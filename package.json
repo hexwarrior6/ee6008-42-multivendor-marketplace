@@ -13,6 +13,7 @@
     "medusa"
   ],
   "scripts": {
+    "dev:email": "email dev --dir ./src/modules/resend/emails",
     "build": "medusa build",
     "seed": "medusa exec ./src/scripts/seed.ts",
     "start": "medusa start",
@@ -27,10 +28,14 @@
     "@medusajs/cli": "2.12.2",
     "@medusajs/framework": "2.12.2",
     "@medusajs/medusa": "2.12.2",
-    "@techlabi/medusa-marketplace-plugin": "^0.50.0"
+    "@react-email/components": "1.0.7",
+    "@react-email/render": "^2.0.4",
+    "@techlabi/medusa-marketplace-plugin": "^0.50.0",
+    "resend": "^6.9.1"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.12.2",
+    "@react-email/preview-server": "^5.2.7",
     "@swc/core": "^1.7.28",
     "@swc/jest": "^0.2.36",
     "@types/jest": "^29.5.13",
@@ -41,6 +46,7 @@
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-email": "^5.2.7",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.2",
     "vite": "^5.4.14",
