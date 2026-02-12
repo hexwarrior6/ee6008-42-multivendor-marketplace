@@ -2,6 +2,7 @@ import { AbstractNotificationProviderService, MedusaError } from "@medusajs/fram
 import { Logger, ProviderSendNotificationDTO, ProviderSendNotificationResultsDTO } from "@medusajs/framework/types"
 import { CreateEmailOptions, Resend } from "resend"
 import { orderPlacedEmail } from "./emails/order-placed"
+import { orderDeliveredEmail } from "./emails/order-delivered"
 
 
 type ResendOptions = {
@@ -19,11 +20,13 @@ type InjectedDependencies = {
 
 enum Templates {
     ORDER_PLACED = "order_placed",
+    ORDER_DELIVERED = "order_delivered",
 }
 
 const templates: {[key in Templates]?: (props: unknown) => React.ReactNode} = {
     //Add templates here
     [Templates.ORDER_PLACED]: orderPlacedEmail,
+    [Templates.ORDER_DELIVERED]: orderDeliveredEmail,
 }
 
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
@@ -68,9 +71,12 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
         if (this.options.html_templates?.[template]?.subject) {
             return this.options.html_templates?.[template]?.subject
         }
+        //Add templates subjects here
         switch(template) {
             case Templates.ORDER_PLACED:
                 return "Order Confirmation"
+            case Templates.ORDER_DELIVERED:
+                return "Your Order has been Delivered"
             default:
                 return "New Email"
         }

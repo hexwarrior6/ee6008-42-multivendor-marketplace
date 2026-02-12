@@ -2,6 +2,7 @@ import { OrderDTO } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import type { SubscriberConfig, SubscriberArgs } from "@medusajs/medusa"
 import createPayoutWorkflow from "../workflows/create-payout"
+import sendOrderDeliveredworkflow from "../workflows/send-order-delivered"
 
 export default async function fulfilmentDelivered({
     event,
@@ -30,6 +31,13 @@ export default async function fulfilmentDelivered({
     const { result } = await createPayoutWorkflow(container).run({
         input: {
             orderId: order.id,
+        }
+    })
+
+    // Send Email
+    await sendOrderDeliveredworkflow(container).run({
+        input: {
+            id: order.id,
         }
     })
     

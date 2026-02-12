@@ -15,7 +15,7 @@ import {
 } from "@react-email/components"
 import { BigNumberValue, CustomerDTO, OrderDTO } from "@medusajs/framework/types"
 
-type OrderPlacedEmailProps = {
+type OrderDeliveredEmailProps = {
   order: OrderDTO & {
     customer: CustomerDTO
   }
@@ -26,7 +26,7 @@ type OrderPlacedEmailProps = {
   }
 }
 
-function OrderPlacedEmailComponent({ order, email_banner }: OrderPlacedEmailProps) {
+function OrderDeliveredEmailComponent({ order, email_banner }: OrderDeliveredEmailProps) {
   const shouldDisplayBanner = email_banner && "title" in email_banner
 
   const formatter = new Intl.NumberFormat([], {
@@ -51,7 +51,7 @@ function OrderPlacedEmailComponent({ order, email_banner }: OrderPlacedEmailProp
     <Tailwind>
       <Html className="font-sans bg-gray-100">
         <Head />
-        <Preview>Thank you for your order from Medusa</Preview>
+        <Preview>Your order has been delivered!</Preview>
         <Body className="bg-white my-10 mx-auto w-full max-w-2xl">
           {/* Header */}
           <Section className="bg-[#27272a] text-white px-6 py-4">
@@ -61,10 +61,11 @@ function OrderPlacedEmailComponent({ order, email_banner }: OrderPlacedEmailProp
           {/* Thank You Message */}
           <Container className="p-6">
             <Heading className="text-2xl font-bold text-center text-gray-800">
-              Thank you for your order, {order.customer?.first_name || order.shipping_address?.first_name}
+              Your order has been delivered!
             </Heading>
-            <Text className="text-center text-gray-600 mt-2">
-              We're processing your order and will notify you when it ships.
+            <Text className="text-left text-gray-600 mt-2">
+            Hi, {order.customer?.first_name || order.shipping_address?.first_name} {order.customer?.last_name || order.shipping_address?.last_name}!<br />
+              We are pleased to inform you that your order #{order.display_id} has been successfully delivered. Thank you for shopping with us!
             </Text>
           </Container>
 
@@ -772,12 +773,11 @@ const mockOrder =
         "fulfillments": [],
         "payment_status": "captured",
         "fulfillment_status": "not_fulfilled"
-    }
+    },
 }
-
 // @ts-ignore
-export default () => <OrderPlacedEmailComponent {...mockOrder} />
+export default () => <OrderDeliveredEmailComponent {...mockOrder} />
 
-export const orderPlacedEmail = (props: OrderPlacedEmailProps) => (
-  <OrderPlacedEmailComponent {...props} />
+export const orderDeliveredEmail = (props: OrderDeliveredEmailProps) => (
+  <OrderDeliveredEmailComponent {...props} />
 )
