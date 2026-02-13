@@ -1,5 +1,5 @@
 import { createStep, StepResponse, transform } from "@medusajs/framework/workflows-sdk"
-import { z } from "zod"
+import { z } from "@medusajs/framework/zod"
 import { ONBOARDING_MODULE } from "../../../modules/onboarding"
 import { OnboardingService } from "../../../modules/onboarding/service"
 import storePayoutAccountLink from "../../../links/store-payout"

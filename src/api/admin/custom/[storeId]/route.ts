@@ -1,7 +1,7 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import { ContainerRegistrationKeys } from "@medusajs/framework/utils";
 import storePayoutAccountLink from "../../../../links/store-payout";
-import { z } from "zod";
+import { z } from "@medusajs/framework/zod";
 
 export async function GET(
   req: MedusaRequest,
