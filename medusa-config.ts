@@ -19,6 +19,10 @@ module.exports = defineConfig({
       resolve: "@techlabi/medusa-marketplace-plugin",
       options: {}
     },
+    {
+      resolve: "@lambdacurry/medusa-product-reviews",
+      options: {}
+    }
   ],
   modules: [
     {
