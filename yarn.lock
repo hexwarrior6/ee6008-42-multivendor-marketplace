@@ -2072,6 +2072,28 @@
   resolved "https://registry.npmjs.org/@js-sdsl/ordered-map/-/ordered-map-4.4.2.tgz"
   integrity sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==
 
+"@lambdacurry/medusa-plugins-sdk@0.0.5":
+  version "0.0.5"
+  resolved "https://registry.yarnpkg.com/@lambdacurry/medusa-plugins-sdk/-/medusa-plugins-sdk-0.0.5.tgz#ac8ce5d6576980f73898476348b5eec3ad4826b3"
+  integrity sha512-8325NYK9EHVpuZHKm7P63S5RDo1ls1W+R0d6ZPKq30/y1twvKV8y/7DESpwMcalpN+fbizT35UOD4g236V3ChQ==
+  dependencies:
+    "@medusajs/js-sdk" "^2.5.0"
+    "@types/express" "^5.0.0"
+    "@types/multer" "^1.4.12"
+    form-data "^4.0.2"
+
+"@lambdacurry/medusa-product-reviews@^1.3.1":
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/@lambdacurry/medusa-product-reviews/-/medusa-product-reviews-1.3.1.tgz#96ee8ba78d9e02b662e92297ee7b028896864bc3"
+  integrity sha512-E1cM8dHM9KA9IRWE8/I6iPe4xtv+1Ibydq8b4H93nJeZRVr7V19pDcpw319BCb5s8y9fIvYv2P4wcybSxYxPwA==
+  dependencies:
+    "@hookform/resolvers" "3.4.2"
+    "@lambdacurry/medusa-plugins-sdk" "0.0.5"
+    "@medusajs/js-sdk" "^2.13.1"
+    "@medusajs/workflows-sdk" "^2.13.1"
+    luxon "^3.5.0"
+    zod "3.25.76"
+
 "@medusajs/admin-bundler@2.13.1":
   version "2.13.1"
   resolved "https://registry.yarnpkg.com/@medusajs/admin-bundler/-/admin-bundler-2.13.1.tgz#c5f55f1afa83500a734d5cece7d18899c5b20641"
@@ -2309,6 +2331,25 @@
     pg "^8.16.3"
     zod "3.25.76"
 
+"@medusajs/deps@2.13.3":
+  version "2.13.3"
+  resolved "https://registry.yarnpkg.com/@medusajs/deps/-/deps-2.13.3.tgz#677e1dff52e3daa92387c134460927c345e17693"
+  integrity sha512-T6478UoYYVuMJG4kK5ooQR/q/mrf4ipziTYKygumiiJVlP+MPJqD3e6xK7bN2rgxUoyaDoVnBWS+fywkEmEx5g==
+  dependencies:
+    "@mikro-orm/cli" "6.4.16"
+    "@mikro-orm/core" "6.4.16"
+    "@mikro-orm/knex" "6.4.16"
+    "@mikro-orm/migrations" "6.4.16"
+    "@mikro-orm/postgresql" "6.4.16"
+    "@opentelemetry/api" "^1.9.0"
+    "@opentelemetry/instrumentation-pg" "^0.52.0"
+    "@opentelemetry/resources" "^2.0.0"
+    "@opentelemetry/sdk-node" "^0.200.0"
+    "@opentelemetry/sdk-trace-node" "^2.0.0"
+    awilix "^8.0.1"
+    pg "^8.16.3"
+    zod "3.25.76"
+
 "@medusajs/draft-order@2.13.1":
   version "2.13.1"
   resolved "https://registry.yarnpkg.com/@medusajs/draft-order/-/draft-order-2.13.1.tgz#e602ec07d46020c4e64d7db4c8fbce6706e00b04"
@@ -2435,6 +2476,14 @@
     fetch-event-stream "^0.1.5"
     qs "^6.12.1"
 
+"@medusajs/js-sdk@^2.13.1", "@medusajs/js-sdk@^2.5.0":
+  version "2.13.3"
+  resolved "https://registry.yarnpkg.com/@medusajs/js-sdk/-/js-sdk-2.13.3.tgz#677494332a9e1bb2e3403628327f65ca6c6c45dd"
+  integrity sha512-JTXZE8q6kHJvZoat2edGUf7QSDVdOTHSaKQnekFD2cIzO6NRUSK+tRiIk+XQLf7FE9eWUHB/h5v9oQ6i47zhXg==
+  dependencies:
+    fetch-event-stream "^0.1.5"
+    qs "^6.12.1"
+
 "@medusajs/link-modules@2.13.1":
   version "2.13.1"
   resolved "https://registry.yarnpkg.com/@medusajs/link-modules/-/link-modules-2.13.1.tgz#5a8b53802a4514dcccbd853f923eec0b23560ffa"
@@ -2538,6 +2587,15 @@
     "@medusajs/orchestration" "2.13.1"
     "@medusajs/utils" "2.13.1"
 
+"@medusajs/modules-sdk@2.13.3":
+  version "2.13.3"
+  resolved "https://registry.yarnpkg.com/@medusajs/modules-sdk/-/modules-sdk-2.13.3.tgz#2085927d58d18dc7775e15d25d702b6c0b145bff"
+  integrity sha512-yrl8oeHWBLs9MqdhRqNEXR9EIFKE7DzwCJ4AEIDwKaQkJxmw/yh5O/6ypAyXFWAAh83pqJaU+/KDXAbmEnBpYw==
+  dependencies:
+    "@medusajs/deps" "2.13.3"
+    "@medusajs/orchestration" "2.13.3"
+    "@medusajs/utils" "2.13.3"
+
 "@medusajs/notification-local@2.13.1":
   version "2.13.1"
   resolved "https://registry.yarnpkg.com/@medusajs/notification-local/-/notification-local-2.13.1.tgz#51f21284ec393917c2b9f4d3cb21d477772bff73"
@@ -2562,6 +2620,15 @@
   dependencies:
     "@medusajs/deps" "2.13.1"
     "@medusajs/utils" "2.13.1"
+    ulid "^2.3.0"
+
+"@medusajs/orchestration@2.13.3":
+  version "2.13.3"
+  resolved "https://registry.yarnpkg.com/@medusajs/orchestration/-/orchestration-2.13.3.tgz#8976246001435fe4ec05a1c0f4d86f004891a087"
+  integrity sha512-ghLN+4hQ/dlY+DCSVLkXB9VFH5lCMWQuCGqsYg8t//yM25RiF09CdERs8PpG7Ze0iD+lAB61JC5qtHBswgG9lA==
+  dependencies:
+    "@medusajs/deps" "2.13.3"
+    "@medusajs/utils" "2.13.3"
     ulid "^2.3.0"
 
 "@medusajs/order@2.13.1":
@@ -2724,6 +2791,26 @@
     pluralize "^8.0.0"
     ulid "^2.3.0"
 
+"@medusajs/utils@2.13.3":
+  version "2.13.3"
+  resolved "https://registry.yarnpkg.com/@medusajs/utils/-/utils-2.13.3.tgz#a523e1eac1e28b700f039d03d726743ef4d714bc"
+  integrity sha512-1tRBUxTehkAcJAxFnmlIlHcRIu4JRuir6NuYKX/fITQYB0Gf6a6NV1fu20hS1FfGXClHvh5kDAHR8Dedn+2WiQ==
+  dependencies:
+    "@graphql-codegen/core" "^4.0.2"
+    "@graphql-codegen/typescript" "^4.0.9"
+    "@graphql-tools/merge" "^9.0.7"
+    "@graphql-tools/schema" "^10.0.6"
+    "@medusajs/deps" "2.13.3"
+    "@types/pluralize" "^0.0.33"
+    bignumber.js "^9.1.2"
+    dotenv "^16.4.5"
+    dotenv-expand "^11.0.6"
+    graphql "^16.9.0"
+    jsonwebtoken "^9.0.2"
+    pg-connection-string "^2.7.0"
+    pluralize "^8.0.0"
+    ulid "^2.3.0"
+
 "@medusajs/workflow-engine-inmemory@2.13.1":
   version "2.13.1"
   resolved "https://registry.yarnpkg.com/@medusajs/workflow-engine-inmemory/-/workflow-engine-inmemory-2.13.1.tgz#a1f3d2b5d98d9a9d07581f579e982a076a454c29"
@@ -2750,6 +2837,17 @@
     "@medusajs/modules-sdk" "2.13.1"
     "@medusajs/orchestration" "2.13.1"
     "@medusajs/utils" "2.13.1"
+    ulid "^2.3.0"
+
+"@medusajs/workflows-sdk@^2.13.1":
+  version "2.13.3"
+  resolved "https://registry.yarnpkg.com/@medusajs/workflows-sdk/-/workflows-sdk-2.13.3.tgz#206a60f6cfe97b1d5e93e4c140ecc78d12b309ed"
+  integrity sha512-OQdekZ4dHbyWwlUd9mqhTnUO1y6bTPIpsbC5dunoRNIV1cqRUqSOwbv+EkVeGanf97z6nJNmrm3T6zLod21a+g==
+  dependencies:
+    "@medusajs/deps" "2.13.3"
+    "@medusajs/modules-sdk" "2.13.3"
+    "@medusajs/orchestration" "2.13.3"
+    "@medusajs/utils" "2.13.3"
     ulid "^2.3.0"
 
 "@mikro-orm/cli@6.4.16":
@@ -6513,6 +6611,25 @@
     "@types/range-parser" "*"
     "@types/send" "*"
 
+"@types/express-serve-static-core@^5.0.0":
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/@types/express-serve-static-core/-/express-serve-static-core-5.1.1.tgz#1a77faffee9572d39124933259be2523837d7eaa"
+  integrity sha512-v4zIMr/cX7/d2BpAEX3KNKL/JrT1s43s96lLvvdTmza1oEvDudCqK9aF/djc/SWgy8Yh0h30TZx5VpzqFCxk5A==
+  dependencies:
+    "@types/node" "*"
+    "@types/qs" "*"
+    "@types/range-parser" "*"
+    "@types/send" "*"
+
+"@types/express@*", "@types/express@^5.0.0":
+  version "5.0.6"
+  resolved "https://registry.yarnpkg.com/@types/express/-/express-5.0.6.tgz#2d724b2c990dcb8c8444063f3580a903f6d500cc"
+  integrity sha512-sKYVuV7Sv9fbPIt/442koC7+IIwK5olP1KWeD88e/idgoJqDm3JV/YUiPwkoKK92ylff2MGxSz1CSjsXelx0YA==
+  dependencies:
+    "@types/body-parser" "*"
+    "@types/express-serve-static-core" "^5.0.0"
+    "@types/serve-static" "^2"
+
 "@types/express@^4.17.21":
   version "4.17.25"
   resolved "https://registry.npmjs.org/@types/express/-/express-4.17.25.tgz"
@@ -6566,6 +6683,13 @@
   version "1.3.5"
   resolved "https://registry.npmjs.org/@types/mime/-/mime-1.3.5.tgz"
   integrity sha512-/pyBZWSLD2n0dcHE3hq8s8ZvcETHtEuF+3E7XVt0Ig2nvsVQXdghHVcEkIWjy9A0wKfTn97a/PSDYohKIlnP/w==
+
+"@types/multer@^1.4.12":
+  version "1.4.13"
+  resolved "https://registry.yarnpkg.com/@types/multer/-/multer-1.4.13.tgz#be483f909a77f13e0624cac3d001859eb12ae68b"
+  integrity sha512-bhhdtPw7JqCiEfC9Jimx5LqX9BDIPJEh2q/fQ4bqbBPtyEZYr3cvF22NwG0DmPZNYA0CAf2CnqDB4KIGGpJcaw==
+  dependencies:
+    "@types/express" "*"
 
 "@types/mute-stream@^0.0.4":
   version "0.0.4"
@@ -6681,6 +6805,14 @@
     "@types/http-errors" "*"
     "@types/node" "*"
     "@types/send" "<1"
+
+"@types/serve-static@^2":
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/@types/serve-static/-/serve-static-2.2.0.tgz#d4a447503ead0d1671132d1ab6bd58b805d8de6a"
+  integrity sha512-8mam4H1NHLtu7nmtalF7eyBH14QyOASmcxHhSfEoRyr0nP/YdoesEtU+uSRvMe96TW/HPTtkoKqQLl53N7UXMQ==
+  dependencies:
+    "@types/http-errors" "*"
+    "@types/node" "*"
 
 "@types/shimmer@^1.2.0":
   version "1.2.0"
@@ -8507,7 +8639,7 @@ foreground-child@^3.3.1:
     cross-spawn "^7.0.6"
     signal-exit "^4.0.1"
 
-form-data@^4.0.4:
+form-data@^4.0.2, form-data@^4.0.4:
   version "4.0.5"
   resolved "https://registry.npmjs.org/form-data/-/form-data-4.0.5.tgz"
   integrity sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==
@@ -9975,7 +10107,7 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
-luxon@^3.2.1:
+luxon@^3.2.1, luxon@^3.5.0:
   version "3.7.2"
   resolved "https://registry.npmjs.org/luxon/-/luxon-3.7.2.tgz"
   integrity sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==
