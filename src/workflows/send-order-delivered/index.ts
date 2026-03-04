@@ -1,9 +1,11 @@
+import { Modules } from "@medusajs/framework/utils"
 import {
   createWorkflow,
   when,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
 import { sendNotificationsStep, useQueryGraphStep } from "@medusajs/medusa/core-flows"
+import { orderCompleteStep } from "./step/order-complete"
 
 type WorkflowInput = {
     id: string
@@ -52,6 +54,8 @@ const sendOrderDeliveredworkflow = createWorkflow(
             },
         }])
     })
+    // Change Order status to complete
+    const order = orderCompleteStep({ order_id: id })
     
     return new WorkflowResponse({notification})
   }
