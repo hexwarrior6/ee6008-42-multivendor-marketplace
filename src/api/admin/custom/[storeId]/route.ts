@@ -12,11 +12,8 @@ export async function GET(
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
 
   const { data: stores } = await query.graph({
-          entity: storePayoutAccountLink.entryPoint,
-          fields: ["payout_account.*"],
-          filters: {
-              store_id: storeId,
-          }
+          entity: "product_review",
+          fields: ["*"],
     })
 
   // const { data: store } = await query.graph({
@@ -37,5 +34,5 @@ export async function GET(
   //   store_information: validation.success,
   //   validation_errors: validation.success ? null : validation.error.issues
   // });
-  res.status(200).json({ store: stores[0].payout_account });
+  res.status(200).json({ store: stores[0]});
 }
