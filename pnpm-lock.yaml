@@ -17,6 +17,9 @@ importers:
       '@medusajs/cli':
         specifier: 2.13.1
         version: 2.13.1(@types/node@20.19.37)
+      '@medusajs/dashboard':
+        specifier: 2.13.1
+        version: 2.13.1(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(typescript@5.9.3)
       '@medusajs/framework':
         specifier: 2.13.1
         version: 2.13.1(@medusajs/cli@2.13.1(@types/node@20.19.37))(@types/node@20.19.37)(ioredis@5.10.1)(vite@5.4.21(@types/node@20.19.37))(zod@3.25.76)
