@@ -2,7 +2,7 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import { STRIPE_CONNECT_MODULE } from "../../../../../modules/stripe-connect";
-import { StoreDTO } from "@medusajs/types/dist/store/common/store";
+import { StoreDTO } from "@medusajs/framework/types";
 import storePayoutAccountLink from "../../../../../links/store-payout";
 import recalculateOnboardingWorkflow from "../../../../../workflows/recalculate-onboarding-status";
 import { PayoutAccountStatus } from "../../../../../modules/stripe-connect/models/payoutAccount";

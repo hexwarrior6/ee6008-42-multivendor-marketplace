@@ -1,6 +1,6 @@
 import { logger } from "@medusajs/framework"
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
-import { ShippingOptionDTO } from "@medusajs/types/dist/fulfillment/common/shipping-option"
+import { ShippingOptionDTO } from "@medusajs/framework/types"
 
 type StepInput = {
     shipping_options: ShippingOptionDTO[],

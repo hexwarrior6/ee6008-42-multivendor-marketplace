@@ -1,5 +1,5 @@
 import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http";
-import { Modules } from "@medusajs/utils";
+import { Modules } from "@medusajs/framework/utils";
 import storePayoutAccountLink from "../../../../links/store-payout";
 import { STRIPE_CONNECT_MODULE } from "../../../../modules/stripe-connect";
 

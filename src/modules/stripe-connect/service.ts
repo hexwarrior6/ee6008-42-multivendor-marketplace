@@ -1,6 +1,6 @@
 import { InjectManager, InjectTransactionManager, MedusaContext, MedusaError, MedusaService } from "@medusajs/framework/utils";
 import { Logger } from "@medusajs/medusa";
-import { Context } from "@medusajs/types";
+import { Context } from "@medusajs/framework/types";
 import Stripe from "stripe";
 import { PayoutAccount } from "./models/payoutAccount";
 import { Payout } from "./models/payout";
