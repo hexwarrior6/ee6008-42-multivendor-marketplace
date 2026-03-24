@@ -32,7 +32,8 @@
     "@react-email/components": "1.0.7",
     "@react-email/render": "^2.0.4",
     "@techlabi/medusa-marketplace-plugin": "^0.50.0",
-    "resend": "^6.9.1"
+    "resend": "^6.9.1",
+    "@medusajs/dashboard": "2.13.1"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.13.1",
