@@ -8,6 +8,7 @@ import recalculateOnboardingWorkflow from "../../../../../workflows/recalculate-
 import { PayoutAccountStatus } from "../../../../../modules/stripe-connect/models/payoutAccount";
 
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
+    const backendURL = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000";
     const logger = req.scope.resolve("logger");
     const stripeConnectModuleService = req.scope.resolve(STRIPE_CONNECT_MODULE);
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
@@ -34,9 +35,9 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
         input: {
           storeId: storeId.id,
         }
-      }).then(() => res.redirect('http://localhost:9000/app'));
+      }).then(() => res.redirect(`${backendURL}/app`));
     } else {
       logger.warn(`Stripe Payouts are NOT enabled for Store ID: ${storeId.id}`);
-      res.redirect('http://localhost:9000/app/onboarding');
+      res.redirect(`${backendURL}/app/onboarding`);
     }
 };

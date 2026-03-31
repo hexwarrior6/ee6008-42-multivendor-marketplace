@@ -119,8 +119,8 @@ export class StripeConnectModuleService extends MedusaService({
         try {
           const accountLink = await this.stripe_.accountLinks.create({
             account: stripeAccountId,
-            refresh_url: `http://localhost:9000/app`,
-            return_url: `http://localhost:9000/admin/stripe-connect/account-link/return`,
+            refresh_url: `${process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"}/app`,
+            return_url: `${process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"}/admin/stripe-connect/account-link/return`,
             type: 'account_onboarding',
           });
           
