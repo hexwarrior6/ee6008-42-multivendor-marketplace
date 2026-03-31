@@ -1,4 +1,4 @@
-import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/framework/http";
+import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import { STRIPE_CONNECT_MODULE } from "../../../../../modules/stripe-connect";
@@ -7,7 +7,7 @@ import storePayoutAccountLink from "../../../../../links/store-payout";
 import recalculateOnboardingWorkflow from "../../../../../workflows/recalculate-onboarding-status";
 import { PayoutAccountStatus } from "../../../../../modules/stripe-connect/models/payoutAccount";
 
-export const GET = async (req: AuthenticatedMedusaRequest, res: MedusaResponse) => {
+export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     const logger = req.scope.resolve("logger");
     const stripeConnectModuleService = req.scope.resolve(STRIPE_CONNECT_MODULE);
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
