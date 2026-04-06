@@ -26,6 +26,23 @@ module.exports = defineConfig({
   ],
   modules: [
     {
+      resolve: "@medusajs/medusa/file",
+      options: {
+        providers: [
+          {
+            resolve: "./src/modules/minio-file",
+            id: "minio",
+            options: {
+              accessKey: process.env.MINIO_ACCESS_KEY,
+              secretKey: process.env.MINIO_SECRET_KEY,
+              bucket: process.env.MINIO_BUCKET,
+              endPoint: process.env.MINIO_PUBLIC_ENDPOINT,
+            }
+          }
+        ]
+      }
+    },
+    {
       resolve: "@medusajs/medusa/notification",
       options: {
         providers: [
