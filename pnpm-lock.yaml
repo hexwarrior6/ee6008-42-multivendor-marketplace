@@ -53,6 +53,9 @@ importers:
       stripe:
         specifier: ^20.4.1
         version: 20.4.1(@types/node@20.19.37)
+      ulid:
+        specifier: ^2.4.0
+        version: 2.4.0
     devDependencies:
       '@medusajs/test-utils':
         specifier: 2.13.5
