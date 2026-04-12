@@ -65,7 +65,8 @@ function OrderDeliveredEmailComponent({ order, email_banner }: OrderDeliveredEma
             </Heading>
             <Text className="text-left text-gray-600 mt-2">
             Hi, {order.customer?.first_name || order.shipping_address?.first_name} {order.customer?.last_name || order.shipping_address?.last_name}!<br />
-              We are pleased to inform you that your order #{order.display_id} has been successfully delivered. Thank you for shopping with us!
+              We are pleased to inform you that your order #{order.display_id} has been successfully delivered. Thank you for shopping with us! <br />
+              <Link href={`${process.env.STORE_CORS}/order/${order.id}/reviews`} className="text-blue-600 underline">Click here to leave a review</Link>
             </Text>
           </Container>
 
