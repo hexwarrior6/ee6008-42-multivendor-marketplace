@@ -6,6 +6,7 @@ loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    redisUrl: process.env.REDIS_URL,
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
@@ -25,7 +26,11 @@ module.exports = defineConfig({
     }
   ],
   modules: [
-    {
+    ...(process.env.MINIO_ACCESS_KEY &&
+    process.env.MINIO_SECRET_KEY &&
+    process.env.MINIO_BUCKET &&
+    process.env.MINIO_PUBLIC_ENDPOINT
+      ? [{
       resolve: "@medusajs/medusa/file",
       options: {
         providers: [
@@ -41,8 +46,10 @@ module.exports = defineConfig({
           }
         ]
       }
-    },
-    {
+    }]
+      : []),
+    ...(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL
+      ? [{
       resolve: "@medusajs/medusa/notification",
       options: {
         providers: [
@@ -57,8 +64,10 @@ module.exports = defineConfig({
           }
         ]
       }
-    },
-    {
+    }]
+      : []),
+    ...(process.env.STRIPE_API_KEY
+      ? [{
       resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
@@ -74,7 +83,8 @@ module.exports = defineConfig({
           }
         ]
       }
-    },
+    }]
+      : []),
     {
       resolve: "./src/modules/stripe-connect",
       options: {
