@@ -25,56 +25,15 @@ module.exports = defineConfig({
     }
   ],
   modules: [
-    {
-      resolve: "@medusajs/medusa/file",
-      options: {
-        providers: [
-          {
-            resolve: "./src/modules/minio-file",
-            id: "minio",
-            options: {
-              accessKey: process.env.MINIO_ACCESS_KEY,
-              secretKey: process.env.MINIO_SECRET_KEY,
-              bucket: process.env.MINIO_BUCKET,
-              endPoint: process.env.MINIO_PUBLIC_ENDPOINT,
-            }
-          }
-        ]
-      }
-    },
-    {
-      resolve: "@medusajs/medusa/notification",
-      options: {
-        providers: [
-          {
-            resolve: "./src/modules/resend",
-            id: "resend",
-            options: {
-              channels: ["email"],
-              api_key: process.env.RESEND_API_KEY,
-              from: process.env.RESEND_FROM_EMAIL
-            }
-          }
-        ]
-      }
-    },
-    {
-      resolve: "@medusajs/medusa/payment",
-      options: {
-        providers: [
-          {
-            resolve: "@medusajs/medusa/payment-stripe",
-            id: "stripe",
-            options: {
-              apiKey: process.env.STRIPE_API_KEY,
-              automatic_payment_methods: true,
-              capture: true,
-              webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-            }
-          }
-        ]
-      }
-    },
+    // Local development: MinIO is temporarily disabled because no
+    // MINIO_SECRET_KEY has been provided. Re-enable this module before
+    // testing file uploads or deploying.
+    // Local development: Resend email notifications are temporarily disabled
+    // because no RESEND_API_KEY has been provided. Re-enable before testing email.
+    // Local development: Stripe payments are disabled because this project
+    // will use WeChat Pay. Stripe Connect remains registered only because
+    // existing database links depend on it; its API calls are disabled unless
+    // STRIPE_API_KEY is configured.
     {
       resolve: "./src/modules/stripe-connect",
       options: {
@@ -83,6 +42,12 @@ module.exports = defineConfig({
     },
     {
       resolve: "./src/modules/onboarding",
-    }
+    },
+    {
+      resolve: "./src/modules/artisan-profile",
+    },
+    {
+      resolve: "./src/modules/custom-order",
+    },
   ]
 })
