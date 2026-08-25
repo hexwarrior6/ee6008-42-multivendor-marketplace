@@ -10,9 +10,12 @@ import {
 type UpdateArtisanProfileBody = {
   display_name?: string
   bio?: string
+  inspiration?: string
+  creative_process?: string
   avatar_url?: string
   location?: string
   specialties?: string[]
+  media?: Array<{ type: "image" | "video"; url: string; caption?: string }>
   verification_status?: "draft" | "pending" | "approved" | "rejected"
 }
 
@@ -35,12 +38,15 @@ export const POST = async (
   const artisanProfileService: ArtisanProfileService = req.scope.resolve(
     ARTISAN_PROFILE_MODULE
   )
-  const { specialties, ...data } = req.body
+  const { specialties, media, ...data } = req.body
   const artisanProfile = await artisanProfileService.updateArtisanProfiles({
     id: req.params.id,
     ...data,
     ...(specialties !== undefined
       ? { specialties: specialties as unknown as Record<string, unknown> }
+      : {}),
+    ...(media !== undefined
+      ? { media: media as unknown as Record<string, unknown> }
       : {}),
   })
 

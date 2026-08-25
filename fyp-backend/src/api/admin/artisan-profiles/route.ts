@@ -12,9 +12,12 @@ type CreateArtisanProfileBody = {
   store_id?: string
   display_name?: string
   bio?: string
+  inspiration?: string
+  creative_process?: string
   avatar_url?: string
   location?: string
   specialties?: string[]
+  media?: Array<{ type: "image" | "video"; url: string; caption?: string }>
   verification_status?: "draft" | "pending" | "approved" | "rejected"
 }
 
@@ -47,7 +50,7 @@ export const POST = async (
   req: AuthenticatedMedusaRequest<CreateArtisanProfileBody>,
   res: MedusaResponse
 ) => {
-  const { store_id, display_name, specialties, ...data } = req.body
+  const { store_id, display_name, specialties, media, ...data } = req.body
 
   if (!store_id || !display_name) {
     throw new MedusaError(
@@ -65,6 +68,9 @@ export const POST = async (
     ...data,
     ...(specialties !== undefined
       ? { specialties: specialties as unknown as Record<string, unknown> }
+      : {}),
+    ...(media !== undefined
+      ? { media: media as unknown as Record<string, unknown> }
       : {}),
   })
 

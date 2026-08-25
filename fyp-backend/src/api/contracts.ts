@@ -16,6 +16,13 @@ export type CustomOrderRequestBody = {
   metadata?: Record<string, unknown> | null
 }
 
+export type CustomOrderMessageBody = {
+  sender_type: "customer" | "artisan" | "admin"
+  sender_id?: string | null
+  message: string
+  attachments?: Array<{ type: "image" | "file"; url: string }> | null
+}
+
 export type RecommendationItem = {
   product_id: string
   title: string

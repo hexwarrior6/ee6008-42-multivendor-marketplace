@@ -19,3 +19,12 @@ export const CustomOrderRequest = model.define("custom_order_request", {
     .default("request"),
   metadata: model.json().nullable(),
 })
+
+export const CustomOrderMessage = model.define("custom_order_message", {
+  id: model.id({ prefix: "com" }).primaryKey(),
+  custom_order_id: model.text(),
+  sender_type: model.enum(["customer", "artisan", "admin"]),
+  sender_id: model.text().nullable(),
+  message: model.text(),
+  attachments: model.json().nullable(),
+})

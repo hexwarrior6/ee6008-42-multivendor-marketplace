@@ -5,9 +5,12 @@ export const ArtisanProfile = model.define("artisan_profile", {
   store_id: model.text().unique(),
   display_name: model.text(),
   bio: model.text().nullable(),
+  inspiration: model.text().nullable(),
+  creative_process: model.text().nullable(),
   avatar_url: model.text().nullable(),
   location: model.text().nullable(),
   specialties: model.json().nullable(),
+  media: model.json().nullable(),
   verification_status: model
     .enum(["draft", "pending", "approved", "rejected"])
     .default("draft"),

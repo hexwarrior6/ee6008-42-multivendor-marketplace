@@ -47,7 +47,26 @@ Create/update fields:
   "avatar_url": "https://example.com/avatar.png",
   "location": "Singapore",
   "specialties": ["ceramics", "woodwork"],
+  "inspiration": "自然纹理与东方器物",
+  "creative_process": "手绘草图、打样、烧制、质检",
+  "media": [
+    { "type": "image", "url": "https://example.com/work-1.jpg", "caption": "代表作品" }
+  ],
   "verification_status": "draft"
+}
+```
+
+Additional profile media can be appended after the profile is created:
+
+```text
+POST /admin/artisan-profiles/:id/media
+```
+
+```json
+{
+  "type": "image",
+  "url": "https://example.com/work-2.jpg",
+  "caption": "工作室作品"
 }
 ```
 
@@ -127,14 +146,58 @@ shape will not change when the model is connected:
 }
 ```
 
+### Custom-order chat
+
+Messages are stored against a custom order so the storefront, artisan UI, and
+admin UI can share one response contract:
+
+```text
+GET  /store/custom-orders/:id/messages
+POST /store/custom-orders/:id/messages
+```
+
+The POST body supports text plus optional image/file attachments:
+
+```json
+{
+  "sender_type": "customer",
+  "sender_id": "cus_01XYZ",
+  "message": "可以把杯身改成深蓝色吗？",
+  "attachments": [
+    { "type": "image", "url": "https://example.com/reference.png" }
+  ]
+}
+```
+
+The GET response is:
+
+```json
+{
+  "messages": [
+    {
+      "id": "com_01ABC",
+      "custom_order_id": "cor_01ABC",
+      "sender_type": "customer",
+      "sender_id": "cus_01XYZ",
+      "message": "可以把杯身改成深蓝色吗？",
+      "attachments": [],
+      "created_at": "2026-08-26T10:00:00.000Z"
+    }
+  ],
+  "count": 1
+}
+```
+
 ### Seller analytics
 
 ```text
 GET /admin/analytics/sales?from=2026-08-01&to=2026-08-31&currency_code=cny
 ```
 
-The first implementation returns a zero-valued baseline so S2 can build the
-dashboard charts. Aggregation will be filled in without changing this shape:
+The route now aggregates order totals, order count, average order value, daily
+revenue, and top products without changing the response shape. It reads only
+orders matching the requested currency and date range; with no matching orders,
+the values are naturally zero/empty:
 
 ```json
 {
