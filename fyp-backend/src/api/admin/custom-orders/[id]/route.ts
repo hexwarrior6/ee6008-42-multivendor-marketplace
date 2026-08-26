@@ -46,13 +46,29 @@ export const PATCH = async (
   }
 
   if (body.product_category !== undefined) {
-    const category = body.product_category.trim()
+    const category =
+      typeof body.product_category === "string"
+        ? body.product_category.trim()
+        : ""
     if (!category || category.length > 100) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
         "product_category must be between 1 and 100 characters"
       )
     }
+  }
+
+  if (
+    body.quoted_amount !== null &&
+    body.quoted_amount !== undefined &&
+    (typeof body.quoted_amount !== "number" ||
+      !Number.isFinite(body.quoted_amount) ||
+      body.quoted_amount < 0)
+  ) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "quoted_amount must be a non-negative number"
+    )
   }
 
   if (body.status && body.status !== current.status) {

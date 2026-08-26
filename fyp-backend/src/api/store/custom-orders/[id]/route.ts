@@ -32,7 +32,7 @@ export const PATCH = async (
   const current = await service.retrieveCustomOrderRequest(req.params.id)
   const body = req.body || {}
 
-  if (body.status && !isCustomOrderStatus(body.status)) {
+  if (body.status !== undefined && !isCustomOrderStatus(body.status)) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
       "Invalid custom order status"
@@ -55,13 +55,28 @@ export const PATCH = async (
     body.product_category !== undefined
   ) {
     if (body.product_category !== undefined) {
-      const category = body.product_category.trim()
+      const category =
+        typeof body.product_category === "string"
+          ? body.product_category.trim()
+          : ""
       if (!category || category.length > 100) {
         throw new MedusaError(
           MedusaError.Types.INVALID_DATA,
           "product_category must be between 1 and 100 characters"
         )
       }
+    }
+    if (
+      body.quoted_amount !== null &&
+      body.quoted_amount !== undefined &&
+      (typeof body.quoted_amount !== "number" ||
+        !Number.isFinite(body.quoted_amount) ||
+        body.quoted_amount < 0)
+    ) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "quoted_amount must be a non-negative number"
+      )
     }
     customOrder = await service.updateCustomOrderRequests({
       id: current.id,

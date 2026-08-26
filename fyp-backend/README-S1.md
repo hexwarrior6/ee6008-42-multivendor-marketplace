@@ -98,6 +98,29 @@ POST /admin/artisan-profiles/:id/media
 }
 ```
 
+如果前端需要直接上传文件，可以使用 base64 文件上传接口。接口需要管理员登录，支持图片和视频，
+单个文件限制为 10 MB；文件会交给 Medusa 当前配置的 file provider（本地或 MinIO）保存：
+
+```text
+POST /admin/artisan-profiles/:id/media/upload
+```
+
+请求体：
+
+```json
+{
+  "filename": "workshop.jpg",
+  "mime_type": "image/jpeg",
+  "type": "image",
+  "content": "<base64-data>",
+  "caption": "工作室照片"
+}
+```
+
+上传成功后，返回的 `file.url` 和 `media.url` 可以直接用于前台展示；`media.file_id` 可用于后续
+删除文件。默认使用 Medusa 本地 file provider；只有在配置完整 MinIO 信息并设置
+`MINIO_ENABLED=true` 后才会切换到 MinIO。
+
 ## 四、定制订单接口（供 S2/S3 对接）
 
 ```text
@@ -238,7 +261,8 @@ GET /store/recommendations?product_id=prod_01ABC&limit=8
 GET /admin/analytics/sales?from=2026-08-01&to=2026-08-31&currency_code=cny
 ```
 
-接口会按照日期和币种统计订单总额、订单数、平均客单价、每日销售额和热销商品。
+接口会按照日期、币种和可选的 `store_id` 统计订单总额、订单数、平均客单价、每日销售额和热销商品。
+不传 `store_id` 时统计所有商家；传入 `store_id` 时只统计该商家的订单。
 没有符合条件的订单时，数值为 0，数组为空：
 
 ```json

@@ -20,7 +20,11 @@ type OrderRecord = {
   total?: number | string | null
   created_at?: string | Date | null
   items?: OrderItem[] | null
+  stores?: Array<{ id?: string | null } | null> | null
 }
+
+const ORDER_PAGE_SIZE = 1000
+const MAX_ANALYTICS_ORDERS = 100_000
 
 const parseDate = (value: unknown, fallback: Date) => {
   const date = value ? new Date(String(value)) : fallback
@@ -39,7 +43,7 @@ export const GET = async (
   const now = new Date()
   const defaultFrom = new Date(now)
   defaultFrom.setDate(defaultFrom.getDate() - 30)
-  const { from, to, currency_code = "cny" } = req.query
+  const { from, to, currency_code = "cny", store_id } = req.query
   const fromDate = parseDate(from, defaultFrom)
   const toDate = parseDate(to, now)
 
@@ -51,28 +55,50 @@ export const GET = async (
   }
 
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
-  const { data } = await query.graph({
-    entity: "order",
-    fields: [
-      "id",
-      "currency_code",
-      "total",
-      "created_at",
-      "items.*",
-      "items.product.id",
-      "items.product.title",
-    ],
-    filters: {
-      created_at: {
-        $gte: fromDate.toISOString(),
-        $lte: toDate.toISOString(),
-      },
-      currency_code: String(currency_code),
-    },
-    pagination: { take: 1000 },
-  })
+  const allOrders: OrderRecord[] = []
+  let skip = 0
 
-  const orders = (data || []) as OrderRecord[]
+  // Remote Query caps a single page at 1000 records. Iterate so the summary
+  // remains correct for busy sellers instead of silently dropping older
+  // orders from the selected period.
+  while (allOrders.length < MAX_ANALYTICS_ORDERS) {
+    const { data } = await query.graph({
+      entity: "order",
+      fields: [
+        "id",
+        "currency_code",
+        "total",
+        "created_at",
+        "stores.id",
+        "items.*",
+        "items.product.id",
+        "items.product.title",
+      ],
+      filters: {
+        created_at: {
+          $gte: fromDate.toISOString(),
+          $lte: toDate.toISOString(),
+        },
+        currency_code: String(currency_code),
+      },
+      pagination: { take: ORDER_PAGE_SIZE, skip },
+    })
+
+    const page = (data || []) as OrderRecord[]
+    allOrders.push(...page)
+    if (page.length < ORDER_PAGE_SIZE) {
+      break
+    }
+    skip += page.length
+  }
+
+  const orders = store_id
+    ? allOrders.filter((order) =>
+        (order.stores || []).some(
+          (store) => store?.id === String(store_id)
+        )
+      )
+    : allOrders
   const daily = new Map<string, { date: string; orders: number; revenue: number }>()
   const products = new Map<
     string,
