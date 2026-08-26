@@ -45,6 +45,7 @@ export const POST = async (
     artisan_id: body.artisan_id,
     customer_id: body.customer_id ?? null,
     title: body.title,
+    product_category: body.product_category?.trim() || "custom",
     description: body.description,
     budget_amount: body.budget_amount ?? null,
     currency_code: body.currency_code || "cny",

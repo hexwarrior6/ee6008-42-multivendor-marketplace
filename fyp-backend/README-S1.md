@@ -107,6 +107,17 @@ GET   /store/custom-orders/:id
 PATCH /store/custom-orders/:id
 ```
 
+管理员订单列表和详情接口如下，必须先登录管理后台：
+
+```text
+GET   /admin/custom-orders
+GET   /admin/custom-orders/:id
+PATCH /admin/custom-orders/:id
+```
+
+列表接口支持 `artisan_id`、`customer_id`、`status`、`product_category`、
+`limit` 和 `offset` 查询参数，供后台订单列表筛选和分页使用。
+
 创建订单请求示例：
 
 ```json
@@ -114,6 +125,7 @@ PATCH /store/custom-orders/:id
   "artisan_id": "art_01ABC",
   "customer_id": "cus_01XYZ",
   "title": "青花瓷茶壶定制",
+  "product_category": "ceramics",
   "description": "希望壶身有梅花图案，容量约 500ml",
   "budget_amount": 680,
   "currency_code": "cny",
@@ -131,6 +143,7 @@ PATCH /store/custom-orders/:id
     "artisan_id": "art_01ABC",
     "customer_id": "cus_01XYZ",
     "title": "青花瓷茶壶定制",
+    "product_category": "ceramics",
     "description": "希望壶身有梅花图案，容量约 500ml",
     "budget_amount": 680,
     "quoted_amount": null,
@@ -139,12 +152,19 @@ PATCH /store/custom-orders/:id
 }
 ```
 
+`product_category` 是定制请求的产品类别，默认值为 `custom`，也可以使用
+`ceramics`、`woodwork`、`jewelry` 等团队约定的分类名称。
+
 订单状态流转：
 
 ```text
 request -> quote -> confirmed -> produced -> delivered
 request/quote/confirmed -> cancelled
 ```
+
+接口会拒绝跳跃或逆向状态，例如 `request -> produced`、
+`delivered -> confirmed` 都会返回错误。状态更新通过后端工作流执行，后续可以在
+工作流中加入通知、审核记录和生产任务等步骤。
 
 ## 五、定制订单聊天接口
 

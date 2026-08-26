@@ -10,6 +10,7 @@ export const CustomOrderRequest = model.define("custom_order_request", {
   artisan_id: model.text(),
   customer_id: model.text().nullable(),
   title: model.text(),
+  product_category: model.text().default("custom"),
   description: model.text(),
   budget_amount: model.number().nullable(),
   quoted_amount: model.number().nullable(),

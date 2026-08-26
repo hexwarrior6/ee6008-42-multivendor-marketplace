@@ -1,15 +1,11 @@
-export type CustomOrderStatus =
-  | "request"
-  | "quote"
-  | "confirmed"
-  | "produced"
-  | "delivered"
-  | "cancelled"
+export type { CustomOrderStatus } from "../modules/custom-order/state-machine"
+import type { CustomOrderStatus } from "../modules/custom-order/state-machine"
 
 export type CustomOrderRequestBody = {
   artisan_id: string
   customer_id?: string | null
   title: string
+  product_category?: string
   description: string
   budget_amount?: number | null
   currency_code?: string

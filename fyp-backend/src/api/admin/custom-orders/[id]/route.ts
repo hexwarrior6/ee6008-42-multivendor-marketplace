@@ -1,4 +1,7 @@
-import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import type {
+  AuthenticatedMedusaRequest,
+  MedusaResponse,
+} from "@medusajs/framework/http"
 import { MedusaError } from "@medusajs/framework/utils"
 import {
   CUSTOM_ORDER_MODULE,
@@ -7,8 +10,8 @@ import {
 import {
   assertCustomOrderTransition,
   isCustomOrderStatus,
+  type CustomOrderStatus,
 } from "../../../../modules/custom-order/state-machine"
-import type { CustomOrderStatus } from "../../../contracts"
 import updateCustomOrderStatusWorkflow from "../../../../workflows/update-custom-order-status"
 
 type UpdateCustomOrderBody = {
@@ -18,30 +21,46 @@ type UpdateCustomOrderBody = {
   metadata?: Record<string, unknown> | null
 }
 
-export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
+export const GET = async (
+  req: AuthenticatedMedusaRequest,
+  res: MedusaResponse
+) => {
   const service: CustomOrderService = req.scope.resolve(CUSTOM_ORDER_MODULE)
   const customOrder = await service.retrieveCustomOrderRequest(req.params.id)
   res.json({ custom_order: customOrder })
 }
 
 export const PATCH = async (
-  req: MedusaRequest<UpdateCustomOrderBody>,
+  req: AuthenticatedMedusaRequest<UpdateCustomOrderBody>,
   res: MedusaResponse
 ) => {
   const service: CustomOrderService = req.scope.resolve(CUSTOM_ORDER_MODULE)
   const current = await service.retrieveCustomOrderRequest(req.params.id)
   const body = req.body || {}
 
-  if (body.status && !isCustomOrderStatus(body.status)) {
+  if (body.status !== undefined && !isCustomOrderStatus(body.status)) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
       "Invalid custom order status"
     )
   }
 
-  let customOrder = current
+  if (body.product_category !== undefined) {
+    const category = body.product_category.trim()
+    if (!category || category.length > 100) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "product_category must be between 1 and 100 characters"
+      )
+    }
+  }
+
   if (body.status && body.status !== current.status) {
     assertCustomOrderTransition(current.status as CustomOrderStatus, body.status)
+  }
+
+  let customOrder = current
+  if (body.status && body.status !== current.status) {
     const { result } = await updateCustomOrderStatusWorkflow.run({
       input: { customOrderId: current.id, status: body.status },
       container: req.scope,
@@ -54,15 +73,6 @@ export const PATCH = async (
     body.metadata !== undefined ||
     body.product_category !== undefined
   ) {
-    if (body.product_category !== undefined) {
-      const category = body.product_category.trim()
-      if (!category || category.length > 100) {
-        throw new MedusaError(
-          MedusaError.Types.INVALID_DATA,
-          "product_category must be between 1 and 100 characters"
-        )
-      }
-    }
     customOrder = await service.updateCustomOrderRequests({
       id: current.id,
       ...(body.quoted_amount !== undefined
