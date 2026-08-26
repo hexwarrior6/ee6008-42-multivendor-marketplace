@@ -130,6 +130,12 @@ GET   /store/custom-orders/:id
 PATCH /store/custom-orders/:id
 ```
 
+上述 Store 定制订单路由（包括消息等子路径）要求客户已登录。请求需携带
+Medusa session cookie 或 bearer token，并由后端的
+`authenticate("customer", ["session", "bearer"])` 中间件校验；只有
+publishable API key 不能调用这些路由。订单创建时 `customer_id` 始终取自登录
+身份，客户端传入的值会被忽略。
+
 管理员订单列表和详情接口如下，必须先登录管理后台：
 
 ```text
@@ -178,6 +184,12 @@ PATCH /admin/custom-orders/:id
 `product_category` 是定制请求的产品类别，默认值为 `custom`，也可以使用
 `ceramics`、`woodwork`、`jewelry` 等团队约定的分类名称。
 
+若使用正式商品下单类型，请传 `listing_type: "product"`、`product_id` 和
+`product_category_id`。后端会验证商品与类别的关系、商品是否已发布且有
+variant、商品是否属于工匠所在店铺，以及商品或类别是否设置
+`metadata.custom_order_enabled: true`。未通过这些检查的跨店铺、未发布或非定制
+商品会返回错误；`listing_type: "custom_request"` 可继续使用纯描述型定制请求。
+
 订单状态流转：
 
 ```text
@@ -198,7 +210,15 @@ GET  /store/custom-orders/:id/messages
 POST /store/custom-orders/:id/messages
 ```
 
-发送消息请求体：
+后台工匠/管理员使用对应的后台接口：
+
+```text
+GET  /admin/custom-orders/:id/messages
+POST /admin/custom-orders/:id/messages
+GET  /admin/custom-orders/:id/history
+```
+
+发送消息请求体（`sender_type` 和 `sender_id` 即使传入也会被服务端忽略）：
 
 ```json
 {
@@ -211,9 +231,11 @@ POST /store/custom-orders/:id/messages
 }
 ```
 
-- `sender_type` 支持 `customer`、`artisan`、`admin`。
+- 发送者类型和 ID 始终从登录身份生成，客户不能伪装成工匠或管理员；只有订单客户、对应工匠和平台管理员可以读取消息。
+- `sender_type` 的返回值支持 `customer`、`artisan`、`admin`。
 - `message` 必填，最多 5000 个字符。
-- `attachments` 可以为空；附件类型支持 `image` 和 `file`。
+- `attachments` 可以为空；附件类型支持 `image` 和 `file`，单个最多 10 MB、总计最多 25 MB，并要求 HTTP(S) URL。
+- 查询支持 `limit` 和 `offset`，响应会返回 `count`、`limit`、`offset` 和 `has_more`。
 
 查询消息返回：
 
@@ -262,7 +284,7 @@ GET /admin/analytics/sales?from=2026-08-01&to=2026-08-31&currency_code=cny
 ```
 
 接口会按照日期、币种和可选的 `store_id` 统计订单总额、订单数、平均客单价、每日销售额和热销商品。
-不传 `store_id` 时统计所有商家；传入 `store_id` 时只统计该商家的订单。
+平台管理员不传 `store_id` 时统计全平台；普通卖家始终只会看到自己关联店铺的数据，不能用查询参数扩大范围。
 没有符合条件的订单时，数值为 0，数组为空：
 
 ```json

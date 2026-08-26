@@ -8,29 +8,32 @@ import {
   CustomOrderService,
 } from "../../../../../modules/custom-order"
 import type { CustomOrderMessageBody } from "../../../../contracts"
-import {
-  assertCustomOrderAccess,
-  requireCustomerContext,
-} from "../../../../utils/authz"
+import { assertCustomOrderAccess } from "../../../../utils/authz"
 import {
   normalizePagination,
   validateAttachments,
 } from "../../../../utils/validation"
 
+const authorize = async (req: AuthenticatedMedusaRequest) => {
+  const service: CustomOrderService = req.scope.resolve(CUSTOM_ORDER_MODULE)
+  const order = await service.retrieveCustomOrderRequest(req.params.id)
+  const actor = await assertCustomOrderAccess(req, order, {
+    allowCustomer: false,
+    allowBackoffice: true,
+  })
+  return { service, order, actor }
+}
+
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
-  requireCustomerContext(req)
-  const service: CustomOrderService = req.scope.resolve(CUSTOM_ORDER_MODULE)
-  const order = await service.retrieveCustomOrderRequest(req.params.id)
-  await assertCustomOrderAccess(req, order, { allowBackoffice: false })
+  const { service } = await authorize(req)
   const { limit, offset } = normalizePagination(req.query)
   const [messages, count] = await service.listAndCountCustomOrderMessages(
     { custom_order_id: req.params.id },
     { take: limit, skip: offset, order: { created_at: "ASC" } }
   )
-
   res.json({
     messages,
     count,
@@ -44,10 +47,7 @@ export const POST = async (
   req: AuthenticatedMedusaRequest<CustomOrderMessageBody>,
   res: MedusaResponse
 ) => {
-  const customer = requireCustomerContext(req)
-  const service: CustomOrderService = req.scope.resolve(CUSTOM_ORDER_MODULE)
-  const order = await service.retrieveCustomOrderRequest(req.params.id)
-  await assertCustomOrderAccess(req, order, { allowBackoffice: false })
+  const { service, actor } = await authorize(req)
   const body = req.body || ({} as CustomOrderMessageBody)
 
   if (typeof body.message !== "string" || !body.message.trim()) {
@@ -66,10 +66,9 @@ export const POST = async (
   const attachments = validateAttachments(body.attachments)
   const created = await service.createCustomOrderMessages({
     custom_order_id: req.params.id,
-    // Sender identity is derived from the authenticated customer. Any
-    // sender_type/sender_id sent by the browser is intentionally ignored.
-    sender_type: "customer",
-    sender_id: customer.actor_id,
+    // The role and id are taken from auth_context, never from the JSON body.
+    sender_type: actor.actor_type,
+    sender_id: actor.actor_id,
     message: body.message.trim(),
     attachments: attachments as unknown as Record<string, unknown> | null,
   })

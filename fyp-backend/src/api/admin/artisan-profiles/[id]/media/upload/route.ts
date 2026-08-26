@@ -8,6 +8,7 @@ import {
   ARTISAN_PROFILE_MODULE,
   ArtisanProfileService,
 } from "../../../../../../modules/artisan-profile"
+import { requireArtisanProfileAccess } from "../../../../../utils/authz"
 
 type UploadMediaBody = {
   type?: "image" | "video"
@@ -54,6 +55,31 @@ const inferMediaType = (mimeType: string): "image" | "video" | undefined => {
   return undefined
 }
 
+const hasSignature = (buffer: Buffer, mimeType: string) => {
+  const startsWith = (...bytes: number[]) =>
+    bytes.every((value, index) => buffer[index] === value)
+  if (mimeType === "image/png") {
+    return startsWith(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+  }
+  if (mimeType === "image/jpeg") {
+    return startsWith(0xff, 0xd8, 0xff)
+  }
+  if (mimeType === "image/gif") {
+    return buffer.subarray(0, 4).toString("ascii") === "GIF8"
+  }
+  if (mimeType === "image/webp") {
+    return buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+      buffer.subarray(8, 12).toString("ascii") === "WEBP"
+  }
+  if (mimeType === "video/mp4" || mimeType === "video/quicktime") {
+    return buffer.subarray(4, 8).toString("ascii") === "ftyp"
+  }
+  if (mimeType === "video/webm") {
+    return startsWith(0x1a, 0x45, 0xdf, 0xa3)
+  }
+  return false
+}
+
 /**
  * Upload a base64-encoded image/video through Medusa's configured file
  * provider, then append the resulting public URL to the artisan profile.
@@ -63,9 +89,10 @@ export const POST = async (
   res: MedusaResponse
 ) => {
   const body = req.body || {}
-  const filename = body.filename?.trim()
-  const rawContent = body.content?.trim()
-  const mimeType = (body.mime_type || body.mimeType || "").trim().toLowerCase()
+  const filename = typeof body.filename === "string" ? body.filename.trim() : ""
+  const rawContent = typeof body.content === "string" ? body.content.trim() : ""
+  const rawMimeType = body.mime_type || body.mimeType || ""
+  const mimeType = typeof rawMimeType === "string" ? rawMimeType.trim().toLowerCase() : ""
 
   if (!filename || !rawContent) {
     throw invalidUpload("filename and content are required")
@@ -92,6 +119,10 @@ export const POST = async (
     throw invalidUpload("type and mime_type must describe an image or video")
   }
 
+  if (!hasSignature(buffer, effectiveMimeType)) {
+    throw invalidUpload("content does not match the declared media type")
+  }
+
   const fileModuleService = req.scope.resolve(
     Modules.FILE
   ) as IFileModuleService
@@ -99,11 +130,16 @@ export const POST = async (
     ARTISAN_PROFILE_MODULE
   )
   const profile = await artisanProfileService.retrieveArtisanProfile(req.params.id)
+  await requireArtisanProfileAccess(req, profile)
 
   // The decoded buffer is used for an exact size check; the file module
   // receives the base64 payload as required by Medusa's file service.
   if (!buffer.length || buffer.length > MAX_UPLOAD_BYTES) {
     throw invalidUpload("content must be between 1 byte and 10 MB")
+  }
+  if (body.caption !== undefined &&
+    (typeof body.caption !== "string" || body.caption.length > 500)) {
+    throw invalidUpload("caption must be 500 characters or fewer")
   }
 
   const uploaded = await fileModuleService.createFiles({

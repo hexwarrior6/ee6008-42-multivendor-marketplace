@@ -11,17 +11,15 @@ import {
   isCustomOrderStatus,
   type CustomOrderStatus,
 } from "../../../modules/custom-order/state-machine"
-
-const toLimit = (value: unknown, fallback = 20) =>
-  Math.min(Math.max(Number(value) || fallback, 1), 100)
+import { getBackofficeAccess, getAccessibleArtisanIds } from "../../utils/authz"
+import { normalizePagination } from "../../utils/validation"
 
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
+  const access = await getBackofficeAccess(req)
   const {
-    limit = 20,
-    offset = 0,
     artisan_id,
     customer_id,
     status,
@@ -36,19 +34,50 @@ export const GET = async (
   }
 
   const service: CustomOrderService = req.scope.resolve(CUSTOM_ORDER_MODULE)
-  const take = toLimit(limit)
-  const skip = Math.max(Number(offset) || 0, 0)
+  const { limit, offset } = normalizePagination(req.query)
+  let accessibleArtisanIds: string[] | undefined
+  if (!access.isPlatformAdmin) {
+    accessibleArtisanIds = await getAccessibleArtisanIds(req, access.storeIds)
+    if (artisan_id && !accessibleArtisanIds.includes(String(artisan_id))) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "You can only list orders assigned to your store"
+      )
+    }
+    if (!accessibleArtisanIds.length) {
+      return res.json({
+        custom_orders: [],
+        count: 0,
+        limit,
+        offset,
+        has_more: false,
+      })
+    }
+  }
+
   const [customOrders, count] = await service.listAndCountCustomOrderRequests(
     {
-      ...(artisan_id ? { artisan_id: String(artisan_id) } : {}),
-      ...(customer_id ? { customer_id: String(customer_id) } : {}),
+      ...(artisan_id
+        ? { artisan_id: String(artisan_id) }
+        : accessibleArtisanIds
+          ? { artisan_id: accessibleArtisanIds }
+          : {}),
+      ...(access.isPlatformAdmin && customer_id
+        ? { customer_id: String(customer_id) }
+        : {}),
       ...(status ? { status: String(status) as CustomOrderStatus } : {}),
       ...(product_category
         ? { product_category: String(product_category) }
         : {}),
     },
-    { take, skip, order: { created_at: "DESC" } }
+    { take: limit, skip: offset, order: { created_at: "DESC" } }
   )
 
-  res.json({ custom_orders: customOrders, count, limit: take, offset: skip })
+  res.json({
+    custom_orders: customOrders,
+    count,
+    limit,
+    offset,
+    has_more: offset + customOrders.length < count,
+  })
 }

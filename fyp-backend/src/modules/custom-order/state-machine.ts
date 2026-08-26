@@ -1,5 +1,10 @@
 import { MedusaError } from "@medusajs/framework/utils"
 
+export type CustomOrderActor = {
+  actor_type: "customer" | "artisan" | "admin"
+  actor_id: string
+}
+
 export const CUSTOM_ORDER_STATUSES = [
   "request",
   "quote",
@@ -48,6 +53,120 @@ export const assertCustomOrderTransition = (
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
       `Cannot move custom order from ${current} to ${next}`
+    )
+  }
+}
+
+type CustomOrderSnapshot = {
+  status: CustomOrderStatus
+  quoted_amount?: number | string | null
+  payment_status?: "pending" | "authorized" | "captured" | "failed" | null
+  product_id?: string | null
+  listing_type?: "custom_request" | "product" | null
+}
+
+type CustomOrderMutationInput = {
+  quoted_amount?: number | null
+  product_category?: string
+  product_category_id?: string | null
+  product_id?: string | null
+  listing_type?: "custom_request" | "product"
+  payment_status?: "pending" | "authorized" | "captured" | "failed"
+  cancellation_reason?: string | null
+}
+
+/** Business invariants shared by all order mutation callers. */
+export const assertCustomOrderBusinessRules = (
+  current: CustomOrderSnapshot,
+  next: CustomOrderStatus,
+  input: CustomOrderMutationInput
+) => {
+  assertCustomOrderTransition(current.status, next)
+
+  const terminal = current.status === "delivered" || current.status === "cancelled"
+  const changesQuoteOrCategory =
+    input.quoted_amount !== undefined ||
+    input.product_category !== undefined ||
+    input.product_category_id !== undefined ||
+    input.product_id !== undefined ||
+    input.listing_type !== undefined
+  if (terminal && changesQuoteOrCategory) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "Delivered or cancelled orders cannot change quote or category"
+    )
+  }
+
+  const quotedAmount = input.quoted_amount !== undefined
+    ? input.quoted_amount
+    : current.quoted_amount
+  const normalizedQuote = quotedAmount === null || quotedAmount === undefined
+    ? null
+    : Number(quotedAmount)
+
+  if (input.quoted_amount !== undefined &&
+    (normalizedQuote !== null &&
+      (!Number.isFinite(normalizedQuote) ||
+        !Number.isInteger(normalizedQuote) ||
+        normalizedQuote < 0))) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "quoted_amount must be a non-negative integer in the smallest currency unit"
+    )
+  }
+
+  if (next === "quote" &&
+    (normalizedQuote === null || !Number.isFinite(normalizedQuote) ||
+      !Number.isInteger(normalizedQuote) || normalizedQuote <= 0)) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "A positive quoted_amount is required before moving to quote"
+    )
+  }
+  const effectiveListingType = input.listing_type ?? current.listing_type ?? "custom_request"
+  const effectiveProductId = input.product_id !== undefined
+    ? input.product_id
+    : current.product_id
+  if (effectiveListingType === "product" && !effectiveProductId) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "listing_type=product requires product_id"
+    )
+  }
+  if (next === "confirmed" &&
+    (normalizedQuote === null || !Number.isFinite(normalizedQuote) ||
+      !Number.isInteger(normalizedQuote) || normalizedQuote <= 0)) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "A valid quote is required before confirmation"
+    )
+  }
+  if (["confirmed", "produced", "delivered"].includes(current.status) &&
+    input.quoted_amount !== undefined) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "The quote cannot be changed after confirmation"
+    )
+  }
+  if (next === "produced" &&
+    !["authorized", "captured"].includes(
+      input.payment_status ?? current.payment_status ?? "pending"
+    )) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "Payment must be authorized or captured before production"
+    )
+  }
+  if (next === "delivered" && current.status !== "produced") {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "Only produced orders can be delivered"
+    )
+  }
+  if (next === "cancelled" && !input.cancellation_reason?.trim()) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "cancellation_reason is required when cancelling an order"
     )
   }
 }

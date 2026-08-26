@@ -1,5 +1,6 @@
 import {
   assertCustomOrderTransition,
+  assertCustomOrderBusinessRules,
   CUSTOM_ORDER_STATUSES,
   CUSTOM_ORDER_TRANSITIONS,
   isCustomOrderStatus,
@@ -48,5 +49,39 @@ describe("custom order state machine", () => {
     expect(isCustomOrderStatus("delivered")).toBe(true)
     expect(isCustomOrderStatus("production")).toBe(false)
     expect(isCustomOrderStatus(undefined)).toBe(false)
+  })
+
+  it("requires a quote, payment, and cancellation reason at the right stages", () => {
+    const request = {
+      status: "request" as const,
+      quoted_amount: null,
+      payment_status: "pending" as const,
+    }
+    expect(() => assertCustomOrderBusinessRules(request, "quote", {})).toThrow(
+      "positive quoted_amount"
+    )
+    expect(() =>
+      assertCustomOrderBusinessRules(request, "quote", { quoted_amount: 680 })
+    ).not.toThrow()
+    expect(() =>
+      assertCustomOrderBusinessRules(
+        { ...request, status: "confirmed", quoted_amount: 680 },
+        "produced",
+        {}
+      )
+    ).toThrow("Payment must be authorized")
+    expect(() =>
+      assertCustomOrderBusinessRules(request, "cancelled", {})
+    ).toThrow("cancellation_reason")
+  })
+
+  it("keeps terminal order quote/category data immutable", () => {
+    expect(() =>
+      assertCustomOrderBusinessRules(
+        { status: "delivered", quoted_amount: 680 },
+        "delivered",
+        { product_category: "new category" }
+      )
+    ).toThrow("cannot change quote or category")
   })
 })

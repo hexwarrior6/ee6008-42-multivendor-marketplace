@@ -4,6 +4,11 @@ import type {
 } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, MedusaError } from "@medusajs/framework/utils"
 import type { SalesAnalyticsResponse } from "../../../contracts"
+import {
+  getBackofficeAccess,
+  securityLog,
+} from "../../../utils/authz"
+import { parseCurrencyCode } from "../../../utils/validation"
 
 type OrderItem = {
   product_id?: string | null
@@ -25,27 +30,51 @@ type OrderRecord = {
 
 const ORDER_PAGE_SIZE = 1000
 const MAX_ANALYTICS_ORDERS = 100_000
+const MAX_ANALYTICS_RANGE_MS = 366 * 24 * 60 * 60 * 1000
 
-const parseDate = (value: unknown, fallback: Date) => {
-  const date = value ? new Date(String(value)) : fallback
-  return Number.isNaN(date.getTime()) ? fallback : date
+const parseDate = (value: unknown, fallback: Date, field: string) => {
+  if (value === undefined || value === null || value === "") {
+    return fallback
+  }
+  const date = new Date(String(value))
+  if (Number.isNaN(date.getTime())) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      `${field} must be a valid ISO date`
+    )
+  }
+  return date
 }
 
+const emptyResponse = (
+  from: Date,
+  to: Date,
+  currencyCode: string
+): SalesAnalyticsResponse => ({
+  period: { from: from.toISOString(), to: to.toISOString() },
+  currency_code: currencyCode,
+  summary: { revenue: 0, orders: 0, average_order_value: 0 },
+  top_products: [],
+  daily: [],
+})
+
 /**
- * Aggregate the order module into the stable seller analytics response. The
- * query is deliberately kept in this route so S2 can consume it without
- * knowing the underlying Medusa order schema.
+ * Aggregate order data into the stable seller analytics response. Store scope
+ * always comes from the authenticated back-office user; a query-string
+ * store_id can narrow an administrator's view but cannot broaden a seller's.
  */
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
+  const access = await getBackofficeAccess(req)
   const now = new Date()
   const defaultFrom = new Date(now)
   defaultFrom.setDate(defaultFrom.getDate() - 30)
-  const { from, to, currency_code = "cny", store_id } = req.query
-  const fromDate = parseDate(from, defaultFrom)
-  const toDate = parseDate(to, now)
+  const { from, to, store_id } = req.query
+  const currencyCode = parseCurrencyCode(req.query.currency_code)
+  const fromDate = parseDate(from, defaultFrom, "from")
+  const toDate = parseDate(to, now, "to")
 
   if (fromDate > toDate) {
     throw new MedusaError(
@@ -53,15 +82,58 @@ export const GET = async (
       "from must be earlier than or equal to to"
     )
   }
+  if (toDate.getTime() - fromDate.getTime() > MAX_ANALYTICS_RANGE_MS) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "Analytics date range cannot exceed 366 days"
+    )
+  }
+
+  const requestedStoreId = store_id ? String(store_id).trim() : undefined
+  let permittedStoreIds: string[] | undefined
+  if (access.isPlatformAdmin) {
+    permittedStoreIds = requestedStoreId ? [requestedStoreId] : undefined
+  } else {
+    if (requestedStoreId && !access.storeIds.includes(requestedStoreId)) {
+      securityLog(req, "seller attempted to query another store's analytics", {
+        store_id: requestedStoreId,
+        actor_id: access.context.actor_id,
+      })
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "You can only query analytics for your own store"
+      )
+    }
+    permittedStoreIds = requestedStoreId
+      ? [requestedStoreId]
+      : access.storeIds
+    if (!permittedStoreIds.length) {
+      return res.json(emptyResponse(fromDate, toDate, currencyCode))
+    }
+  }
 
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
   const allOrders: OrderRecord[] = []
   let skip = 0
 
-  // Remote Query caps a single page at 1000 records. Iterate so the summary
-  // remains correct for busy sellers instead of silently dropping older
-  // orders from the selected period.
+  // Remote Query caps a single page at 1000 records. Keep the hard cap to
+  // protect the process while still returning complete results under it.
   while (allOrders.length < MAX_ANALYTICS_ORDERS) {
+    const orderFilters = {
+      created_at: {
+        $gte: fromDate.toISOString(),
+        $lte: toDate.toISOString(),
+      },
+      currency_code: currencyCode,
+      // Push the authenticated store boundary into Remote Query as well as
+      // keeping the defensive in-memory check below. This prevents seller
+      // analytics from loading unrelated stores into the Node process. The
+      // generated Remote Query type intentionally excludes filters through a
+      // list relation, although the runtime supports this nested filter.
+      ...(permittedStoreIds?.length
+        ? { stores: { id: permittedStoreIds } }
+        : {}),
+    } as never
     const { data } = await query.graph({
       entity: "order",
       fields: [
@@ -74,13 +146,7 @@ export const GET = async (
         "items.product.id",
         "items.product.title",
       ],
-      filters: {
-        created_at: {
-          $gte: fromDate.toISOString(),
-          $lte: toDate.toISOString(),
-        },
-        currency_code: String(currency_code),
-      },
+      filters: orderFilters,
       pagination: { take: ORDER_PAGE_SIZE, skip },
     })
 
@@ -92,10 +158,10 @@ export const GET = async (
     skip += page.length
   }
 
-  const orders = store_id
+  const orders = permittedStoreIds
     ? allOrders.filter((order) =>
         (order.stores || []).some(
-          (store) => store?.id === String(store_id)
+          (store) => store?.id && permittedStoreIds!.includes(store.id)
         )
       )
     : allOrders
@@ -108,7 +174,8 @@ export const GET = async (
 
   for (const order of orders) {
     const orderRevenue = Number(order.total || 0)
-    revenue += Number.isFinite(orderRevenue) ? orderRevenue : 0
+    const safeOrderRevenue = Number.isFinite(orderRevenue) ? orderRevenue : 0
+    revenue += safeOrderRevenue
 
     const date = new Date(String(order.created_at || now))
     const dateKey = Number.isNaN(date.getTime())
@@ -116,7 +183,7 @@ export const GET = async (
       : date.toISOString().slice(0, 10)
     const day = daily.get(dateKey) || { date: dateKey, orders: 0, revenue: 0 }
     day.orders += 1
-    day.revenue += orderRevenue
+    day.revenue += safeOrderRevenue
     daily.set(dateKey, day)
 
     for (const item of order.items || []) {
@@ -143,7 +210,7 @@ export const GET = async (
       from: fromDate.toISOString(),
       to: toDate.toISOString(),
     },
-    currency_code: String(currency_code),
+    currency_code: currencyCode,
     summary: {
       revenue,
       orders: orderCount,

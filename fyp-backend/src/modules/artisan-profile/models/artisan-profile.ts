@@ -3,6 +3,11 @@ import { model } from "@medusajs/framework/utils"
 export const ArtisanProfile = model.define("artisan_profile", {
   id: model.id({ prefix: "art" }).primaryKey(),
   store_id: model.text().unique(),
+  // Back-office seller users are linked explicitly when a profile is created.
+  // Keeping this nullable preserves compatibility with profiles created before
+  // seller accounts were introduced; store_id remains the fallback ownership
+  // boundary for those records.
+  artisan_user_id: model.text().nullable(),
   display_name: model.text(),
   bio: model.text().nullable(),
   inspiration: model.text().nullable(),

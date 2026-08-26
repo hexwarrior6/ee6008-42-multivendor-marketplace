@@ -24,6 +24,15 @@
           "nullable": false,
           "mappedType": "text"
         },
+        "artisan_user_id": {
+          "name": "artisan_user_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
         "display_name": {
           "name": "display_name",
           "type": "text",
@@ -35,6 +44,24 @@
         },
         "bio": {
           "name": "bio",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "inspiration": {
+          "name": "inspiration",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "creative_process": {
+          "name": "creative_process",
           "type": "text",
           "unsigned": false,
           "autoincrement": false,
@@ -62,6 +89,15 @@
         },
         "specialties": {
           "name": "specialties",
+          "type": "jsonb",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "json"
+        },
+        "media": {
+          "name": "media",
           "type": "jsonb",
           "unsigned": false,
           "autoincrement": false,
