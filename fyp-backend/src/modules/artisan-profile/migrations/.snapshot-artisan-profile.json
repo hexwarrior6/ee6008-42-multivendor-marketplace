@@ -105,6 +105,16 @@
           "nullable": true,
           "mappedType": "json"
         },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "default": "0",
+          "mappedType": "number"
+        },
         "verification_status": {
           "name": "verification_status",
           "type": "text",

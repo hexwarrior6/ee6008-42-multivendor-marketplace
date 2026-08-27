@@ -17,6 +17,10 @@ import {
   validateStringArray,
 } from "../../../utils/validation"
 import { dismissProfileStoreLink } from "../../../utils/module-links"
+import {
+  assertMediaFileIdsBelongToProfile,
+  collectMediaFileIds,
+} from "../../../utils/media-security"
 
 type UpdateArtisanProfileBody = {
   artisan_user_id?: string | null
@@ -56,14 +60,6 @@ const validateOptionalText = (
   }
   return value.trim()
 }
-
-const collectFileIds = (media: unknown) =>
-  new Set(
-    (Array.isArray(media) ? media : [])
-      .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
-      .map((item) => item.file_id)
-      .filter((id): id is string => typeof id === "string" && Boolean(id))
-  )
 
 const getAuthorizedProfile = async (req: AuthenticatedMedusaRequest) => {
   const access = await getBackofficeAccess(req)
@@ -166,48 +162,54 @@ export const POST = async (
       "display_name cannot be null"
     )
   }
-  const oldFileIds = collectFileIds(current.media)
-  const updated = await service.updateArtisanProfiles({
+  if (media !== undefined) {
+    assertMediaFileIdsBelongToProfile(media, current.media)
+  }
+  const oldFileIds = collectMediaFileIds(current.media)
+  const updated = await service.updateArtisanProfileAtomically({
     id: current.id,
-    ...(body.artisan_user_id !== undefined && access.isPlatformAdmin
-      ? {
-          artisan_user_id:
-            typeof body.artisan_user_id === "string"
-              ? body.artisan_user_id.trim() || null
-              : null,
-        }
-      : {}),
-    ...(displayName !== undefined ? { display_name: displayName } : {}),
-    ...(body.bio !== undefined
-      ? { bio: validateOptionalText(body.bio, "bio", 5000) }
-      : {}),
-    ...(body.inspiration !== undefined
-      ? { inspiration: validateOptionalText(body.inspiration, "inspiration", 5000) }
-      : {}),
-    ...(body.creative_process !== undefined
-      ? { creative_process: validateOptionalText(body.creative_process, "creative_process", 5000) }
-      : {}),
-    ...(body.avatar_url !== undefined
-      ? { avatar_url: validateOptionalText(body.avatar_url, "avatar_url", 2000) }
-      : {}),
-    ...(body.location !== undefined
-      ? { location: validateOptionalText(body.location, "location", 200) }
-      : {}),
-    ...(specialties !== undefined
-      ? { specialties: (specialties ?? null) as unknown as Record<string, unknown> }
-      : {}),
-    ...(media !== undefined
-      ? { media: (media ?? null) as unknown as Record<string, unknown> }
-      : {}),
-    ...(body.verification_status !== undefined
-      ? { verification_status: body.verification_status }
-      : {}),
+    expectedVersion: Number(current.version ?? 0),
+    data: {
+      ...(body.artisan_user_id !== undefined && access.isPlatformAdmin
+        ? {
+            artisan_user_id:
+              typeof body.artisan_user_id === "string"
+                ? body.artisan_user_id.trim() || null
+                : null,
+          }
+        : {}),
+      ...(displayName !== undefined ? { display_name: displayName } : {}),
+      ...(body.bio !== undefined
+        ? { bio: validateOptionalText(body.bio, "bio", 5000) }
+        : {}),
+      ...(body.inspiration !== undefined
+        ? { inspiration: validateOptionalText(body.inspiration, "inspiration", 5000) }
+        : {}),
+      ...(body.creative_process !== undefined
+        ? { creative_process: validateOptionalText(body.creative_process, "creative_process", 5000) }
+        : {}),
+      ...(body.avatar_url !== undefined
+        ? { avatar_url: validateOptionalText(body.avatar_url, "avatar_url", 2000) }
+        : {}),
+      ...(body.location !== undefined
+        ? { location: validateOptionalText(body.location, "location", 200) }
+        : {}),
+      ...(specialties !== undefined
+        ? { specialties: (specialties ?? null) as unknown as Record<string, unknown> }
+        : {}),
+      ...(media !== undefined
+        ? { media: (media ?? null) as unknown as Record<string, unknown> }
+        : {}),
+      ...(body.verification_status !== undefined
+        ? { verification_status: body.verification_status }
+        : {}),
+    },
   })
 
   // Remove files no longer referenced by the profile. Storage cleanup is
   // best-effort because the profile update has already succeeded.
   if (media !== undefined && oldFileIds.size) {
-    const newFileIds = collectFileIds(media)
+    const newFileIds = collectMediaFileIds(media)
     const fileService = req.scope.resolve(Modules.FILE) as IFileModuleService
     for (const fileId of oldFileIds) {
       if (!newFileIds.has(fileId)) {
@@ -229,7 +231,7 @@ export const DELETE = async (
   res: MedusaResponse
 ) => {
   const { service, profile } = await getAuthorizedProfile(req)
-  const fileIds = [...collectFileIds(profile.media)]
+  const fileIds = [...collectMediaFileIds(profile.media)]
   await service.deleteArtisanProfiles(profile.id)
   try {
     await dismissProfileStoreLink(req.scope, profile.store_id, profile.id)

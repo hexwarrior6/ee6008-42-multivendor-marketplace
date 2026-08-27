@@ -11,22 +11,55 @@ import {
 import { parseCurrencyCode } from "../../../utils/validation"
 
 type OrderItem = {
+  id?: string | null
   product_id?: string | null
+  variant_id?: string | null
+  store_id?: string | null
   title?: string | null
   quantity?: number | string | null
   unit_price?: number | string | null
+  subtotal?: number | string | null
   total?: number | string | null
   product?: { id?: string; title?: string | null } | null
+  variant?: {
+    product_id?: string | null
+    product?: { id?: string; title?: string | null } | null
+  } | null
+}
+
+type PaymentRefund = { id?: string | null; amount?: number | string | null }
+type PaymentCapture = { amount?: number | string | null }
+type PaymentRecord = {
+  amount?: number | string | null
+  captured_at?: string | Date | null
+  captures?: PaymentCapture[] | null
+  refunds?: PaymentRefund[] | null
+}
+type PaymentCollection = {
+  status?: string | null
+  amount?: number | string | null
+  captured_amount?: number | string | null
+  refunded_amount?: number | string | null
+  payments?: PaymentRecord[] | null
 }
 
 type OrderRecord = {
   id: string
   currency_code?: string | null
   total?: number | string | null
+  status?: string | null
+  canceled_at?: string | Date | null
+  payment_status?: string | null
+  refunded_amount?: number | string | null
   created_at?: string | Date | null
   items?: OrderItem[] | null
   stores?: Array<{ id?: string | null } | null> | null
+  store?: { id?: string | null } | null
+  store_id?: string | null
+  payment_collections?: PaymentCollection[] | null
 }
+
+type ProductStoreMap = Map<string, Set<string>>
 
 const ORDER_PAGE_SIZE = 1000
 const MAX_ANALYTICS_ORDERS = 100_000
@@ -56,7 +89,220 @@ const emptyResponse = (
   summary: { revenue: 0, orders: 0, average_order_value: 0 },
   top_products: [],
   daily: [],
+  truncated: false,
 })
+
+const asFiniteAmount = (value: unknown) => {
+  const amount = Number(value)
+  return Number.isFinite(amount) ? amount : undefined
+}
+
+const capturedCollectionStatuses = new Set([
+  "captured",
+  "partially_captured",
+  "partially_refunded",
+  "refunded",
+  "paid",
+  "completed",
+  "succeeded",
+])
+
+/** Return paid revenue after refunds, in the order currency's minor unit. */
+export const getOrderNetRevenue = (order: OrderRecord): number => {
+  const orderStatus = String(order.status || "").trim().toLowerCase()
+  if (
+    order.canceled_at ||
+    ["canceled", "cancelled", "failed", "draft", "pending", "requires_action"].includes(
+      orderStatus
+    )
+  ) {
+    return 0
+  }
+
+  const collections = Array.isArray(order.payment_collections)
+    ? order.payment_collections
+    : []
+  let captured = 0
+  let refunded = 0
+  let hasCapturedSignal = false
+
+  for (const collection of collections) {
+    const collectionCaptured = asFiniteAmount(collection.captured_amount)
+    if (collectionCaptured !== undefined) {
+      captured += Math.max(0, collectionCaptured)
+      hasCapturedSignal = true
+    }
+    const collectionRefunded = asFiniteAmount(collection.refunded_amount)
+    if (collectionRefunded !== undefined) {
+      refunded += Math.max(0, collectionRefunded)
+    } else {
+      const collectionStatus = String(collection.status || "").toLowerCase()
+      const paymentCapturedFromRecords = (collection.payments || []).reduce(
+        (sum, payment) => {
+          const captures = (payment.captures || [])
+            .map((capture) => asFiniteAmount(capture.amount))
+            .filter((amount): amount is number => amount !== undefined)
+          if (captures.length) {
+            return sum + captures.reduce(
+              (total, amount) => total + Math.max(0, amount),
+              0
+            )
+          }
+          // A payment with captured_at is captured even on installations that
+          // do not expose the nested capture rows through Remote Query.
+          if (payment.captured_at) {
+            return sum + Math.max(0, asFiniteAmount(payment.amount) || 0)
+          }
+          return sum
+        },
+        0
+      )
+      if (paymentCapturedFromRecords > 0) {
+        captured += paymentCapturedFromRecords
+        hasCapturedSignal = true
+      } else if (capturedCollectionStatuses.has(collectionStatus)) {
+        const collectionAmount = asFiniteAmount(collection.amount)
+        if (collectionAmount !== undefined) {
+          captured += Math.max(0, collectionAmount)
+          hasCapturedSignal = true
+        }
+      }
+    }
+
+    if (collectionRefunded === undefined) {
+      const paymentRefunds = (collection.payments || []).flatMap(
+        (payment) => payment.refunds || []
+      )
+      if (paymentRefunds.length) {
+        refunded += paymentRefunds.reduce(
+          (sum, refund) => sum + Math.max(0, asFiniteAmount(refund.amount) || 0),
+          0
+        )
+      }
+    }
+  }
+
+  // Some older integrations expose a direct payment_status but not the
+  // payment_collection relation. Keep that path explicit and still require a
+  // paid status; never fall back to order.total for unpaid/unknown orders.
+  if (!collections.length) {
+    const paymentStatus = String(order.payment_status || "").toLowerCase()
+    const directPaidStatuses = new Set([
+      "captured",
+      "paid",
+      "completed",
+      "succeeded",
+    ])
+    if (directPaidStatuses.has(paymentStatus)) {
+      captured = Math.max(0, asFiniteAmount(order.total) || 0)
+      refunded = Math.max(
+        0,
+        asFiniteAmount(order.refunded_amount) || 0
+      )
+      hasCapturedSignal = true
+    } else if (
+      paymentStatus === "partially_refunded" ||
+      paymentStatus === "refunded"
+    ) {
+      // A direct refunded status without the refund amount cannot be safely
+      // treated as revenue. A collection response normally supplies both
+      // captured_amount and refunded_amount; this branch is only for legacy
+      // integrations that expose a flat payment_status.
+      const refundAmount = asFiniteAmount(order.refunded_amount)
+      if (refundAmount !== undefined) {
+        captured = Math.max(0, asFiniteAmount(order.total) || 0)
+        refunded = Math.max(0, refundAmount)
+        hasCapturedSignal = true
+      }
+    }
+  }
+
+  if (!hasCapturedSignal) {
+    return 0
+  }
+  return Math.max(0, captured - refunded)
+}
+
+const getItemProductId = (item: OrderItem) =>
+  item.product_id || item.product?.id || item.variant?.product_id || item.variant?.product?.id
+
+const getOrderStoreIds = (order: OrderRecord) => [
+  ...new Set([
+    ...(order.stores || [])
+      .map((store) => store?.id)
+      .filter((id): id is string => Boolean(id)),
+    ...(order.store_id ? [order.store_id] : []),
+    ...(order.store?.id ? [order.store.id] : []),
+  ]),
+]
+
+const getItemGrossRevenue = (item: OrderItem) => {
+  const total = asFiniteAmount(item.total ?? item.subtotal)
+  if (total !== undefined) {
+    return Math.max(0, total)
+  }
+  const unitPrice = asFiniteAmount(item.unit_price)
+  const quantity = asFiniteAmount(item.quantity)
+  if (unitPrice === undefined || quantity === undefined) {
+    return 0
+  }
+  return Math.max(0, unitPrice * quantity)
+}
+
+const itemBelongsToStores = (
+  order: OrderRecord,
+  item: OrderItem,
+  permittedStoreIds: Set<string>,
+  productStores: ProductStoreMap
+) => {
+  if (item.store_id && permittedStoreIds.has(item.store_id)) {
+    return true
+  }
+  const productId = getItemProductId(item)
+  const linkedStores = productId ? productStores.get(productId) : undefined
+  if (linkedStores && [...linkedStores].some((id) => permittedStoreIds.has(id))) {
+    return true
+  }
+  // A legacy single-store order may not expose product_store links. It is
+  // safe to use the order boundary only when there is exactly one store and
+  // the line itself has no product identity to misattribute.
+  return !productId && getOrderStoreIds(order).length === 1 &&
+    permittedStoreIds.has(getOrderStoreIds(order)[0])
+}
+
+const loadProductStoreMap = async (
+  query: { graph: (input: unknown) => Promise<{ data?: unknown[] }> },
+  productIds: string[]
+): Promise<ProductStoreMap> => {
+  const result: ProductStoreMap = new Map()
+  // Keep Remote Query variables reasonably small for large order histories.
+  for (let index = 0; index < productIds.length; index += 500) {
+    const chunk = productIds.slice(index, index + 500)
+    const { data } = await query.graph({
+      entity: "product_store",
+      fields: ["product_id", "store_id", "store.id"],
+      filters: { product_id: chunk },
+    })
+    for (const raw of data || []) {
+      const link = raw as {
+        product_id?: string | null
+        store_id?: string | null
+        store?: { id?: string | null } | null
+      }
+      if (!link.product_id) {
+        continue
+      }
+      const storeId = link.store_id || link.store?.id
+      if (!storeId) {
+        continue
+      }
+      const stores = result.get(link.product_id) || new Set<string>()
+      stores.add(storeId)
+      result.set(link.product_id, stores)
+    }
+  }
+  return result
+}
 
 /**
  * Aggregate order data into the stable seller analytics response. Store scope
@@ -117,8 +363,10 @@ export const GET = async (
   let skip = 0
 
   // Remote Query caps a single page at 1000 records. Keep the hard cap to
-  // protect the process while still returning complete results under it.
-  while (allOrders.length < MAX_ANALYTICS_ORDERS) {
+  // protect the process, but fetch one probe page at the boundary so the
+  // response can truthfully tell callers when data was truncated.
+  let truncated = false
+  while (true) {
     const orderFilters = {
       created_at: {
         $gte: fromDate.toISOString(),
@@ -140,17 +388,32 @@ export const GET = async (
         "id",
         "currency_code",
         "total",
+        "status",
+        "canceled_at",
         "created_at",
         "stores.id",
-        "items.*",
-        "items.product.id",
-        "items.product.title",
+        "*items",
+        "*items.variant.product",
+        "*payment_collections",
+        "*payment_collections.payments",
+        "*payment_collections.payments.captures",
+        "*payment_collections.payments.refunds",
       ],
       filters: orderFilters,
       pagination: { take: ORDER_PAGE_SIZE, skip },
     })
 
     const page = (data || []) as OrderRecord[]
+    const remaining = MAX_ANALYTICS_ORDERS - allOrders.length
+    if (remaining <= 0) {
+      truncated = page.length > 0
+      break
+    }
+    if (page.length > remaining) {
+      allOrders.push(...page.slice(0, remaining))
+      truncated = true
+      break
+    }
     allOrders.push(...page)
     if (page.length < ORDER_PAGE_SIZE) {
       break
@@ -158,12 +421,35 @@ export const GET = async (
     skip += page.length
   }
 
-  const orders = permittedStoreIds
-    ? allOrders.filter((order) =>
-        (order.stores || []).some(
-          (store) => store?.id && permittedStoreIds!.includes(store.id)
-        )
+  const scopedStoreIds = permittedStoreIds ? new Set(permittedStoreIds) : undefined
+  let productStores: ProductStoreMap = new Map()
+  if (scopedStoreIds) {
+    const productIds = [
+      ...new Set(
+        allOrders
+          .flatMap((order) => order.items || [])
+          .map(getItemProductId)
+          .filter((id): id is string => Boolean(id))
+      ),
+    ]
+    try {
+      productStores = await loadProductStoreMap(query, productIds)
+    } catch {
+      throw new MedusaError(
+        MedusaError.Types.UNEXPECTED_STATE,
+        "Product store ownership could not be verified for analytics"
       )
+    }
+  }
+
+  const orders = scopedStoreIds
+    ? allOrders.filter((order) => {
+        const orderStores = getOrderStoreIds(order)
+        // The line-item product_store check below remains authoritative when
+        // a legacy order has no materialized order-store relation.
+        return !orderStores.length ||
+          orderStores.some((id) => scopedStoreIds.has(id))
+      })
     : allOrders
   const daily = new Map<string, { date: string; orders: number; revenue: number }>()
   const products = new Map<
@@ -171,11 +457,45 @@ export const GET = async (
     { product_id: string; title: string; units: number; revenue: number }
   >()
   let revenue = 0
+  let orderCount = 0
 
   for (const order of orders) {
-    const orderRevenue = Number(order.total || 0)
-    const safeOrderRevenue = Number.isFinite(orderRevenue) ? orderRevenue : 0
-    revenue += safeOrderRevenue
+    const netOrderRevenue = getOrderNetRevenue(order)
+    if (netOrderRevenue <= 0) {
+      continue
+    }
+
+    const allItems = order.items || []
+    const scopedItems = scopedStoreIds
+      ? allItems.filter((item) =>
+          itemBelongsToStores(order, item, scopedStoreIds, productStores)
+        )
+      : allItems
+    if (scopedStoreIds && !scopedItems.length) {
+      continue
+    }
+
+    const grossOrderItems = allItems.reduce(
+      (sum, item) => sum + getItemGrossRevenue(item),
+      0
+    )
+    const grossScopedItems = scopedItems.reduce(
+      (sum, item) => sum + getItemGrossRevenue(item),
+      0
+    )
+    // Seller revenue is allocated from the paid, post-refund order amount by
+    // each seller's line-item share. This prevents every seller on a
+    // multi-vendor order from receiving the complete order.total.
+    const scopedRevenue = scopedStoreIds
+      ? grossOrderItems > 0
+        ? netOrderRevenue * (grossScopedItems / grossOrderItems)
+        : 0
+      : netOrderRevenue
+    if (scopedRevenue <= 0) {
+      continue
+    }
+    revenue += scopedRevenue
+    orderCount += 1
 
     const date = new Date(String(order.created_at || now))
     const dateKey = Number.isNaN(date.getTime())
@@ -183,28 +503,30 @@ export const GET = async (
       : date.toISOString().slice(0, 10)
     const day = daily.get(dateKey) || { date: dateKey, orders: 0, revenue: 0 }
     day.orders += 1
-    day.revenue += safeOrderRevenue
+    day.revenue += scopedRevenue
     daily.set(dateKey, day)
 
-    for (const item of order.items || []) {
-      const productId = String(item.product_id || item.product?.id || "unknown")
-      const units = Number(item.quantity || 0)
-      const lineRevenue = Number(
-        item.total ?? Number(item.unit_price || 0) * units
-      )
+    for (const item of scopedItems) {
+      const productId = String(getItemProductId(item) || "unknown")
+      const units = asFiniteAmount(item.quantity) || 0
+      const itemGrossRevenue = getItemGrossRevenue(item)
+      const lineRevenue = grossOrderItems > 0
+        ? netOrderRevenue * (itemGrossRevenue / grossOrderItems)
+        : 0
       const current = products.get(productId) || {
         product_id: productId,
-        title: String(item.product?.title || item.title || productId),
+        title: String(
+          item.product?.title || item.variant?.product?.title || item.title || productId
+        ),
         units: 0,
         revenue: 0,
       }
-      current.units += Number.isFinite(units) ? units : 0
-      current.revenue += Number.isFinite(lineRevenue) ? lineRevenue : 0
+      current.units += units
+      current.revenue += lineRevenue
       products.set(productId, current)
     }
   }
 
-  const orderCount = orders.length
   const response: SalesAnalyticsResponse = {
     period: {
       from: fromDate.toISOString(),
@@ -220,6 +542,7 @@ export const GET = async (
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10),
     daily: [...daily.values()].sort((a, b) => a.date.localeCompare(b.date)),
+    truncated,
   }
 
   res.json(response)

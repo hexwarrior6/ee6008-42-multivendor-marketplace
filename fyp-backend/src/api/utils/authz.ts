@@ -295,10 +295,20 @@ export const getAccessibleArtisanIds = async (
 
   const service: ArtisanProfileService = req.scope.resolve(ARTISAN_PROFILE_MODULE)
   const actorId = requireAuthContext(req).actor_id
-  const profiles = await service.listArtisanProfiles(
-    { store_id: storeIds },
-    { take: 1000 }
-  )
+  const pageSize = 1000
+  const profiles: Array<{ id: string; artisan_user_id?: string | null }> = []
+  let skip = 0
+  while (true) {
+    const [page, count] = await service.listAndCountArtisanProfiles(
+      { store_id: storeIds },
+      { take: pageSize, skip }
+    )
+    profiles.push(...page)
+    if (profiles.length >= count || page.length < pageSize) {
+      break
+    }
+    skip += page.length
+  }
   return profiles
     .filter((profile) => !profile.artisan_user_id || profile.artisan_user_id === actorId)
     .map((profile) => profile.id)

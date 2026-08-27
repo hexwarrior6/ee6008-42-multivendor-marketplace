@@ -31,7 +31,11 @@ export const linkCustomOrder = async (
   input: { orderId: string; customerId: string; artisanId: string }
 ) => {
   const link = getLink(scope)
-  await Promise.all([
+  // Wait for both remote-link writes to settle before returning an error. A
+  // plain Promise.all rejects as soon as one write fails while the other can
+  // still finish in the background; callers may then delete the order and
+  // leave an orphan link behind. allSettled makes compensation deterministic.
+  const results = await Promise.allSettled([
     link.create({
       [ARTISAN_PROFILE_MODULE]: { artisan_profile_id: input.artisanId },
       [CUSTOM_ORDER_MODULE]: { custom_order_request_id: input.orderId },
@@ -41,6 +45,14 @@ export const linkCustomOrder = async (
       [CUSTOM_ORDER_MODULE]: { custom_order_request_id: input.orderId },
     }),
   ])
+  const failure = results.find(
+    (result): result is PromiseRejectedResult => result.status === "rejected"
+  )
+  if (failure) {
+    throw failure.reason instanceof Error
+      ? failure.reason
+      : new Error(String(failure.reason))
+  }
 }
 
 export const dismissProfileStoreLink = async (

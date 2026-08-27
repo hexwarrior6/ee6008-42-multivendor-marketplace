@@ -67,10 +67,14 @@ const assertExistingProductReferences = async (
   }
   const productCategoryId = body.product_category_id === undefined
     ? current.product_category_id
-    : body.product_category_id
+    : typeof body.product_category_id === "string"
+      ? body.product_category_id.trim()
+      : body.product_category_id
   const productId = body.product_id === undefined
     ? current.product_id
-    : body.product_id
+    : typeof body.product_id === "string"
+      ? body.product_id.trim()
+      : body.product_id
   const listingType = body.listing_type ?? current.listing_type ?? "custom_request"
 
   const profileService: ArtisanProfileService = req.scope.resolve(
@@ -168,7 +172,9 @@ export const PATCH = async (
     )
   }
   const effectiveProductId = body.product_id !== undefined
-    ? body.product_id
+    ? typeof body.product_id === "string"
+      ? body.product_id.trim()
+      : body.product_id
     : current.product_id
   const effectiveListingType = body.listing_type ?? current.listing_type
   if (effectiveListingType === "product" && !effectiveProductId) {
@@ -242,9 +248,21 @@ export const PATCH = async (
           ? { product_category: body.product_category.trim() }
           : {}),
         ...(body.product_category_id !== undefined
-          ? { product_category_id: body.product_category_id }
+          ? {
+              product_category_id:
+                typeof body.product_category_id === "string"
+                  ? body.product_category_id.trim()
+                  : body.product_category_id,
+            }
           : {}),
-        ...(body.product_id !== undefined ? { product_id: body.product_id } : {}),
+        ...(body.product_id !== undefined
+          ? {
+              product_id:
+                typeof body.product_id === "string"
+                  ? body.product_id.trim()
+                  : body.product_id,
+            }
+          : {}),
         ...(body.listing_type !== undefined
           ? { listing_type: body.listing_type }
           : {}),
@@ -269,6 +287,17 @@ export const DELETE = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
 ) => {
+  const access = await getBackofficeAccess(req)
+  if (!access.isPlatformAdmin) {
+    securityLog(req, "artisan attempted to delete a custom order", {
+      order_id: req.params.id,
+      actor_id: access.context.actor_id,
+    })
+    throw new MedusaError(
+      MedusaError.Types.NOT_ALLOWED,
+      "Only a platform administrator can delete custom orders"
+    )
+  }
   const { service, customOrder } = await retrieveAuthorizedOrder(req)
   await service.deleteCustomOrderWithRelations(customOrder.id)
   try {

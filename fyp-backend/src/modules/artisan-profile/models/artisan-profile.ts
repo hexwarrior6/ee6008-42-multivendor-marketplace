@@ -16,6 +16,10 @@ export const ArtisanProfile = model.define("artisan_profile", {
   location: model.text().nullable(),
   specialties: model.json().nullable(),
   media: model.json().nullable(),
+  // Media writes use this value for optimistic concurrency. Without a
+  // version, two upload/delete requests can both read the same JSON array and
+  // the later request can silently overwrite the earlier one.
+  version: model.number().default(0),
   verification_status: model
     .enum(["draft", "pending", "approved", "rejected"])
     .default("draft"),

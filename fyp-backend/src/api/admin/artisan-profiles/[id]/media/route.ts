@@ -15,7 +15,6 @@ type MediaBody = {
   type?: "image" | "video"
   url?: string
   caption?: string
-  file_id?: string
   filename?: string
 }
 
@@ -23,7 +22,17 @@ export const POST = async (
   req: AuthenticatedMedusaRequest<MediaBody>,
   res: MedusaResponse
 ) => {
-  const { type, url, caption, file_id, filename } = req.body || {}
+  const body = req.body || {}
+  // A URL-only media entry must never be allowed to attach an arbitrary
+  // provider file. File IDs are generated only by the upload endpoint after
+  // the file module has accepted the bytes.
+  if (Object.prototype.hasOwnProperty.call(body, "file_id")) {
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
+      "file_id can only be assigned by the media upload endpoint"
+    )
+  }
+  const { type, url, caption, filename } = body
   if (!type || !url) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
@@ -39,11 +48,14 @@ export const POST = async (
   const existing = Array.isArray(profile.media) ? profile.media : []
   const media = validateArtisanMedia([
     ...existing,
-    { type, url, caption, ...(file_id ? { file_id } : {}), ...(filename ? { filename } : {}) },
+    { type, url, caption, ...(filename ? { filename } : {}) },
   ])!
-  const updated = await service.updateArtisanProfiles({
+  const updated = await service.updateArtisanProfileAtomically({
     id: profile.id,
-    media: media as unknown as Record<string, unknown>,
+    expectedVersion: Number(profile.version ?? 0),
+    data: {
+      media: media as unknown as Record<string, unknown>,
+    },
   })
 
   res.status(201).json({ artisan_profile: updated, media: media.at(-1) })
@@ -84,12 +96,15 @@ export const DELETE = async (
   const media = existing.filter((item) =>
     !((fileId && item?.file_id === fileId) || (url && item?.url === url))
   )
-  if (removed.length === existing.length) {
+  if (removed.length === 0) {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, "Media item not found")
   }
-  const updated = await service.updateArtisanProfiles({
+  const updated = await service.updateArtisanProfileAtomically({
     id: profile.id,
-    media: media as unknown as Record<string, unknown>,
+    expectedVersion: Number(profile.version ?? 0),
+    data: {
+      media: media as unknown as Record<string, unknown>,
+    },
   })
 
   // Deleting the backing file is best effort; the profile is already

@@ -21,6 +21,7 @@ import {
   dismissProfileStoreLink,
   linkProfileToStore,
 } from "../../utils/module-links"
+import { assertNoClientMediaFileIds } from "../../utils/media-security"
 
 type CreateArtisanProfileBody = {
   store_id?: string
@@ -188,6 +189,10 @@ export const POST = async (
 
   const specialties = validateStringArray(body.specialties, "specialties")
   const media = validateArtisanMedia(body.media)
+  // A profile can only reference files created by the upload endpoint. There
+  // is no profile-owned file set at creation time, so reject all file_id
+  // values instead of allowing a caller to claim another user's file.
+  assertNoClientMediaFileIds(media)
   let artisanUserId: string | null = access.isPlatformAdmin
     ? null
     : access.context.actor_id

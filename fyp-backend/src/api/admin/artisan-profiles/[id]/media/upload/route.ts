@@ -162,9 +162,12 @@ export const POST = async (
   ]
 
   try {
-    const updated = await artisanProfileService.updateArtisanProfiles({
+    const updated = await artisanProfileService.updateArtisanProfileAtomically({
       id: profile.id,
-      media: media as unknown as Record<string, unknown>,
+      expectedVersion: Number(profile.version ?? 0),
+      data: {
+        media: media as unknown as Record<string, unknown>,
+      },
     })
 
     res.status(201).json({

@@ -54,4 +54,6 @@ export type SalesAnalyticsResponse = {
     revenue: number
   }>
   daily: Array<{ date: string; orders: number; revenue: number }>
+  /** True when the hard safety cap prevented a complete result set. */
+  truncated: boolean
 }
