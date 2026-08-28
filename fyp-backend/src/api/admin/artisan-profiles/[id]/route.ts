@@ -21,6 +21,7 @@ import {
   assertMediaFileIdsBelongToProfile,
   collectMediaFileIds,
 } from "../../../utils/media-security"
+import { resolveProfileVerificationStatus } from "../../../utils/artisan-profile"
 
 type UpdateArtisanProfileBody = {
   artisan_user_id?: string | null
@@ -165,6 +166,22 @@ export const POST = async (
   if (media !== undefined) {
     assertMediaFileIdsBelongToProfile(media, current.media)
   }
+  const hasPublicContentChanges = [
+    body.display_name,
+    body.bio,
+    body.inspiration,
+    body.creative_process,
+    body.avatar_url,
+    body.location,
+    body.specialties,
+    body.media,
+  ].some((value) => value !== undefined)
+  const verificationStatus = resolveProfileVerificationStatus({
+    isPlatformAdmin: access.isPlatformAdmin,
+    currentStatus: current.verification_status,
+    hasPublicContentChanges,
+    requestedStatus: body.verification_status,
+  })
   const oldFileIds = collectMediaFileIds(current.media)
   const updated = await service.updateArtisanProfileAtomically({
     id: current.id,
@@ -200,8 +217,8 @@ export const POST = async (
       ...(media !== undefined
         ? { media: (media ?? null) as unknown as Record<string, unknown> }
         : {}),
-      ...(body.verification_status !== undefined
-        ? { verification_status: body.verification_status }
+      ...(verificationStatus !== undefined
+        ? { verification_status: verificationStatus }
         : {}),
     },
   })

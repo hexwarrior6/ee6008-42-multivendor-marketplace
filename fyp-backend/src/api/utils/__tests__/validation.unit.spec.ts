@@ -52,6 +52,9 @@ describe("shared API validation", () => {
     expect(() =>
       parseNonNegativeAmount(680.5, "budget_amount", { integer: true })
     ).toThrow("smallest currency unit")
+    expect(() =>
+      parseNonNegativeAmount(2_147_483_648, "budget_amount", { integer: true })
+    ).toThrow("must not exceed 2147483647")
   })
 
   it("validates profile media records", () => {

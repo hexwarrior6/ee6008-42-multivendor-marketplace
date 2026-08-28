@@ -9,6 +9,7 @@ import {
   ArtisanProfileService,
 } from "../../../../../../modules/artisan-profile"
 import { requireArtisanProfileAccess } from "../../../../../utils/authz"
+import { resolveProfileVerificationStatus } from "../../../../../utils/artisan-profile"
 
 type UploadMediaBody = {
   type?: "image" | "video"
@@ -130,7 +131,7 @@ export const POST = async (
     ARTISAN_PROFILE_MODULE
   )
   const profile = await artisanProfileService.retrieveArtisanProfile(req.params.id)
-  await requireArtisanProfileAccess(req, profile)
+  const access = await requireArtisanProfileAccess(req, profile)
 
   // The decoded buffer is used for an exact size check; the file module
   // receives the base64 payload as required by Medusa's file service.
@@ -160,6 +161,11 @@ export const POST = async (
       ...(body.caption?.trim() ? { caption: body.caption.trim() } : {}),
     },
   ]
+  const verificationStatus = resolveProfileVerificationStatus({
+    isPlatformAdmin: access.isPlatformAdmin,
+    currentStatus: profile.verification_status,
+    hasPublicContentChanges: true,
+  })
 
   try {
     const updated = await artisanProfileService.updateArtisanProfileAtomically({
@@ -167,6 +173,7 @@ export const POST = async (
       expectedVersion: Number(profile.version ?? 0),
       data: {
         media: media as unknown as Record<string, unknown>,
+        ...(verificationStatus ? { verification_status: verificationStatus } : {}),
       },
     })
 

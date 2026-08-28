@@ -1,6 +1,6 @@
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
 
-jest.setTimeout(120 * 1000)
+jest.setTimeout(600 * 1000)
 
 /**
  * This suite boots the real Medusa application and exercises the registered

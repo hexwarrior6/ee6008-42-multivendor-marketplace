@@ -4,6 +4,7 @@ import {
   ArtisanProfileService,
 } from "../../../modules/artisan-profile"
 import { normalizePagination } from "../../utils/validation"
+import { toPublicArtisanProfile } from "../../utils/artisan-profile"
 
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const artisanProfileService: ArtisanProfileService = req.scope.resolve(
@@ -23,7 +24,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   )
 
   res.json({
-    artisan_profiles: profiles,
+    artisan_profiles: profiles.map(toPublicArtisanProfile),
     count,
     limit,
     offset,

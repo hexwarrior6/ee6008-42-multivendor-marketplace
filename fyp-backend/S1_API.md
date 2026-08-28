@@ -19,6 +19,11 @@
 创建档案的主要字段：`store_id`、`display_name`、`bio`、`inspiration`、
 `creative_process`、`avatar_url`、`location`、`specialties`、`media`。
 
+Store API 使用公开 DTO，只返回 `id`、`store_id` 和上述展示字段，不返回
+`artisan_user_id`、乐观锁 `version`、审核状态及内部时间字段。卖家修改已经
+`approved` 的公开资料或媒体后，后端会自动将档案重置为 `pending`，需要平台
+管理员重新审核；平台管理员修改资料不会自动改变审核状态。
+
 ## 定制订单
 
 ### 客户端（Store API）
@@ -46,7 +51,8 @@ Medusa session cookie 或 bearer token；publishable API key 只能识别销售�
 ```
 
 `budget_amount` 和 `quoted_amount` 使用整数的最小货币单位（例如人民币分），
-不接受小数，以避免浮点误差。
+不接受小数，以避免浮点误差。数据库列使用 PostgreSQL `integer`，因此允许范围
+为 `0` 到 `2,147,483,647`。
 
 当 `listing_type` 为 `product`，必须同时提供 `product_id`。商品必须属于提交的
 `product_category_id`（如果提供）、处于 `published` 状态并有可用 variant，且
@@ -75,7 +81,8 @@ Medusa session cookie 或 bearer token；publishable API key 只能识别销售�
 `confirmed` 必须已有报价；进入 `produced` 前付款状态必须为 `authorized` 或
 `captured`；进入 `cancelled` 必须提供 `cancellation_reason`；进入
 `delivered` 会自动写入 `delivered_at`。已交付/取消订单不能再改报价、类别或
-商品关联。
+商品关联或付款状态。付款状态允许 `pending → authorized/captured/failed`、
+`authorized → captured/failed`；`captured` 不允许倒退，失败的付款可以重新发起。
 
 所有列表接口的 `limit` 最大为 100，非法分页参数会返回 `400`，响应中的分页值
 是规范化后的实际值。

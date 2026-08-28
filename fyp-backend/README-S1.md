@@ -41,6 +41,10 @@ curl.exe http://localhost:9000/store/artisans `
   -H "x-publishable-api-key: <本地 publishable key>"
 ```
 
+公开接口只返回展示所需的 `id`、`store_id`、`display_name`、`bio`、
+`inspiration`、`creative_process`、`avatar_url`、`location`、`specialties` 和
+`media`，不会返回 `artisan_user_id`、`version`、审核状态或内部时间字段。
+
 ## 三、工匠管理接口（Admin API）
 
 这些接口需要先登录 `http://localhost:9000/app`，不能直接用商城公开 key 调用。
@@ -81,6 +85,9 @@ DELETE /admin/artisan-profiles/:id
 - `creative_process`：制作流程或工艺说明。
 - `media`：作品媒体数组，`type` 当前支持 `image` 和 `video`。
 - `verification_status`：建议先用 `draft`，审核通过后改为 `approved`，前台才会展示。
+
+卖家修改已经审核通过的公开字段或媒体后，档案会自动重置为 `pending`，必须由
+平台管理员重新审核；平台管理员维护资料时不会自动改变审核状态。
 
 也可以在资料创建后追加一条作品媒体：
 
@@ -184,6 +191,9 @@ PATCH /admin/custom-orders/:id
 `product_category` 是定制请求的产品类别，默认值为 `custom`，也可以使用
 `ceramics`、`woodwork`、`jewelry` 等团队约定的分类名称。
 
+`budget_amount` 和 `quoted_amount` 都是最小货币单位整数，合法范围为
+`0` 到 `2,147,483,647`；超出范围会在写入数据库前返回参数错误。
+
 若使用正式商品下单类型，请传 `listing_type: "product"`、`product_id` 和
 `product_category_id`。后端会验证商品与类别的关系、商品是否已发布且有
 variant、商品是否属于工匠所在店铺，以及商品或类别是否设置
@@ -200,6 +210,10 @@ request/quote/confirmed -> cancelled
 接口会拒绝跳跃或逆向状态，例如 `request -> produced`、
 `delivered -> confirmed` 都会返回错误。状态更新通过后端工作流执行，后续可以在
 工作流中加入通知、审核记录和生产任务等步骤。
+
+付款状态不能任意倒退：`pending` 可以进入 `authorized`、`captured` 或 `failed`，
+`authorized` 可以进入 `captured` 或 `failed`，`captured` 不能改回未付款状态；
+已交付或取消的订单不能再修改付款状态。
 
 ## 五、定制订单聊天接口
 
@@ -300,9 +314,13 @@ GET /admin/analytics/sales?from=2026-08-01&to=2026-08-31&currency_code=cny
     "average_order_value": 0
   },
   "top_products": [],
-  "daily": []
+  "daily": [],
+  "truncated": false
 }
 ```
+
+为了限制单次分析的内存和查询成本，日期范围最长 366 天、最多处理 100,000 张
+订单；若达到硬上限，响应中的 `truncated` 为 `true`。
 
 ## 八、给其他成员的对接顺序
 

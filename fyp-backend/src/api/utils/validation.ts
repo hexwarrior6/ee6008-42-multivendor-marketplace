@@ -1,4 +1,5 @@
 import { MedusaError } from "@medusajs/framework/utils"
+import { MAX_CUSTOM_ORDER_AMOUNT } from "../../modules/custom-order/constants"
 
 export type NormalizedPagination = {
   limit: number
@@ -54,7 +55,7 @@ export const parseCurrencyCode = (value: unknown, fallback = "cny") => {
 export const parseNonNegativeAmount = (
   value: unknown,
   field: string,
-  options: { nullable?: boolean; integer?: boolean } = {}
+  options: { nullable?: boolean; integer?: boolean; max?: number } = {}
 ): number | null | undefined => {
   if (value === undefined) {
     return undefined
@@ -70,6 +71,11 @@ export const parseNonNegativeAmount = (
   }
   if (options.integer && !Number.isInteger(value)) {
     throw invalid(`${field} must be an integer in the smallest currency unit`)
+  }
+  const maximum = options.max ??
+    (options.integer ? MAX_CUSTOM_ORDER_AMOUNT : undefined)
+  if (maximum !== undefined && value > maximum) {
+    throw invalid(`${field} must not exceed ${maximum}`)
   }
   return value
 }

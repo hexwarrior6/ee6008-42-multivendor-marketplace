@@ -1,5 +1,7 @@
 import { medusaIntegrationTestRunner } from "@medusajs/test-utils"
-jest.setTimeout(60 * 1000)
+// Remote CI databases can take more than a minute to apply Medusa's complete
+// migration set before the application starts accepting requests.
+jest.setTimeout(600 * 1000)
 
 medusaIntegrationTestRunner({
   inApp: true,

@@ -84,4 +84,31 @@ describe("custom order state machine", () => {
       )
     ).toThrow("cannot change quote or category")
   })
+
+  it("rejects out-of-range quotes before they reach the database", () => {
+    expect(() =>
+      assertCustomOrderBusinessRules(
+        { status: "request", payment_status: "pending" },
+        "quote",
+        { quoted_amount: 2_147_483_648 }
+      )
+    ).toThrow("no greater than 2147483647")
+  })
+
+  it("prevents captured payments and terminal orders from regressing", () => {
+    expect(() =>
+      assertCustomOrderBusinessRules(
+        { status: "confirmed", quoted_amount: 680, payment_status: "captured" },
+        "confirmed",
+        { payment_status: "pending" }
+      )
+    ).toThrow("captured to pending")
+    expect(() =>
+      assertCustomOrderBusinessRules(
+        { status: "delivered", quoted_amount: 680, payment_status: "authorized" },
+        "delivered",
+        { payment_status: "captured" }
+      )
+    ).toThrow("cannot change payment status")
+  })
 })

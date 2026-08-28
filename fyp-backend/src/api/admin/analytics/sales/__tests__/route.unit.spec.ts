@@ -13,6 +13,21 @@ describe("sales analytics revenue filtering", () => {
     ).toBe(1000)
   })
 
+  it("does not count collection and nested capture amounts twice", () => {
+    expect(
+      getOrderNetRevenue({
+        id: "ord-capture-sources",
+        payment_collections: [
+          {
+            status: "captured",
+            captured_amount: 1200,
+            payments: [{ captures: [{ amount: 1200 }] }],
+          },
+        ],
+      })
+    ).toBe(1200)
+  })
+
   it.each([
     { status: "pending" },
     { status: "canceled" },

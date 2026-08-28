@@ -10,6 +10,7 @@ import {
 } from "../../../../../modules/artisan-profile"
 import { requireArtisanProfileAccess } from "../../../../utils/authz"
 import { validateArtisanMedia } from "../../../../utils/validation"
+import { resolveProfileVerificationStatus } from "../../../../utils/artisan-profile"
 
 type MediaBody = {
   type?: "image" | "video"
@@ -44,17 +45,23 @@ export const POST = async (
     ARTISAN_PROFILE_MODULE
   )
   const profile = await service.retrieveArtisanProfile(req.params.id)
-  await requireArtisanProfileAccess(req, profile)
+  const access = await requireArtisanProfileAccess(req, profile)
   const existing = Array.isArray(profile.media) ? profile.media : []
   const media = validateArtisanMedia([
     ...existing,
     { type, url, caption, ...(filename ? { filename } : {}) },
   ])!
+  const verificationStatus = resolveProfileVerificationStatus({
+    isPlatformAdmin: access.isPlatformAdmin,
+    currentStatus: profile.verification_status,
+    hasPublicContentChanges: true,
+  })
   const updated = await service.updateArtisanProfileAtomically({
     id: profile.id,
     expectedVersion: Number(profile.version ?? 0),
     data: {
       media: media as unknown as Record<string, unknown>,
+      ...(verificationStatus ? { verification_status: verificationStatus } : {}),
     },
   })
 
@@ -70,7 +77,7 @@ export const DELETE = async (
     ARTISAN_PROFILE_MODULE
   )
   const profile = await service.retrieveArtisanProfile(req.params.id)
-  await requireArtisanProfileAccess(req, profile)
+  const access = await requireArtisanProfileAccess(req, profile)
   const body = (req.body || {}) as { file_id?: string; url?: string }
   if (
     (body.file_id !== undefined && typeof body.file_id !== "string") ||
@@ -99,11 +106,17 @@ export const DELETE = async (
   if (removed.length === 0) {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, "Media item not found")
   }
+  const verificationStatus = resolveProfileVerificationStatus({
+    isPlatformAdmin: access.isPlatformAdmin,
+    currentStatus: profile.verification_status,
+    hasPublicContentChanges: true,
+  })
   const updated = await service.updateArtisanProfileAtomically({
     id: profile.id,
     expectedVersion: Number(profile.version ?? 0),
     data: {
       media: media as unknown as Record<string, unknown>,
+      ...(verificationStatus ? { verification_status: verificationStatus } : {}),
     },
   })
 

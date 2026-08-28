@@ -4,6 +4,7 @@ import {
   ARTISAN_PROFILE_MODULE,
   ArtisanProfileService,
 } from "../../../../modules/artisan-profile"
+import { toPublicArtisanProfile } from "../../../utils/artisan-profile"
 
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const artisanProfileService: ArtisanProfileService = req.scope.resolve(
@@ -15,5 +16,5 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     throw new MedusaError(MedusaError.Types.NOT_FOUND, "Artisan profile not found")
   }
 
-  res.json({ artisan_profile: artisanProfile })
+  res.json({ artisan_profile: toPublicArtisanProfile(artisanProfile) })
 }

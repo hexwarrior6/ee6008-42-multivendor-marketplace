@@ -1,4 +1,5 @@
 import { MedusaError } from "@medusajs/framework/utils"
+import { MAX_CUSTOM_ORDER_AMOUNT } from "./constants"
 
 export type CustomOrderActor = {
   actor_type: "customer" | "artisan" | "admin"
@@ -15,6 +16,23 @@ export const CUSTOM_ORDER_STATUSES = [
 ] as const
 
 export type CustomOrderStatus = (typeof CUSTOM_ORDER_STATUSES)[number]
+
+export type CustomOrderPaymentStatus =
+  | "pending"
+  | "authorized"
+  | "captured"
+  | "failed"
+
+export const CUSTOM_ORDER_PAYMENT_TRANSITIONS: Record<
+  CustomOrderPaymentStatus,
+  readonly CustomOrderPaymentStatus[]
+> = {
+  pending: ["authorized", "captured", "failed"],
+  authorized: ["captured", "failed"],
+  captured: [],
+  // A failed payment may be retried through a new provider attempt.
+  failed: ["pending", "authorized", "captured"],
+}
 
 export const CUSTOM_ORDER_TRANSITIONS: Record<
   CustomOrderStatus,
@@ -60,7 +78,7 @@ export const assertCustomOrderTransition = (
 type CustomOrderSnapshot = {
   status: CustomOrderStatus
   quoted_amount?: number | string | null
-  payment_status?: "pending" | "authorized" | "captured" | "failed" | null
+  payment_status?: CustomOrderPaymentStatus | null
   product_id?: string | null
   listing_type?: "custom_request" | "product" | null
 }
@@ -71,7 +89,7 @@ type CustomOrderMutationInput = {
   product_category_id?: string | null
   product_id?: string | null
   listing_type?: "custom_request" | "product"
-  payment_status?: "pending" | "authorized" | "captured" | "failed"
+  payment_status?: CustomOrderPaymentStatus
   cancellation_reason?: string | null
 }
 
@@ -97,6 +115,27 @@ export const assertCustomOrderBusinessRules = (
     )
   }
 
+  const currentPaymentStatus = current.payment_status ?? "pending"
+  if (
+    input.payment_status !== undefined &&
+    input.payment_status !== currentPaymentStatus
+  ) {
+    if (terminal) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "Delivered or cancelled orders cannot change payment status"
+      )
+    }
+    if (!CUSTOM_ORDER_PAYMENT_TRANSITIONS[currentPaymentStatus].includes(
+      input.payment_status
+    )) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        `Cannot move custom order payment from ${currentPaymentStatus} to ${input.payment_status}`
+      )
+    }
+  }
+
   const quotedAmount = input.quoted_amount !== undefined
     ? input.quoted_amount
     : current.quoted_amount
@@ -108,10 +147,11 @@ export const assertCustomOrderBusinessRules = (
     (normalizedQuote !== null &&
       (!Number.isFinite(normalizedQuote) ||
         !Number.isInteger(normalizedQuote) ||
-        normalizedQuote < 0))) {
+        normalizedQuote < 0 ||
+        normalizedQuote > MAX_CUSTOM_ORDER_AMOUNT))) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
-      "quoted_amount must be a non-negative integer in the smallest currency unit"
+      `quoted_amount must be a non-negative integer no greater than ${MAX_CUSTOM_ORDER_AMOUNT} in the smallest currency unit`
     )
   }
 

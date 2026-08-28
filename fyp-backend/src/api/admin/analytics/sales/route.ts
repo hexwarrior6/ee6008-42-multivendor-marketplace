@@ -131,10 +131,6 @@ export const getOrderNetRevenue = (order: OrderRecord): number => {
     if (collectionCaptured !== undefined) {
       captured += Math.max(0, collectionCaptured)
       hasCapturedSignal = true
-    }
-    const collectionRefunded = asFiniteAmount(collection.refunded_amount)
-    if (collectionRefunded !== undefined) {
-      refunded += Math.max(0, collectionRefunded)
     } else {
       const collectionStatus = String(collection.status || "").toLowerCase()
       const paymentCapturedFromRecords = (collection.payments || []).reduce(
@@ -169,6 +165,10 @@ export const getOrderNetRevenue = (order: OrderRecord): number => {
       }
     }
 
+    const collectionRefunded = asFiniteAmount(collection.refunded_amount)
+    if (collectionRefunded !== undefined) {
+      refunded += Math.max(0, collectionRefunded)
+    }
     if (collectionRefunded === undefined) {
       const paymentRefunds = (collection.payments || []).flatMap(
         (payment) => payment.refunds || []
@@ -390,6 +390,8 @@ export const GET = async (
         "total",
         "status",
         "canceled_at",
+        "payment_status",
+        "refunded_amount",
         "created_at",
         "stores.id",
         "*items",
