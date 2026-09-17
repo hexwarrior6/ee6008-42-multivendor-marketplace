@@ -17,9 +17,30 @@ concurrency:
 
 jobs:
   verify-backend:
-    name: Type check, unit tests, and build
+    name: Type check, tests, and build
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/medusa
+      JWT_SECRET: backend-ci-jwt-secret
+      COOKIE_SECRET: backend-ci-cookie-secret
+      STORE_CORS: http://localhost:8000
+      ADMIN_CORS: http://localhost:9000
+      AUTH_CORS: http://localhost:8000,http://localhost:9000
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: medusa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d medusa"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: fyp-backend
@@ -49,6 +70,9 @@ jobs:
 
       - name: Run unit tests
         run: pnpm test:unit
+
+      - name: Run HTTP integration tests
+        run: pnpm test:integration:http
 
       - name: Build backend
         run: pnpm run build
