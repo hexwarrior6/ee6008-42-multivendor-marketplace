@@ -23,7 +23,10 @@ describe("S1 authorization boundaries", () => {
         { customer_id: "customer-1", artisan_id: "art-1" },
         { allowBackoffice: false }
       )
-    ).rejects.toThrow("own custom orders")
+    ).rejects.toMatchObject({
+      type: "forbidden",
+      message: expect.stringContaining("own custom orders"),
+    })
   })
 
   it("honors an explicit artisan assignment within a shared store", async () => {

@@ -45,7 +45,7 @@ const unauthorized = (message = "Authentication is required") =>
   new MedusaError(MedusaError.Types.UNAUTHORIZED, message)
 
 const forbidden = (message = "You do not have permission to access this resource") =>
-  new MedusaError(MedusaError.Types.NOT_ALLOWED, message)
+  new MedusaError(MedusaError.Types.FORBIDDEN, message)
 
 export const requireAuthContext = (req: RequestWithOptionalAuth): AuthContext => {
   if (!req.auth_context?.actor_id) {
