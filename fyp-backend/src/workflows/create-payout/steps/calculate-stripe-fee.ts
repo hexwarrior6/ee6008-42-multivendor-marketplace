@@ -2,6 +2,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { createStep, StepResponse, transform } from "@medusajs/framework/workflows-sdk"
 import Stripe from "stripe"
 import { STRIPE_CONNECT_MODULE } from "../../../modules/stripe-connect"
+import type { StripeConnectModuleService } from "../../../modules/stripe-connect/service"
 
 type StepInput = {
     orderId: string
@@ -13,7 +14,7 @@ export const calculateStripeFeeStep = createStep(
 
         const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
         const query = container.resolve(ContainerRegistrationKeys.QUERY)
-        const stripeConnectModuleService = container.resolve(STRIPE_CONNECT_MODULE)
+        const stripeConnectModuleService = container.resolve<StripeConnectModuleService>(STRIPE_CONNECT_MODULE)
 
         const { data: paymentInfo } = await query.graph({
             entity: "order",
