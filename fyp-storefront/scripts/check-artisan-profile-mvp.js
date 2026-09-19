@@ -38,6 +38,10 @@ const mediaFeed = fs.readFileSync(
   ),
   "utf8"
 )
+const productPage = fs.readFileSync(
+  path.join(root, "src/app/[countryCode]/(main)/products/[handle]/page.tsx"),
+  "utf8"
+)
 
 const checks = [
   {
@@ -61,6 +65,13 @@ const checks = [
     ok:
       productTabs.includes("/artisans/") &&
       productTabs.includes("View artisan profile"),
+  },
+  {
+    name: "product detail verifies an approved artisan profile before linking",
+    ok:
+      productPage.includes("retrieveArtisanProfileByStoreId") &&
+      productTabs.includes("artisanProfileId &&") &&
+      productTabs.includes("/artisans/${artisanProfileId}"),
   },
   {
     name: "product tabs receives countryCode",

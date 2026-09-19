@@ -11,13 +11,18 @@ import Link from "next/link"
 type ProductTabsProps = {
   product: StoreProductWithStore
   countryCode: string
+  artisanProfileId: string | null
 }
 
-const ProductTabs = ({ product, countryCode }: ProductTabsProps) => {
+const ProductTabs = ({
+  product,
+  countryCode,
+  artisanProfileId,
+}: ProductTabsProps) => {
   const tabs = [
     {
       label: "Product Information",
-      component: <ProductInfoTab product={product} countryCode={countryCode} />,
+      component: <ProductInfoTab product={product} />,
     },
     {
       label: "Shipping & Returns",
@@ -25,8 +30,14 @@ const ProductTabs = ({ product, countryCode }: ProductTabsProps) => {
     },
     {
       label: "Store Information",
-      component: <StoreInfoTab product={product} countryCode={countryCode} />,
-    }
+      component: (
+        <StoreInfoTab
+          product={product}
+          countryCode={countryCode}
+          artisanProfileId={artisanProfileId}
+        />
+      ),
+    },
   ]
 
   return (
@@ -47,7 +58,7 @@ const ProductTabs = ({ product, countryCode }: ProductTabsProps) => {
   )
 }
 
-const ProductInfoTab = ({ product }: ProductTabsProps) => {
+const ProductInfoTab = ({ product }: Pick<ProductTabsProps, "product">) => {
   return (
     <div className="text-small-regular py-8">
       <div className="grid grid-cols-2 gap-x-8">
@@ -124,7 +135,11 @@ const ShippingInfoTab = () => {
   )
 }
 
-const StoreInfoTab = ({ product, countryCode }: ProductTabsProps) => {
+const StoreInfoTab = ({
+  product,
+  countryCode,
+  artisanProfileId,
+}: ProductTabsProps) => {
   const store = product.store
 
   return (
@@ -134,9 +149,9 @@ const StoreInfoTab = ({ product, countryCode }: ProductTabsProps) => {
           <span className="font-semibold">Store Name</span>
           <p>{store?.name || "Not Medusa Store"}</p>
         </div>
-        {store?.id && (
+        {artisanProfileId && (
           <Link
-            href={`/${countryCode}/artisans/${store.id}`}
+            href={`/${countryCode}/artisans/${artisanProfileId}`}
             className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline underline-offset-4"
           >
             View artisan profile
