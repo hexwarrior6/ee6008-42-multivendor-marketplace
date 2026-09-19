@@ -1,13 +1,16 @@
 import { Heading, Text } from "@medusajs/ui"
 
 import type { ArtisanProfile } from "@lib/data/artisans"
-import type { CustomOrder } from "@lib/data/custom-orders"
+import type { CustomOrder, CustomOrderMessage } from "@lib/data/custom-orders"
 import { convertToLocale } from "@lib/util/money"
+import CustomOrderChat from "@modules/custom-orders/components/chat"
 import CustomOrderStatusTimeline from "@modules/custom-orders/components/status-timeline"
 
 type CustomOrderDetailTemplateProps = {
   order: CustomOrder
   artisan: ArtisanProfile | null
+  messages: CustomOrderMessage[]
+  countryCode: string
 }
 
 function formatAmount(amount: number | null, currencyCode: string) {
@@ -22,6 +25,8 @@ function formatAmount(amount: number | null, currencyCode: string) {
 export default function CustomOrderDetailTemplate({
   order,
   artisan,
+  messages,
+  countryCode,
 }: CustomOrderDetailTemplateProps) {
   return (
     <div className="w-full">
@@ -77,13 +82,11 @@ export default function CustomOrderDetailTemplate({
         <Heading id="messages-heading" level="h2" className="text-lg">
           Messages
         </Heading>
-        <div className="mt-4 border border-dashed border-ui-border-strong p-5">
-          <Text className="font-medium">Chat integration placeholder</Text>
-          <Text className="text-ui-fg-muted mt-1">
-            Buyer and artisan messages will appear here when S3 connects the
-            chat service.
-          </Text>
-        </div>
+        <CustomOrderChat
+          orderId={order.id}
+          countryCode={countryCode}
+          messages={messages}
+        />
       </section>
     </div>
   )
