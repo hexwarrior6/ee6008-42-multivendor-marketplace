@@ -1,6 +1,7 @@
 {
   "name": "fyp",
   "version": "0.0.1",
+  "packageManager": "pnpm@11.23.0",
   "description": "A starter for Medusa projects.",
   "author": "Medusa (https://medusajs.com)",
   "license": "MIT",
