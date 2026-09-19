@@ -6,16 +6,18 @@ import Refresh from "@modules/common/icons/refresh"
 
 import Accordion from "./accordion"
 import { StoreProductWithStore } from "types/global"
+import Link from "next/link"
 
 type ProductTabsProps = {
   product: StoreProductWithStore
+  countryCode: string
 }
 
-const ProductTabs = ({ product }: ProductTabsProps) => {
+const ProductTabs = ({ product, countryCode }: ProductTabsProps) => {
   const tabs = [
     {
       label: "Product Information",
-      component: <ProductInfoTab product={product} />,
+      component: <ProductInfoTab product={product} countryCode={countryCode} />,
     },
     {
       label: "Shipping & Returns",
@@ -23,7 +25,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
     },
     {
       label: "Store Information",
-      component: <StoreInfoTab product={product} />,
+      component: <StoreInfoTab product={product} countryCode={countryCode} />,
     }
   ]
 
@@ -122,14 +124,24 @@ const ShippingInfoTab = () => {
   )
 }
 
-const StoreInfoTab = ({ product }: ProductTabsProps) => {
+const StoreInfoTab = ({ product, countryCode }: ProductTabsProps) => {
+  const store = product.store
+
   return (
     <div className="text-small-regular py-8">
       <div className="grid grid-cols-1 gap-y-4">
         <div>
           <span className="font-semibold">Store Name</span>
-          <p>{product.store?.name || "Not Medusa Store"}</p>
+          <p>{store?.name || "Not Medusa Store"}</p>
         </div>
+        {store?.id && (
+          <Link
+            href={`/${countryCode}/artisans/${store.id}`}
+            className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline underline-offset-4"
+          >
+            View artisan profile
+          </Link>
+        )}
       </div>
     </div>
   )
