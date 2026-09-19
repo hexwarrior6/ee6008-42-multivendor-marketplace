@@ -3,9 +3,43 @@ import { resolve } from 'path'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
+const minioConfigured = process.env.MINIO_ENABLED === "true" && [
+  process.env.MINIO_PUBLIC_ENDPOINT,
+  process.env.MINIO_ACCESS_KEY,
+  process.env.MINIO_SECRET_KEY,
+].every(Boolean)
+
+const fileProvider = minioConfigured
+  ? {
+      resolve: "./src/modules/minio-file",
+      id: "minio",
+      options: {
+        endPoint: process.env.MINIO_PUBLIC_ENDPOINT,
+        accessKey: process.env.MINIO_ACCESS_KEY,
+        secretKey: process.env.MINIO_SECRET_KEY,
+        bucket: process.env.MINIO_BUCKET,
+      },
+    }
+  : {
+      resolve: "@medusajs/medusa/file-local",
+      id: "local",
+      options: {
+        upload_dir: resolve(process.cwd(), "static", "uploads"),
+        private_upload_dir: resolve(process.cwd(), "static", "private"),
+      },
+    }
+
+const fileModule = {
+  resolve: "@medusajs/file",
+  options: {
+    providers: [fileProvider],
+  },
+}
+
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
+    redisUrl: process.env.REDIS_URL,
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
@@ -25,24 +59,9 @@ module.exports = defineConfig({
     }
   ],
   modules: [
-    {
-      resolve: "@medusajs/medusa/file",
-      options: {
-        providers: [
-          {
-            resolve: "./src/modules/minio-file",
-            id: "minio",
-            options: {
-              accessKey: process.env.MINIO_ACCESS_KEY,
-              secretKey: process.env.MINIO_SECRET_KEY,
-              bucket: process.env.MINIO_BUCKET,
-              endPoint: process.env.MINIO_PUBLIC_ENDPOINT,
-            }
-          }
-        ]
-      }
-    },
-    {
+    fileModule,
+    ...(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL
+      ? [{
       resolve: "@medusajs/medusa/notification",
       options: {
         providers: [
@@ -57,8 +76,10 @@ module.exports = defineConfig({
           }
         ]
       }
-    },
-    {
+    }]
+      : []),
+    ...(process.env.STRIPE_API_KEY
+      ? [{
       resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
@@ -74,7 +95,8 @@ module.exports = defineConfig({
           }
         ]
       }
-    },
+    }]
+      : []),
     {
       resolve: "./src/modules/stripe-connect",
       options: {
@@ -83,6 +105,12 @@ module.exports = defineConfig({
     },
     {
       resolve: "./src/modules/onboarding",
-    }
+    },
+    {
+      resolve: "./src/modules/artisan-profile",
+    },
+    {
+      resolve: "./src/modules/custom-order",
+    },
   ]
 })
