@@ -23,18 +23,37 @@ const productTabsPath = path.join(
 const productTabs = fs.existsSync(productTabsPath)
   ? fs.readFileSync(productTabsPath, "utf8")
   : ""
+const artisanPage = fs.readFileSync(
+  path.join(root, "src/app/[countryCode]/(main)/artisans/[id]/page.tsx"),
+  "utf8"
+)
+const artisanData = fs.readFileSync(
+  path.join(root, "src/lib/data/artisans.ts"),
+  "utf8"
+)
+const mediaFeed = fs.readFileSync(
+  path.join(
+    root,
+    "src/modules/artisans/components/artisan-media-feed/index.tsx"
+  ),
+  "utf8"
+)
 
 const checks = [
   {
     name: "artisan data helper uses S1 store artisan APIs",
     ok:
-      fs.readFileSync(path.join(root, "src/lib/data/artisans.ts"), "utf8")
+      fs
+        .readFileSync(path.join(root, "src/lib/data/artisans.ts"), "utf8")
         .includes("/store/artisans") &&
-      fs.readFileSync(path.join(root, "src/lib/data/artisans.ts"), "utf8")
+      fs
+        .readFileSync(path.join(root, "src/lib/data/artisans.ts"), "utf8")
         .includes("artisan_profile") &&
-      fs.readFileSync(path.join(root, "src/lib/data/artisans.ts"), "utf8")
+      fs
+        .readFileSync(path.join(root, "src/lib/data/artisans.ts"), "utf8")
         .includes("display_name") &&
-      fs.readFileSync(path.join(root, "src/lib/data/artisans.ts"), "utf8")
+      fs
+        .readFileSync(path.join(root, "src/lib/data/artisans.ts"), "utf8")
         .includes("store_id"),
   },
   {
@@ -47,11 +66,29 @@ const checks = [
     name: "product tabs receives countryCode",
     ok: productTabs.includes("countryCode"),
   },
+  {
+    name: "artisan products use the profile store id",
+    ok: artisanPage.includes("storeId: artisan.store_id"),
+  },
+  {
+    name: "profile failures are not masked by legacy sample content",
+    ok:
+      !artisanData.includes("retrieveLegacyStoreAsArtisanProfile") &&
+      !artisanData.includes("fallbackArtisanMedia"),
+  },
+  {
+    name: "behind-the-scenes videos use a video player",
+    ok:
+      mediaFeed.includes('item.type === "video"') &&
+      mediaFeed.includes("<video"),
+  },
 ]
 
 const failures = [
   ...missingFiles.map((file) => `Missing file: ${file}`),
-  ...checks.filter((check) => !check.ok).map((check) => `Failed: ${check.name}`),
+  ...checks
+    .filter((check) => !check.ok)
+    .map((check) => `Failed: ${check.name}`),
 ]
 
 if (failures.length) {

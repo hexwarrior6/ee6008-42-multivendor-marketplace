@@ -38,45 +38,6 @@ type S1ArtisanProfileListResponse = {
   has_more: boolean
 }
 
-type LegacyStoreResponse = {
-  store: {
-    id: string
-    name: string
-    metadata?: Record<string, unknown> | null
-  }
-}
-
-export const fallbackArtisanMedia: ArtisanProfileMedia[] = [
-  {
-    type: "image",
-    caption: "Material selection",
-    url:
-      "https://medusa-public-images.s3.eu-west-1.amazonaws.com/tee-black-front.png",
-  },
-  {
-    type: "image",
-    caption: "Studio process",
-    url:
-      "https://medusa-public-images.s3.eu-west-1.amazonaws.com/sweatshirt-vintage-front.png",
-  },
-  {
-    type: "image",
-    caption: "Final finishing",
-    url:
-      "https://medusa-public-images.s3.eu-west-1.amazonaws.com/shorts-vintage-front.png",
-  },
-]
-
-function readMetadataString(
-  metadata: Record<string, unknown> | null | undefined,
-  key: string,
-  fallback: string
-) {
-  const value = metadata?.[key]
-
-  return typeof value === "string" && value.trim() ? value : fallback
-}
-
 export async function retrieveArtisanProfile(
   artisanIdOrStoreId: string
 ): Promise<ArtisanProfile | null> {
@@ -96,13 +57,15 @@ export async function retrieveArtisanProfile(
     return profile
   }
 
-  const profileByStore = await retrieveArtisanProfileByStoreId(artisanIdOrStoreId)
+  const profileByStore = await retrieveArtisanProfileByStoreId(
+    artisanIdOrStoreId
+  )
 
   if (profileByStore) {
     return profileByStore
   }
 
-  return retrieveLegacyStoreAsArtisanProfile(artisanIdOrStoreId)
+  return null
 }
 
 export async function listArtisanProfiles(): Promise<ArtisanProfile[]> {
@@ -133,53 +96,12 @@ export async function retrieveArtisanProfileByStoreId(
   return profiles.find((profile) => profile.store_id === storeId) ?? null
 }
 
-async function retrieveLegacyStoreAsArtisanProfile(
-  storeId: string
-): Promise<ArtisanProfile | null> {
-  const store = await sdk.client
-    .fetch<LegacyStoreResponse>(`/store/${storeId}`, {
-      method: "GET",
-      cache: "no-store",
-    })
-    .then(({ store }) => store)
-    .catch(() => null)
-
-  if (!store) {
-    return null
-  }
-
-  const metadata = store.metadata
-
-  return {
-    id: store.id,
-    store_id: store.id,
-    display_name: store.name,
-    bio: readMetadataString(
-      metadata,
-      "artisan_biography",
-      `${store.name} creates small-batch handmade goods with a focus on careful materials, patient craft, and products that feel personal rather than mass produced.`
-    ),
-    inspiration: readMetadataString(
-      metadata,
-      "artisan_inspiration",
-      "The studio is inspired by everyday rituals, traditional craft details, and the textures found in local markets and workshops."
-    ),
-    creative_process: readMetadataString(
-      metadata,
-      "artisan_creative_process",
-      "Each product starts with material selection, moves through hand finishing, and is checked individually before it is listed for customers."
-    ),
-    avatar_url: null,
-    location: readMetadataString(metadata, "artisan_location", "China"),
-    specialties: null,
-    media: fallbackArtisanMedia,
-  }
-}
-
 function normalizeProfileMedia(profile: ArtisanProfile): ArtisanProfile {
   return {
     ...profile,
-    specialties: Array.isArray(profile.specialties) ? profile.specialties : null,
+    specialties: Array.isArray(profile.specialties)
+      ? profile.specialties
+      : null,
     media: Array.isArray(profile.media) ? profile.media : [],
   }
 }

@@ -1,9 +1,6 @@
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
-import {
-  listArtisanProducts,
-  retrieveArtisanProfile,
-} from "@lib/data/artisans"
+import { listArtisanProducts, retrieveArtisanProfile } from "@lib/data/artisans"
 import { getRegion } from "@lib/data/regions"
 import ArtisanTemplate from "@modules/artisans/templates"
 
@@ -24,8 +21,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   return {
     title: `${artisan.display_name} | Artisan Profile`,
     description:
-      artisan.bio ||
-      `${artisan.display_name} artisan profile on Medusa Store`,
+      artisan.bio || `${artisan.display_name} artisan profile on Medusa Store`,
   }
 }
 
@@ -44,7 +40,7 @@ export default async function ArtisanPage(props: Props) {
   }
 
   const products = await listArtisanProducts({
-    storeId: params.id,
+    storeId: artisan.store_id,
     countryCode: params.countryCode,
   })
 
