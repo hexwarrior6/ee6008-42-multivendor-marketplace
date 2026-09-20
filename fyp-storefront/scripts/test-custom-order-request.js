@@ -32,6 +32,21 @@ const trackingSubject = loadTsModule(
   path.resolve(__dirname, "../src/lib/util/custom-order-status.ts")
 )
 
+const backendStateMachineSource = fs.readFileSync(
+  path.resolve(
+    __dirname,
+    "../../fyp-backend/src/modules/custom-order/state-machine.ts"
+  ),
+  "utf8"
+)
+const backendRouteSource = fs.readFileSync(
+  path.resolve(
+    __dirname,
+    "../../fyp-backend/src/api/store/custom-orders/route.ts"
+  ),
+  "utf8"
+)
+
 const { buildCustomOrderPayload } = requestSubject
 const { getCustomOrderTimeline } = trackingSubject
 
@@ -121,5 +136,79 @@ test("represents cancellation as a separate terminal state", () => {
 
   assert.deepEqual(getCustomOrderTimeline("cancelled"), [
     { status: "cancelled", label: "Cancelled", state: "current" },
+  ])
+})
+
+test("frontend status set stays identical to the backend state machine", () => {
+  const statusesMatch = backendStateMachineSource.match(
+    /CUSTOM_ORDER_STATUSES = \[([\s\S]*?)\]/
+  )
+  assert.ok(statusesMatch, "CUSTOM_ORDER_STATUSES not found in the backend")
+  const backendStatuses = Array.from(
+    statusesMatch[1].matchAll(/"([a-z_]+)"/g)
+  ).map((match) => match[1])
+
+  assert.deepEqual(backendStatuses, [
+    "request",
+    "quote",
+    "confirmed",
+    "produced",
+    "delivered",
+    "cancelled",
+  ])
+})
+
+test("the timeline renders exactly the backend flow order for every status", () => {
+  const flow = ["request", "quote", "confirmed", "produced", "delivered"]
+
+  for (const [index, status] of flow.entries()) {
+    const timeline = getCustomOrderTimeline(status)
+    assert.deepEqual(
+      timeline.map((step) => step.status),
+      flow
+    )
+    assert.equal(timeline[index].state, "current")
+    assert.ok(
+      timeline.slice(0, index).every((step) => step.state === "complete")
+    )
+    assert.ok(
+      timeline.slice(index + 1).every((step) => step.state === "upcoming")
+    )
+  }
+
+  assert.deepEqual(
+    getCustomOrderTimeline("cancelled").map((step) => step.status),
+    ["cancelled"]
+  )
+})
+
+test("the request payload fields still match the backend POST contract", () => {
+  const payload = buildCustomOrderPayload(
+    (() => {
+      const formData = new FormData()
+      formData.set("artisan_id", "art_123")
+      formData.set("title", "Ceramic tea set")
+      formData.set("product_category", "Ceramics")
+      formData.set("description", "Four handmade cups and one teapot.")
+      formData.set("budget_amount", "68.50")
+      formData.set("currency_code", "sgd")
+      return formData
+    })()
+  )
+
+  for (const field of Object.keys(payload)) {
+    assert.ok(
+      backendRouteSource.includes(field),
+      `the backend POST /store/custom-orders route no longer reads "${field}"`
+    )
+  }
+  assert.deepEqual(Object.keys(payload).sort(), [
+    "artisan_id",
+    "budget_amount",
+    "currency_code",
+    "description",
+    "listing_type",
+    "product_category",
+    "title",
   ])
 })

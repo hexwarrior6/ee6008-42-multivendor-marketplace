@@ -27,7 +27,10 @@ export default async function CustomOrderDetailPage(props: Props) {
 
   const [artisan, talkJsSession] = await Promise.all([
     retrieveArtisanProfile(order.artisan_id).catch(() => null),
-    retrieveCustomOrderTalkJsSession(order.id),
+    // Chat is an enhancement of the order detail page: if TalkJS is not
+    // configured or temporarily unreachable, the order and its status must
+    // still be shown with a degraded messages section.
+    retrieveCustomOrderTalkJsSession(order.id).catch(() => null),
   ])
 
   return (

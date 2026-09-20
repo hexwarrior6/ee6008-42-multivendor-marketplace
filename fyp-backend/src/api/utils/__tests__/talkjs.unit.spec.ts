@@ -92,4 +92,77 @@ describe("TalkJS custom-order session", () => {
       )
     ).toBe(false)
   })
+
+  it("registers the buyer and the artisan as the only participants", async () => {
+    const request = jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(new Response(null, { status: 200 }))
+
+    await prepareTalkJsSession(input)
+
+    const conversationPut = request.mock.calls.find(
+      ([url, options]) =>
+        String(url).includes("/conversations/") &&
+        options?.method === "PUT"
+    )
+    expect(conversationPut).toBeDefined()
+    const body = JSON.parse(String(conversationPut?.[1]?.body))
+    expect(body.participants).toEqual([
+      "customer_cus_1",
+      "artisan_art_1",
+    ])
+    expect(body.subject).toBe("Engraved cup")
+    expect(body.custom).toEqual({
+      custom_order_id: "cor_test_1",
+      category: "custom_order",
+    })
+  })
+
+  it("derives a stable conversation id per order that differs between orders", async () => {
+    const request = jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(new Response(null, { status: 200 }))
+
+    const first = await prepareTalkJsSession(input)
+    const second = await prepareTalkJsSession(input)
+    const otherOrder = await prepareTalkJsSession({
+      ...input,
+      orderId: "cor_test_2",
+    })
+
+    expect(second.conversation_id).toBe(first.conversation_id)
+    expect(otherOrder.conversation_id).not.toBe(first.conversation_id)
+    expect(request.mock.calls.filter(([url]) =>
+      String(url).includes("/import/conversations/")
+    )).toHaveLength(0)
+  })
+
+  it("fails with a clear error when TalkJS environment variables are missing", async () => {
+    delete process.env.TALKJS_APP_ID
+    process.env.TALKJS_SECRET_KEY = "test_secret"
+
+    await expect(prepareTalkJsSession(input)).rejects.toThrow(
+      "TalkJS is not configured. Set TALKJS_APP_ID and TALKJS_SECRET_KEY."
+    )
+  })
+
+  it("surfaces a TalkJS REST failure with its status code", async () => {
+    jest
+      .spyOn(global, "fetch")
+      .mockResolvedValue(new Response("quota exceeded", { status: 429 }))
+
+    await expect(prepareTalkJsSession(input)).rejects.toThrow(
+      "TalkJS request failed (429): quota exceeded"
+    )
+  })
+
+  it("reports network failures without leaking the request", async () => {
+    jest
+      .spyOn(global, "fetch")
+      .mockRejectedValue(new Error("getaddrinfo ENOTFOUND api.talkjs.com"))
+
+    await expect(prepareTalkJsSession(input)).rejects.toThrow(
+      "TalkJS could not be reached"
+    )
+  })
 })

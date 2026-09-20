@@ -55,7 +55,9 @@ export const PATCH = async (
     body.product_category !== undefined ||
     body.product_category_id !== undefined ||
     body.product_id !== undefined ||
-    body.listing_type !== undefined
+    body.listing_type !== undefined ||
+    body.payment_status !== undefined ||
+    body.cancellation_reason !== undefined
   ) {
     throw new MedusaError(
       MedusaError.Types.NOT_ALLOWED,

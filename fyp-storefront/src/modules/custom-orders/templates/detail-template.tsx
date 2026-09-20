@@ -9,7 +9,7 @@ import CustomOrderStatusTimeline from "@modules/custom-orders/components/status-
 type CustomOrderDetailTemplateProps = {
   order: CustomOrder
   artisan: ArtisanProfile | null
-  talkJsSession: TalkJsSession
+  talkJsSession: TalkJsSession | null
 }
 
 function formatAmount(amount: number | null, currencyCode: string) {
@@ -80,7 +80,19 @@ export default function CustomOrderDetailTemplate({
         <Heading id="messages-heading" level="h2" className="text-lg">
           Messages
         </Heading>
-        <CustomOrderChat session={talkJsSession} />
+        {talkJsSession ? (
+          <CustomOrderChat session={talkJsSession} />
+        ) : (
+          <div
+            role="status"
+            className="mt-4 flex items-center justify-center border border-ui-border-base bg-ui-bg-subtle px-4 py-10"
+          >
+            <Text className="text-ui-fg-muted">
+              Chat is temporarily unavailable. Order details and status are
+              still up to date.
+            </Text>
+          </div>
+        )}
       </section>
     </div>
   )
