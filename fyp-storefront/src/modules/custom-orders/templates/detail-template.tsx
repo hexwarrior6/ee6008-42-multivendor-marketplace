@@ -1,7 +1,7 @@
 import { Heading, Text } from "@medusajs/ui"
 
 import type { ArtisanProfile } from "@lib/data/artisans"
-import type { CustomOrder, CustomOrderMessage } from "@lib/data/custom-orders"
+import type { CustomOrder, TalkJsSession } from "@lib/data/custom-orders"
 import { convertToLocale } from "@lib/util/money"
 import CustomOrderChat from "@modules/custom-orders/components/chat"
 import CustomOrderStatusTimeline from "@modules/custom-orders/components/status-timeline"
@@ -9,8 +9,7 @@ import CustomOrderStatusTimeline from "@modules/custom-orders/components/status-
 type CustomOrderDetailTemplateProps = {
   order: CustomOrder
   artisan: ArtisanProfile | null
-  messages: CustomOrderMessage[]
-  countryCode: string
+  talkJsSession: TalkJsSession
 }
 
 function formatAmount(amount: number | null, currencyCode: string) {
@@ -25,8 +24,7 @@ function formatAmount(amount: number | null, currencyCode: string) {
 export default function CustomOrderDetailTemplate({
   order,
   artisan,
-  messages,
-  countryCode,
+  talkJsSession,
 }: CustomOrderDetailTemplateProps) {
   return (
     <div className="w-full">
@@ -82,11 +80,7 @@ export default function CustomOrderDetailTemplate({
         <Heading id="messages-heading" level="h2" className="text-lg">
           Messages
         </Heading>
-        <CustomOrderChat
-          orderId={order.id}
-          countryCode={countryCode}
-          messages={messages}
-        />
+        <CustomOrderChat session={talkJsSession} />
       </section>
     </div>
   )

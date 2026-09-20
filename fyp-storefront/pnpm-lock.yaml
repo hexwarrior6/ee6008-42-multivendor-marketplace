@@ -22,10 +22,10 @@ importers:
         version: 2.13.4(react@19.0.4)
       '@medusajs/js-sdk':
         specifier: latest
-        version: 2.19.0
+        version: 2.21.0
       '@medusajs/ui':
         specifier: latest
-        version: 4.2.1(@types/react-dom@19.0.4(@types/react@19.0.4))(@types/react@19.0.4)(react-dom@19.0.4(react@19.0.4))(react@19.0.4)(typescript@5.9.3)
+        version: 4.2.4(@types/react-dom@19.0.4(@types/react@19.0.4))(@types/react@19.0.4)(react-dom@19.0.4(react@19.0.4))(react@19.0.4)(typescript@5.9.3)
       '@radix-ui/react-accordion':
         specifier: ^1.2.1
         version: 1.2.12(@types/react-dom@19.0.4(@types/react@19.0.4))(@types/react@19.0.4)(react-dom@19.0.4(react@19.0.4))(react@19.0.4)
@@ -38,6 +38,12 @@ importers:
       '@stripe/stripe-js':
         specifier: ^8.5.3
         version: 8.11.0
+      '@talkjs/core':
+        specifier: ^1.12.0
+        version: 1.12.0
+      '@talkjs/react-components':
+        specifier: ^0.3.8
+        version: 0.3.8(@talkjs/core@1.12.0)(react-dom@19.0.4(react@19.0.4))(react@19.0.4)
       lodash:
         specifier: ^4.17.21
         version: 4.17.23
@@ -74,10 +80,10 @@ importers:
         version: 7.29.0(supports-color@8.1.1)
       '@medusajs/types':
         specifier: latest
-        version: 2.19.0
+        version: 2.21.0
       '@medusajs/ui-preset':
         specifier: latest
-        version: 2.19.0(tailwindcss@3.4.19)
+        version: 2.21.0(tailwindcss@3.4.19)
       '@types/lodash':
         specifier: ^4.14.195
         version: 4.17.24
@@ -551,17 +557,17 @@ packages:
     peerDependencies:
       react: ^18.3.1
 
-  '@medusajs/icons@2.19.0':
-    resolution: {integrity: sha512-k0JnPGVzAxzToWcbTEg8ReXNie9jAe0k3BC630BUHENaMETM+HT+w3kVD6Q6rFNBqQEMH8mRivecHRd0TStiLA==}
+  '@medusajs/icons@2.21.0':
+    resolution: {integrity: sha512-bcldF+97MYbzQuFgLKbVhyvRM908k2rVex3CpeLvsfYauc/bM/F/bE/gnevq9infbdpuF6y8zgAPrCi8MxmCQg==}
     peerDependencies:
       react: ^18.3.1 || ^19.0.0
 
-  '@medusajs/js-sdk@2.19.0':
-    resolution: {integrity: sha512-XrZgmluiq3xr1kgHylxBQ3zW7/5/Yi2myhvIcwL10V6gba8DH8CLn30CW3C5GbQHHFNQK2oqsuJUehM2X2kYZw==}
+  '@medusajs/js-sdk@2.21.0':
+    resolution: {integrity: sha512-57xt2wBgk6IJCYyBV+MwrhSTFbad/YZ7ytoQ/BN8H3ChRXDxzGzMt19N9jNlfoyFSoDxcGKgItPL2WQqtFQlHQ==}
     engines: {node: '>=20'}
 
-  '@medusajs/types@2.19.0':
-    resolution: {integrity: sha512-RE1riIOXrqHWMDDUCij+XCncxc+vbFOtFyMP9awA7R0KJ6oT/AEM3ZLSl7cqqQLHErgtaN8u5Mxwj8Ie+WlDlw==}
+  '@medusajs/types@2.21.0':
+    resolution: {integrity: sha512-yO+e6+pjqlodCuATTvT84OSuCfjFrmPUXodMDUS/cMxqPdfoP7mZkiDzJU8w+aMItn7GVnYgfgj4D9MmnrQSUg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       ioredis: ^5.4.1
@@ -572,13 +578,13 @@ packages:
       vite:
         optional: true
 
-  '@medusajs/ui-preset@2.19.0':
-    resolution: {integrity: sha512-3aClodpFn+EnpZDjLHyYykkuA30c7cqq3oeuyl/hQlsv76Fhk9QGkbiL8OSxEw2HSnqqR2fOro6UXHpAs9a8DQ==}
+  '@medusajs/ui-preset@2.21.0':
+    resolution: {integrity: sha512-ww7UXYK/e9Aned9Wjv/NqYMzuCTSOPZZnKiyNWnE7vo6raX55S0nP7UA9m2Z0V8IPFL36+y3ecMvPMxDu1rJ4A==}
     peerDependencies:
       tailwindcss: ^3.4.3
 
-  '@medusajs/ui@4.2.1':
-    resolution: {integrity: sha512-fjeb5SZAXhaQuYD/TkyvCPBIGEukbz2fjVi0NXbEkM7bweTOulCHRTxA/W52xwuoMSEMxxHBqLqZOtYmjygOaw==}
+  '@medusajs/ui@4.2.4':
+    resolution: {integrity: sha512-OVMKpjIV89QvTYCNWLDzVckMQkJ8H4nLdP3X+6/FIk5iiSAuijs0f8WqpofrC3EQHNIk3Ndsn0pVhLlqqRfwgA==}
     peerDependencies:
       react: ^18.3.1
       react-dom: ^18.3.1
@@ -2049,6 +2055,16 @@ packages:
     resolution: {integrity: sha512-h9wegbZDPurxG22xZSoWtdzc41/OlNEUQERNqI/0fOwa2aVlWGu7C35E/x6LDyD3lgtztFSSjKZyuVM0hxhbgA==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1 || >= 4.0.0-alpha.20 || >= 4.0.0-beta.1'
+
+  '@talkjs/core@1.12.0':
+    resolution: {integrity: sha512-qf+zElmBnIwqaUDNQJieitDjtB6UDaLHezwqusxqG1JVWg3KRemx4oN6RmpIXvEt61irpfT1emPGnwWmEMNtNg==}
+
+  '@talkjs/react-components@0.3.8':
+    resolution: {integrity: sha512-eWpz3B6HXwrjXhMCu7JF2qNFkxtcYhj/6LjtDS8wKAU82JsvaSuESBTEEA+Qp0NkRLCM/Xx2+HWnYBCxCMfbww==}
+    peerDependencies:
+      '@talkjs/core': ^1.11.1
+      react: '>=17.0.0 <20.0.0'
+      react-dom: '>=17.0.0 <20.0.0'
 
   '@tanstack/react-table@8.20.5':
     resolution: {integrity: sha512-WEHopKw3znbUZ61s9i0+i9g8drmDo6asTWbrQh8Us63DAk/M0FkmIqERew6P71HI75ksZ2Pxyuf4vvKh9rAkiA==}
@@ -4659,7 +4675,7 @@ snapshots:
 
   '@lambdacurry/medusa-plugins-sdk@0.0.5':
     dependencies:
-      '@medusajs/js-sdk': 2.19.0
+      '@medusajs/js-sdk': 2.21.0
       '@types/express': 5.0.6
       '@types/multer': 1.4.13
       form-data: 4.0.5
@@ -4668,31 +4684,31 @@ snapshots:
     dependencies:
       react: 19.0.4
 
-  '@medusajs/icons@2.19.0(react@19.0.4)':
+  '@medusajs/icons@2.21.0(react@19.0.4)':
     dependencies:
       react: 19.0.4
 
-  '@medusajs/js-sdk@2.19.0':
+  '@medusajs/js-sdk@2.21.0':
     dependencies:
       fetch-event-stream: 0.1.6
       qs: 6.15.3
 
-  '@medusajs/types@2.19.0':
+  '@medusajs/types@2.21.0':
     dependencies:
       bignumber.js: 9.3.1
 
-  '@medusajs/ui-preset@2.19.0(tailwindcss@3.4.19)':
+  '@medusajs/ui-preset@2.21.0(tailwindcss@3.4.19)':
     dependencies:
       '@tailwindcss/forms': 0.5.11(tailwindcss@3.4.19)
       tailwindcss: 3.4.19
       tailwindcss-animate: 1.0.7(tailwindcss@3.4.19)
 
-  '@medusajs/ui@4.2.1(@types/react-dom@19.0.4(@types/react@19.0.4))(@types/react@19.0.4)(react-dom@19.0.4(react@19.0.4))(react@19.0.4)(typescript@5.9.3)':
+  '@medusajs/ui@4.2.4(@types/react-dom@19.0.4(@types/react@19.0.4))(@types/react@19.0.4)(react-dom@19.0.4(react@19.0.4))(react@19.0.4)(typescript@5.9.3)':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@19.0.4(react@19.0.4))(react@19.0.4)
       '@dnd-kit/sortable': 8.0.0(@dnd-kit/core@6.3.1(react-dom@19.0.4(react@19.0.4))(react@19.0.4))(react@19.0.4)
       '@dnd-kit/utilities': 3.2.2(react@19.0.4)
-      '@medusajs/icons': 2.19.0(react@19.0.4)
+      '@medusajs/icons': 2.21.0(react@19.0.4)
       '@radix-ui/react-dialog': 1.1.4(@types/react-dom@19.0.4(@types/react@19.0.4))(@types/react@19.0.4)(react-dom@19.0.4(react@19.0.4))(react@19.0.4)
       '@radix-ui/react-dismissable-layer': 1.1.4(@types/react-dom@19.0.4(@types/react@19.0.4))(@types/react@19.0.4)(react-dom@19.0.4(react@19.0.4))(react@19.0.4)
       '@tanstack/react-table': 8.20.5(react-dom@19.0.4(react@19.0.4))(react@19.0.4)
@@ -6614,6 +6630,14 @@ snapshots:
     dependencies:
       mini-svg-data-uri: 1.4.4
       tailwindcss: 3.4.19
+
+  '@talkjs/core@1.12.0': {}
+
+  '@talkjs/react-components@0.3.8(@talkjs/core@1.12.0)(react-dom@19.0.4(react@19.0.4))(react@19.0.4)':
+    dependencies:
+      '@talkjs/core': 1.12.0
+      react: 19.0.4
+      react-dom: 19.0.4(react@19.0.4)
 
   '@tanstack/react-table@8.20.5(react-dom@19.0.4(react@19.0.4))(react@19.0.4)':
     dependencies:

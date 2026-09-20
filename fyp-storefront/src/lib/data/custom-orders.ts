@@ -5,7 +5,6 @@ import { getAuthHeaders } from "@lib/data/cookies"
 import { buildCustomOrderPayload } from "@lib/util/custom-order-request"
 import type { CustomOrderPayload } from "@lib/util/custom-order-request"
 import type { CustomOrderStatus } from "@lib/util/custom-order-status"
-import { revalidatePath } from "next/cache"
 
 export type CustomOrder = {
   id: string
@@ -36,29 +35,17 @@ export type CustomOrderSummary = {
   status: string
 }
 
-export type CustomOrderMessage = {
-  id: string
-  custom_order_id: string
-  sender_type: "customer" | "artisan" | "admin"
-  sender_id: string | null
-  message: string
-  attachments: Array<{
-    type: "image" | "file"
-    url: string
-    name?: string
-  }> | null
-  created_at: string
-}
-
 export type CreateCustomOrderState = {
   success: boolean
   error: string | null
   customOrder: CustomOrderSummary | null
 }
 
-export type SendMessageState = {
-  success: boolean
-  error: string | null
+export type TalkJsSession = {
+  app_id: string
+  user_id: string
+  conversation_id: string
+  token: string
 }
 
 type CreateCustomOrderResponse = {
@@ -101,20 +88,20 @@ export async function retrieveCustomOrder(id: string): Promise<CustomOrder> {
   return custom_order
 }
 
-export async function listCustomOrderMessages(
+export async function retrieveCustomOrderTalkJsSession(
   orderId: string
-): Promise<CustomOrderMessage[]> {
+): Promise<TalkJsSession> {
   const headers = await getAuthHeaders()
-  const { messages } = await sdk.client.fetch<{
-    messages: CustomOrderMessage[]
-  }>(`/store/custom-orders/${encodeURIComponent(orderId)}/messages`, {
-    method: "GET",
-    headers,
-    query: { limit: 100, offset: 0 },
-    cache: "no-store",
-  })
+  const { talkjs } = await sdk.client.fetch<{ talkjs: TalkJsSession }>(
+    `/store/custom-orders/${encodeURIComponent(orderId)}/talkjs`,
+    {
+      method: "GET",
+      headers,
+      cache: "no-store",
+    }
+  )
 
-  return messages
+  return talkjs
 }
 
 function getErrorMessage(error: unknown) {
@@ -165,53 +152,6 @@ export async function createCustomOrder(
       success: false,
       error: getErrorMessage(error),
       customOrder: null,
-    }
-  }
-}
-
-export async function sendCustomOrderMessage(
-  orderId: string,
-  countryCode: string,
-  _currentState: SendMessageState,
-  formData: FormData
-): Promise<SendMessageState> {
-  try {
-    const headers = await getAuthHeaders()
-    if (!("authorization" in headers)) {
-      return { success: false, error: "Your session expired. Please sign in." }
-    }
-
-    const value = formData.get("message")
-    const message = typeof value === "string" ? value.trim() : ""
-    if (!message) {
-      return { success: false, error: "Enter a message before sending." }
-    }
-    if (message.length > 5000) {
-      return {
-        success: false,
-        error: "Messages cannot exceed 5,000 characters.",
-      }
-    }
-
-    await sdk.client.fetch(
-      `/store/custom-orders/${encodeURIComponent(orderId)}/messages`,
-      {
-        method: "POST",
-        headers,
-        body: { message, attachments: [] },
-        cache: "no-store",
-      }
-    )
-
-    revalidatePath(`/${countryCode}/account/custom-orders/${orderId}`)
-    return { success: true, error: null }
-  } catch (error) {
-    return {
-      success: false,
-      error:
-        error instanceof Error && error.message
-          ? error.message
-          : "The message could not be sent. Please try again.",
     }
   }
 }

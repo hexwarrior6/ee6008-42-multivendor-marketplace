@@ -3,8 +3,8 @@ import { notFound } from "next/navigation"
 
 import { retrieveArtisanProfile } from "@lib/data/artisans"
 import {
-  listCustomOrderMessages,
   retrieveCustomOrder,
+  retrieveCustomOrderTalkJsSession,
 } from "@lib/data/custom-orders"
 import CustomOrderDetailTemplate from "@modules/custom-orders/templates/detail-template"
 
@@ -18,24 +18,23 @@ type Props = {
 }
 
 export default async function CustomOrderDetailPage(props: Props) {
-  const { countryCode, id } = await props.params
+  const { id } = await props.params
   const order = await retrieveCustomOrder(id).catch(() => null)
 
   if (!order) {
     notFound()
   }
 
-  const [artisan, messages] = await Promise.all([
+  const [artisan, talkJsSession] = await Promise.all([
     retrieveArtisanProfile(order.artisan_id).catch(() => null),
-    listCustomOrderMessages(order.id),
+    retrieveCustomOrderTalkJsSession(order.id),
   ])
 
   return (
     <CustomOrderDetailTemplate
       order={order}
       artisan={artisan}
-      messages={messages}
-      countryCode={countryCode}
+      talkJsSession={talkJsSession}
     />
   )
 }
