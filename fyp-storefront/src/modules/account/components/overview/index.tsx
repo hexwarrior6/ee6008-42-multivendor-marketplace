@@ -4,22 +4,29 @@ import ChevronDown from "@modules/common/icons/chevron-down"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
+import {
+  getStorefrontDictionary,
+  type StorefrontLocale,
+} from "@lib/i18n/storefront"
 
 type OverviewProps = {
   customer: HttpTypes.StoreCustomer | null
   orders: HttpTypes.StoreOrder[] | null
+  locale: StorefrontLocale
 }
 
-const Overview = ({ customer, orders }: OverviewProps) => {
+const Overview = ({ customer, orders, locale }: OverviewProps) => {
+  const t = getStorefrontDictionary(locale).account
+
   return (
     <div data-testid="overview-page-wrapper">
       <div className="hidden small:block">
         <div className="text-xl-semi flex justify-between items-center mb-4">
           <span data-testid="welcome-message" data-value={customer?.first_name}>
-            您好，{customer?.first_name}
+            {t.hello} {customer?.first_name}
           </span>
           <span className="text-small-regular text-ui-fg-base">
-            当前账户：{" "}
+            {t.currentAccount}{" "}
             <span
               className="font-semibold"
               data-testid="customer-email"
@@ -33,7 +40,7 @@ const Overview = ({ customer, orders }: OverviewProps) => {
           <div className="flex flex-col gap-y-4 h-full col-span-1 row-span-2 flex-1">
             <div className="flex items-start gap-x-16 mb-6">
               <div className="flex flex-col gap-y-4">
-                <h3 className="text-large-semi">个人资料</h3>
+                <h3 className="text-large-semi">{t.profile}</h3>
                 <div className="flex items-end gap-x-2">
                   <span
                     className="text-3xl-semi leading-none"
@@ -43,13 +50,13 @@ const Overview = ({ customer, orders }: OverviewProps) => {
                     {getProfileCompletion(customer)}%
                   </span>
                   <span className="uppercase text-base-regular text-ui-fg-subtle">
-                    已完成
+                    {t.completed}
                   </span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-y-4">
-                <h3 className="text-large-semi">地址</h3>
+                <h3 className="text-large-semi">{t.addresses}</h3>
                 <div className="flex items-end gap-x-2">
                   <span
                     className="text-3xl-semi leading-none"
@@ -59,7 +66,7 @@ const Overview = ({ customer, orders }: OverviewProps) => {
                     {customer?.addresses?.length || 0}
                   </span>
                   <span className="uppercase text-base-regular text-ui-fg-subtle">
-                    已保存
+                    {t.saved}
                   </span>
                 </div>
               </div>
@@ -67,7 +74,7 @@ const Overview = ({ customer, orders }: OverviewProps) => {
 
             <div className="flex flex-col gap-y-4">
               <div className="flex items-center gap-x-2">
-                <h3 className="text-large-semi">最近订单</h3>
+                <h3 className="text-large-semi">{t.recentOrders}</h3>
               </div>
               <ul
                 className="flex flex-col gap-y-4"
@@ -86,12 +93,14 @@ const Overview = ({ customer, orders }: OverviewProps) => {
                         >
                           <Container className="bg-gray-50 flex justify-between items-center p-4">
                             <div className="grid grid-cols-3 grid-rows-2 text-small-regular gap-x-4 flex-1">
-                                <span className="font-semibold">下单日期</span>
                               <span className="font-semibold">
-                                订单编号
+                                {t.orderDate}
                               </span>
                               <span className="font-semibold">
-                                订单金额
+                                {t.orderNumber}
+                              </span>
+                              <span className="font-semibold">
+                                {t.orderTotal}
                               </span>
                               <span data-testid="order-created-date">
                                 {new Date(order.created_at).toDateString()}
@@ -114,7 +123,7 @@ const Overview = ({ customer, orders }: OverviewProps) => {
                               data-testid="open-order-button"
                             >
                               <span className="sr-only">
-                                查看订单 #{order.display_id}
+                                {t.viewOrder} #{order.display_id}
                               </span>
                               <ChevronDown className="-rotate-90" />
                             </button>
@@ -124,7 +133,9 @@ const Overview = ({ customer, orders }: OverviewProps) => {
                     )
                   })
                 ) : (
-                  <span data-testid="no-orders-message">暂无最近订单</span>
+                  <span data-testid="no-orders-message">
+                    {t.noRecentOrders}
+                  </span>
                 )}
               </ul>
             </div>

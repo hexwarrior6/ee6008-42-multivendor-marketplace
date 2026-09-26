@@ -7,6 +7,7 @@ import ErrorMessage from "@modules/checkout/components/error-message"
 import { SubmitButton } from "@modules/checkout/components/submit-button"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { signup } from "@lib/data/customer"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 
 type Props = {
   setCurrentView: (view: LOGIN_VIEW) => void
@@ -14,6 +15,7 @@ type Props = {
 
 const Register = ({ setCurrentView }: Props) => {
   const [message, formAction] = useActionState(signup, null)
+  const { t } = useStorefrontI18n()
 
   return (
     <div
@@ -21,29 +23,29 @@ const Register = ({ setCurrentView }: Props) => {
       data-testid="register-page"
     >
       <h1 className="text-large-semi uppercase mb-6">
-        注册手作市集账户
+        {t.account.registerTitle}
       </h1>
       <p className="text-center text-base-regular text-ui-fg-base mb-4">
-        创建账户，享受更完整的购物体验。
+        {t.account.registerIntro}
       </p>
       <form className="w-full flex flex-col" action={formAction}>
         <div className="flex flex-col w-full gap-y-2">
           <Input
-            label="名"
+            label={t.account.firstName}
             name="first_name"
             required
             autoComplete="given-name"
             data-testid="first-name-input"
           />
           <Input
-            label="姓"
+            label={t.account.lastName}
             name="last_name"
             required
             autoComplete="family-name"
             data-testid="last-name-input"
           />
           <Input
-            label="邮箱"
+            label={t.account.email}
             name="email"
             required
             type="email"
@@ -51,14 +53,14 @@ const Register = ({ setCurrentView }: Props) => {
             data-testid="email-input"
           />
           <Input
-            label="电话"
+            label={t.account.phone}
             name="phone"
             type="tel"
             autoComplete="tel"
             data-testid="phone-input"
           />
           <Input
-            label="密码"
+            label={t.account.password}
             name="password"
             required
             type="password"
@@ -68,33 +70,33 @@ const Register = ({ setCurrentView }: Props) => {
         </div>
         <ErrorMessage error={message} data-testid="register-error" />
         <span className="text-center text-ui-fg-base text-small-regular mt-6">
-          注册即表示您同意手作市集的{" "}
+          {t.account.agreementPrefix}{" "}
           <LocalizedClientLink
             href="/content/privacy-policy"
             className="underline"
           >
-            隐私政策
+            {t.account.privacyPolicy}
           </LocalizedClientLink>{" "}
-          和{" "}
+          {t.account.and}{" "}
           <LocalizedClientLink
             href="/content/terms-of-use"
             className="underline"
           >
-            使用条款
+            {t.account.termsOfUse}
           </LocalizedClientLink>
           .
         </span>
         <SubmitButton className="w-full mt-6" data-testid="register-button">
-          注册
+          {t.account.register}
         </SubmitButton>
       </form>
       <span className="text-center text-ui-fg-base text-small-regular mt-6">
-        已有账户？{" "}
+        {t.account.haveAccount}{" "}
         <button
           onClick={() => setCurrentView(LOGIN_VIEW.SIGN_IN)}
           className="underline"
         >
-          登录
+          {t.account.signIn}
         </button>
         .
       </span>

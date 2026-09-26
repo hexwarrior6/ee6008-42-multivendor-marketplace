@@ -1,8 +1,11 @@
-import { Github } from "@medusajs/icons"
 import { Button, Heading } from "@medusajs/ui"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
-const Hero = () => {
+const Hero = async () => {
   const backendUrl = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).shell
   return (
     <div className="h-[75vh] w-full border-b border-ui-border-base relative bg-ui-bg-subtle">
       <div className="absolute inset-0 z-10 flex flex-col justify-center items-center text-center small:p-32 gap-6">
@@ -11,13 +14,13 @@ const Hero = () => {
             level="h1"
             className="text-3xl leading-10 text-ui-fg-base font-normal"
           >
-            多商家手作电商平台
+            {t.heroTitle}
           </Heading>
           <Heading
             level="h2"
             className="text-3xl leading-10 text-ui-fg-subtle font-normal"
           >
-            汇聚独立手艺人与原创作品
+            {t.heroSubtitle}
           </Heading>
         </span>
         <a
@@ -25,8 +28,7 @@ const Hero = () => {
           target="_blank"
         >
           <Button variant="secondary">
-            成为商家
-            {/* <Github /> */}
+            {t.becomeSeller}
           </Button>
         </a>
       </div>

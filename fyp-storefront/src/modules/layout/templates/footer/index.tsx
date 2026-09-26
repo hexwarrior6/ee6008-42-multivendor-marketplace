@@ -4,12 +4,16 @@ import { Text, clx } from "@medusajs/ui"
 
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import MedusaCTA from "@modules/layout/components/medusa-cta"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
 export default async function Footer() {
-  const { collections } = await listCollections({
-    fields: "*products",
-  })
-  const productCategories = await listCategories()
+  const [{ collections }, productCategories, locale] = await Promise.all([
+    listCollections({ fields: "*products" }),
+    listCategories(),
+    getStorefrontLocale(),
+  ])
+  const t = getStorefrontDictionary(locale).shell
 
   return (
     <footer className="border-t border-ui-border-base w-full">
@@ -20,14 +24,14 @@ export default async function Footer() {
               href="/"
               className="txt-compact-xlarge-plus text-ui-fg-subtle hover:text-ui-fg-base uppercase"
             >
-              手作市集
+              {t.brand}
             </LocalizedClientLink>
           </div>
           <div className="text-small-regular gap-10 md:gap-x-16 grid grid-cols-2 sm:grid-cols-3">
             {productCategories && productCategories?.length > 0 && (
               <div className="flex flex-col gap-y-2">
                 <span className="txt-small-plus txt-ui-fg-base">
-                  商品分类
+                  {t.productCategories}
                 </span>
                 <ul
                   className="grid grid-cols-1 gap-2"
@@ -85,7 +89,7 @@ export default async function Footer() {
             {collections && collections.length > 0 && (
               <div className="flex flex-col gap-y-2">
                 <span className="txt-small-plus txt-ui-fg-base">
-                  商品系列
+                  {t.collections}
                 </span>
                 <ul
                   className={clx(
@@ -109,7 +113,7 @@ export default async function Footer() {
               </div>
             )}
             <div className="flex flex-col gap-y-2">
-              <span className="txt-small-plus txt-ui-fg-base">关于平台</span>
+              <span className="txt-small-plus txt-ui-fg-base">{t.about}</span>
               <ul className="grid grid-cols-1 gap-y-2 text-ui-fg-subtle txt-small">
                 <li>
                   <a
@@ -128,7 +132,7 @@ export default async function Footer() {
                     rel="noreferrer"
                     className="hover:text-ui-fg-base"
                   >
-                    使用文档
+                    {t.documentation}
                   </a>
                 </li>
                 <li>
@@ -138,7 +142,7 @@ export default async function Footer() {
                     rel="noreferrer"
                     className="hover:text-ui-fg-base"
                   >
-                    源代码
+                    {t.sourceCode}
                   </a>
                 </li>
               </ul>
@@ -147,7 +151,7 @@ export default async function Footer() {
         </div>
         <div className="flex w-full mb-16 justify-between text-ui-fg-muted">
           <Text className="txt-compact-small">
-            © {new Date().getFullYear()} 手作市集。保留所有权利。
+            © {new Date().getFullYear()} {t.rights}
           </Text>
           <MedusaCTA />
         </div>

@@ -10,6 +10,7 @@ import { getProductPrice } from "@lib/util/get-product-price"
 import OptionSelect from "./option-select"
 import { HttpTypes } from "@medusajs/types"
 import { isSimpleProduct } from "@lib/util/product"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 
 type MobileActionsProps = {
   product: HttpTypes.StoreProduct
@@ -35,6 +36,7 @@ const MobileActions: React.FC<MobileActionsProps> = ({
   optionsDisabled,
 }) => {
   const { state, open, close } = useToggleState()
+  const { t } = useStorefrontI18n()
 
   const price = getProductPrice({
     product: product,
@@ -111,7 +113,7 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                   <span>
                     {variant
                       ? Object.values(options).join(" / ")
-                      : "选择规格"}
+                      : t.catalog.selectVariant}
                   </span>
                   <ChevronDown />
                 </div>
@@ -124,10 +126,10 @@ const MobileActions: React.FC<MobileActionsProps> = ({
                 data-testid="mobile-cart-button"
               >
                 {!variant
-                  ? "选择规格"
+                  ? t.catalog.selectVariant
                   : !inStock
-                  ? "Out of stock"
-                  : "加入购物车"}
+                  ? t.catalog.outOfStock
+                  : t.catalog.addToCart}
               </Button>
             </div>
           </div>

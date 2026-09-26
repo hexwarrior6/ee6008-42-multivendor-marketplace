@@ -25,8 +25,9 @@ const AccountNav = ({
 }) => {
   const route = usePathname()
   const { countryCode } = useParams() as { countryCode: string }
-  const customOrdersLabel =
-    getStorefrontDictionary(locale).customOrder.listTitle
+  const dictionary = getStorefrontDictionary(locale)
+  const t = dictionary.account
+  const customOrdersLabel = dictionary.customOrder.listTitle
 
   const handleLogout = async () => {
     await signout(countryCode)
@@ -43,13 +44,13 @@ const AccountNav = ({
           >
             <>
               <ChevronDown className="transform rotate-90" />
-              <span>账户</span>
+              <span>{t.account}</span>
             </>
           </LocalizedClientLink>
         ) : (
           <>
             <div className="text-xl-semi mb-4 px-8">
-              您好，{customer?.first_name}
+              {t.hello} {customer?.first_name}
             </div>
             <div className="text-base-regular">
               <ul>
@@ -62,7 +63,7 @@ const AccountNav = ({
                     <>
                       <div className="flex items-center gap-x-2">
                         <User size={20} />
-                        <span>个人资料</span>
+                        <span>{t.profile}</span>
                       </div>
                       <ChevronDown className="transform -rotate-90" />
                     </>
@@ -77,7 +78,7 @@ const AccountNav = ({
                     <>
                       <div className="flex items-center gap-x-2">
                         <MapPin size={20} />
-                        <span>地址</span>
+                        <span>{t.addresses}</span>
                       </div>
                       <ChevronDown className="transform -rotate-90" />
                     </>
@@ -91,7 +92,7 @@ const AccountNav = ({
                   >
                     <div className="flex items-center gap-x-2">
                       <Package size={20} />
-                      <span>订单</span>
+                      <span>{t.orders}</span>
                     </div>
                     <ChevronDown className="transform -rotate-90" />
                   </LocalizedClientLink>
@@ -118,7 +119,7 @@ const AccountNav = ({
                   >
                     <div className="flex items-center gap-x-2">
                       <ArrowRightOnRectangle />
-                      <span>退出登录</span>
+                      <span>{t.logout}</span>
                     </div>
                     <ChevronDown className="transform -rotate-90" />
                   </button>
@@ -131,7 +132,7 @@ const AccountNav = ({
       <div className="hidden small:block" data-testid="account-nav">
         <div>
           <div className="pb-4">
-            <h3 className="text-base-semi">账户</h3>
+            <h3 className="text-base-semi">{t.account}</h3>
           </div>
           <div className="text-base-regular">
             <ul className="flex mb-0 justify-start items-start flex-col gap-y-4">
@@ -141,7 +142,7 @@ const AccountNav = ({
                   route={route!}
                   data-testid="overview-link"
                 >
-                  概览
+                  {t.overview}
                 </AccountNavLink>
               </li>
               <li>
@@ -150,7 +151,7 @@ const AccountNav = ({
                   route={route!}
                   data-testid="profile-link"
                 >
-                  个人资料
+                  {t.profile}
                 </AccountNavLink>
               </li>
               <li>
@@ -159,7 +160,7 @@ const AccountNav = ({
                   route={route!}
                   data-testid="addresses-link"
                 >
-                  地址
+                  {t.addresses}
                 </AccountNavLink>
               </li>
               <li>
@@ -168,7 +169,7 @@ const AccountNav = ({
                   route={route!}
                   data-testid="orders-link"
                 >
-                  订单
+                  {t.orders}
                 </AccountNavLink>
               </li>
               <li>
@@ -186,7 +187,7 @@ const AccountNav = ({
                   onClick={handleLogout}
                   data-testid="logout-button"
                 >
-                  退出登录
+                  {t.logout}
                 </button>
               </li>
             </ul>

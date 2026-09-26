@@ -7,6 +7,7 @@ import Refresh from "@modules/common/icons/refresh"
 import Accordion from "./accordion"
 import { StoreProductWithStore } from "types/global"
 import Link from "next/link"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 
 type ProductTabsProps = {
   product: StoreProductWithStore
@@ -19,17 +20,18 @@ const ProductTabs = ({
   countryCode,
   artisanProfileId,
 }: ProductTabsProps) => {
+  const { t } = useStorefrontI18n()
   const tabs = [
     {
-      label: "商品信息",
+      label: t.catalog.productInformation,
       component: <ProductInfoTab product={product} />,
     },
     {
-      label: "配送与退换货",
+      label: t.catalog.shippingReturns,
       component: <ShippingInfoTab />,
     },
     {
-      label: "店铺信息",
+      label: t.catalog.storeInformation,
       component: (
         <StoreInfoTab
           product={product}
@@ -59,30 +61,32 @@ const ProductTabs = ({
 }
 
 const ProductInfoTab = ({ product }: Pick<ProductTabsProps, "product">) => {
+  const { t } = useStorefrontI18n()
+
   return (
     <div className="text-small-regular py-8">
       <div className="grid grid-cols-2 gap-x-8">
         <div className="flex flex-col gap-y-4">
           <div>
-            <span className="font-semibold">材质</span>
+            <span className="font-semibold">{t.catalog.material}</span>
             <p>{product.material ? product.material : "-"}</p>
           </div>
           <div>
-            <span className="font-semibold">原产地</span>
+            <span className="font-semibold">{t.catalog.originCountry}</span>
             <p>{product.origin_country ? product.origin_country : "-"}</p>
           </div>
           <div>
-            <span className="font-semibold">类型</span>
+            <span className="font-semibold">{t.catalog.type}</span>
             <p>{product.type ? product.type.value : "-"}</p>
           </div>
         </div>
         <div className="flex flex-col gap-y-4">
           <div>
-            <span className="font-semibold">重量</span>
+            <span className="font-semibold">{t.catalog.weight}</span>
             <p>{product.weight ? `${product.weight} g` : "-"}</p>
           </div>
           <div>
-            <span className="font-semibold">尺寸</span>
+            <span className="font-semibold">{t.catalog.dimensions}</span>
             <p>
               {product.length && product.width && product.height
                 ? `${product.length}L x ${product.width}W x ${product.height}H`
@@ -96,34 +100,30 @@ const ProductInfoTab = ({ product }: Pick<ProductTabsProps, "product">) => {
 }
 
 const ShippingInfoTab = () => {
+  const { t } = useStorefrontI18n()
+
   return (
     <div className="text-small-regular py-8">
       <div className="grid grid-cols-1 gap-y-8">
         <div className="flex items-start gap-x-2">
           <FastDelivery />
           <div>
-            <span className="font-semibold">快速配送</span>
-            <p className="max-w-sm">
-              商品将在 3–5 个工作日内送达取货点或您的家中。
-            </p>
+            <span className="font-semibold">{t.catalog.fastDelivery}</span>
+            <p className="max-w-sm">{t.catalog.fastDeliveryBody}</p>
           </div>
         </div>
         <div className="flex items-start gap-x-2">
           <Refresh />
           <div>
-            <span className="font-semibold">简单换货</span>
-            <p className="max-w-sm">
-              如果商品不合适，无需担心，我们会为您更换新品。
-            </p>
+            <span className="font-semibold">{t.catalog.easyExchanges}</span>
+            <p className="max-w-sm">{t.catalog.easyExchangesBody}</p>
           </div>
         </div>
         <div className="flex items-start gap-x-2">
           <Back />
           <div>
-            <span className="font-semibold">轻松退货</span>
-            <p className="max-w-sm">
-              退回商品即可获得退款，我们会尽力让退货流程简单顺利。
-            </p>
+            <span className="font-semibold">{t.catalog.easyReturns}</span>
+            <p className="max-w-sm">{t.catalog.easyReturnsBody}</p>
           </div>
         </div>
       </div>
@@ -137,20 +137,21 @@ const StoreInfoTab = ({
   artisanProfileId,
 }: ProductTabsProps) => {
   const store = product.store
+  const { t } = useStorefrontI18n()
 
   return (
     <div className="text-small-regular py-8">
       <div className="grid grid-cols-1 gap-y-4">
         <div>
-          <span className="font-semibold">店铺名称</span>
-          <p>{store?.name || "手作市集"}</p>
+          <span className="font-semibold">{t.catalog.storeName}</span>
+          <p>{store?.name || t.catalog.storeFallback}</p>
         </div>
         {artisanProfileId && (
           <Link
             href={`/${countryCode}/artisans/${artisanProfileId}`}
             className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline underline-offset-4"
           >
-            查看手艺人主页
+            {t.catalog.viewArtisanProfile}
           </Link>
         )}
       </div>

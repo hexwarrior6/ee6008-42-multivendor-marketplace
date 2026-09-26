@@ -8,12 +8,14 @@ import LanguageSwitcher from "@modules/layout/components/language-switcher"
 import SideMenu from "@modules/layout/components/side-menu"
 import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 import { STOREFRONT_LANGUAGE_SWITCH_ENABLED } from "@lib/constants"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
 
 export default async function Nav() {
   const [regions, locale] = await Promise.all([
     listRegions().then((regions: StoreRegion[]) => regions),
     getStorefrontLocale(),
   ])
+  const t = getStorefrontDictionary(locale).shell
 
   return (
     <div className="sticky top-0 inset-x-0 z-50 group">
@@ -31,7 +33,7 @@ export default async function Nav() {
               className="txt-compact-xlarge-plus hover:text-ui-fg-base uppercase"
               data-testid="nav-store-link"
             >
-              手作市集
+              {t.brand}
             </LocalizedClientLink>
           </div>
 
@@ -45,7 +47,7 @@ export default async function Nav() {
                 href="/account"
                 data-testid="nav-account-link"
               >
-                我的账户
+                {t.myAccount}
               </LocalizedClientLink>
             </div>
             <Suspense
@@ -55,7 +57,7 @@ export default async function Nav() {
                   href="/cart"
                   data-testid="nav-cart-link"
                 >
-                  购物车 (0)
+                  {t.cart} (0)
                 </LocalizedClientLink>
               }
             >

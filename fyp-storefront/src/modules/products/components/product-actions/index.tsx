@@ -13,6 +13,7 @@ import ProductPrice from "../product-price"
 import MobileActions from "./mobile-actions"
 import { useRouter } from "next/navigation"
 import { addItemToSellerCart } from "@lib/data/seller-cart"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 
 type ProductActionsProps = {
   storeId?: string
@@ -38,6 +39,7 @@ export default function ProductActions({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const { t } = useStorefrontI18n()
 
   const [options, setOptions] = useState<Record<string, string | undefined>>({})
   const [isAdding, setIsAdding] = useState(false)
@@ -184,10 +186,10 @@ export default function ProductActions({
           data-testid="add-product-button"
         >
           {!selectedVariant && !options
-            ? "请选择规格"
+            ? t.catalog.selectVariant
             : !inStock || !isValidVariant
-            ? "暂时缺货"
-            : "加入购物车"}
+            ? t.catalog.outOfStock
+            : t.catalog.addToCart}
         </Button>
         <MobileActions
           product={product}
