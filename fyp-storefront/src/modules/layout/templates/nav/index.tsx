@@ -25,7 +25,7 @@ export default async function Nav() {
               className="txt-compact-xlarge-plus hover:text-ui-fg-base uppercase"
               data-testid="nav-store-link"
             >
-              Medusa Store
+              手作市集
             </LocalizedClientLink>
           </div>
 
@@ -36,7 +36,7 @@ export default async function Nav() {
                 href="/account"
                 data-testid="nav-account-link"
               >
-                Account
+                我的账户
               </LocalizedClientLink>
             </div>
             <Suspense
@@ -46,7 +46,7 @@ export default async function Nav() {
                   href="/cart"
                   data-testid="nav-cart-link"
                 >
-                  Cart (0)
+                  购物车 (0)
                 </LocalizedClientLink>
               }
             >

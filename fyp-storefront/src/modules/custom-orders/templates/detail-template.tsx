@@ -14,7 +14,7 @@ type CustomOrderDetailTemplateProps = {
 
 function formatAmount(amount: number | null, currencyCode: string) {
   return amount === null
-    ? "Not specified"
+    ? "未指定"
     : convertToLocale({
         amount: amount / 100,
         currency_code: currencyCode,
@@ -29,7 +29,7 @@ export default function CustomOrderDetailTemplate({
   return (
     <div className="w-full">
       <div className="mb-8">
-        <Text className="text-ui-fg-muted mb-2">Custom order</Text>
+        <Text className="text-ui-fg-muted mb-2">定制订单</Text>
         <Heading level="h1" className="text-2xl">
           {order.title}
         </Heading>
@@ -41,12 +41,12 @@ export default function CustomOrderDetailTemplate({
         className="border-y border-ui-border-base py-7"
       >
         <Heading id="progress-heading" level="h2" className="text-lg mb-6">
-          Order progress
+          订单进度
         </Heading>
         <CustomOrderStatusTimeline status={order.status} />
         {order.status === "cancelled" && order.cancellation_reason && (
           <Text className="text-ui-fg-muted mt-3">
-            Reason: {order.cancellation_reason}
+            原因：{order.cancellation_reason}
           </Text>
         )}
       </section>
@@ -56,29 +56,29 @@ export default function CustomOrderDetailTemplate({
         className="py-7 border-b border-ui-border-base"
       >
         <Heading id="request-heading" level="h2" className="text-lg mb-5">
-          Request details
+          需求详情
         </Heading>
         <dl className="grid grid-cols-1 small:grid-cols-[11rem_1fr] gap-x-8 gap-y-4">
-          <dt className="text-ui-fg-muted">Artisan</dt>
+          <dt className="text-ui-fg-muted">手艺人</dt>
           <dd>{artisan?.display_name || order.artisan_id}</dd>
-          <dt className="text-ui-fg-muted">Category</dt>
+          <dt className="text-ui-fg-muted">类别</dt>
           <dd>{order.product_category}</dd>
-          <dt className="text-ui-fg-muted">Requested</dt>
+          <dt className="text-ui-fg-muted">提交时间</dt>
           <dd>{new Date(order.created_at).toLocaleString()}</dd>
-          <dt className="text-ui-fg-muted">Budget</dt>
+          <dt className="text-ui-fg-muted">预算</dt>
           <dd>{formatAmount(order.budget_amount, order.currency_code)}</dd>
-          <dt className="text-ui-fg-muted">Artisan quote</dt>
+          <dt className="text-ui-fg-muted">手艺人报价</dt>
           <dd>{formatAmount(order.quoted_amount, order.currency_code)}</dd>
-          <dt className="text-ui-fg-muted">Payment</dt>
+          <dt className="text-ui-fg-muted">付款</dt>
           <dd className="capitalize">{order.payment_status}</dd>
-          <dt className="text-ui-fg-muted">Description</dt>
+          <dt className="text-ui-fg-muted">描述</dt>
           <dd className="whitespace-pre-wrap">{order.description}</dd>
         </dl>
       </section>
 
       <section aria-labelledby="messages-heading" className="py-7">
         <Heading id="messages-heading" level="h2" className="text-lg">
-          Messages
+          消息
         </Heading>
         {talkJsSession ? (
           <CustomOrderChat session={talkJsSession} />

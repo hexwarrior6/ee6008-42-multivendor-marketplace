@@ -14,7 +14,7 @@ const CheckoutSummary = ({ cart }: { cart: any }) => {
           level="h2"
           className="flex flex-row text-3xl-regular items-baseline"
         >
-          In your Cart
+          购物车商品
         </Heading>
         <Divider className="my-6" />
         <CartTotals totals={cart} />

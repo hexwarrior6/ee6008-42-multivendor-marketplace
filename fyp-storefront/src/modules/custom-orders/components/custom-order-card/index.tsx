@@ -26,9 +26,9 @@ export default function CustomOrderCard({ order }: { order: CustomOrder }) {
           </Text>
           <Text className="mt-3 line-clamp-2">{order.description}</Text>
           <Text className="mt-3 font-medium">
-            Budget:{" "}
+            预算：{" "}
             {order.budget_amount === null
-              ? "Not specified"
+              ? "未指定"
               : convertToLocale({
                   amount: order.budget_amount / 100,
                   currency_code: order.currency_code,
@@ -36,7 +36,7 @@ export default function CustomOrderCard({ order }: { order: CustomOrder }) {
           </Text>
         </div>
         <LocalizedClientLink href={`/account/custom-orders/${order.id}`}>
-          <Button variant="secondary">View request</Button>
+          <Button variant="secondary">查看需求</Button>
         </LocalizedClientLink>
       </div>
     </article>

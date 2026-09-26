@@ -28,7 +28,7 @@ const ItemsTemplate = ({ cart }: ItemsTemplateProps) => {
   const items = cart?.items
   const step = getCheckoutStep(cart)
 
-  let sellerName = "Seller"
+  let sellerName = "商家"
 
   if(cart?.metadata?.store_name) {
     if (typeof cart.metadata.store_name === 'string') {
@@ -47,14 +47,14 @@ const ItemsTemplate = ({ cart }: ItemsTemplateProps) => {
       <Table>
         <Table.Header className="border-t-0">
           <Table.Row className="text-ui-fg-subtle txt-medium-plus">
-            <Table.HeaderCell className="!pl-0">Item</Table.HeaderCell>
+            <Table.HeaderCell className="!pl-0">商品</Table.HeaderCell>
             <Table.HeaderCell></Table.HeaderCell>
-            <Table.HeaderCell>Quantity</Table.HeaderCell>
+            <Table.HeaderCell>数量</Table.HeaderCell>
             <Table.HeaderCell className="hidden small:table-cell">
-              Price
+              价格
             </Table.HeaderCell>
             <Table.HeaderCell className="!pr-0 text-right">
-              Total
+              合计
             </Table.HeaderCell>
           </Table.Row>
         </Table.Header>
@@ -82,7 +82,7 @@ const ItemsTemplate = ({ cart }: ItemsTemplateProps) => {
 
       <div className="mt-6">
         <LocalizedClientLink href={`/checkout/${cart.id}?step=` + step}>
-          <Button size="large" className="w-full">Checkout from {sellerName}</Button>
+          <Button size="large" className="w-full">从 {sellerName} 结算</Button>
         </LocalizedClientLink>
       </div>
     </div>

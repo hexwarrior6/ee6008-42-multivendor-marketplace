@@ -16,18 +16,18 @@ const ORDER_FLOW: Array<{
   status: Exclude<CustomOrderStatus, "cancelled">
   label: string
 }> = [
-  { status: "request", label: "Request" },
-  { status: "quote", label: "Quote" },
-  { status: "confirmed", label: "Confirmed" },
-  { status: "produced", label: "Produced" },
-  { status: "delivered", label: "Delivered" },
+  { status: "request", label: "提交需求" },
+  { status: "quote", label: "报价" },
+  { status: "confirmed", label: "已确认" },
+  { status: "produced", label: "已生产" },
+  { status: "delivered", label: "已交付" },
 ]
 
 export function getCustomOrderTimeline(
   currentStatus: CustomOrderStatus
 ): CustomOrderTimelineStep[] {
   if (currentStatus === "cancelled") {
-    return [{ status: "cancelled", label: "Cancelled", state: "current" }]
+    return [{ status: "cancelled", label: "已取消", state: "current" }]
   }
 
   const currentIndex = ORDER_FLOW.findIndex(

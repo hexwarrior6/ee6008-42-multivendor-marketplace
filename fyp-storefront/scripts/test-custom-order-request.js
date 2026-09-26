@@ -123,11 +123,11 @@ test("marks the completed and current steps for an order in production", () => {
   assert.equal(typeof getCustomOrderTimeline, "function")
 
   assert.deepEqual(getCustomOrderTimeline("produced"), [
-    { status: "request", label: "Request", state: "complete" },
-    { status: "quote", label: "Quote", state: "complete" },
-    { status: "confirmed", label: "Confirmed", state: "complete" },
-    { status: "produced", label: "Produced", state: "current" },
-    { status: "delivered", label: "Delivered", state: "upcoming" },
+    { status: "request", label: "提交需求", state: "complete" },
+    { status: "quote", label: "报价", state: "complete" },
+    { status: "confirmed", label: "已确认", state: "complete" },
+    { status: "produced", label: "已生产", state: "current" },
+    { status: "delivered", label: "已交付", state: "upcoming" },
   ])
 })
 
@@ -135,7 +135,7 @@ test("represents cancellation as a separate terminal state", () => {
   assert.equal(typeof getCustomOrderTimeline, "function")
 
   assert.deepEqual(getCustomOrderTimeline("cancelled"), [
-    { status: "cancelled", label: "Cancelled", state: "current" },
+    { status: "cancelled", label: "已取消", state: "current" },
   ])
 })
 

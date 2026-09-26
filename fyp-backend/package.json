@@ -17,6 +17,7 @@
     "dev:email": "email dev --dir ./src/modules/resend/emails",
     "build": "medusa build && pnpm run patch-admin && node src/scripts/postBuild.js",
     "seed": "medusa exec ./src/scripts/seed.ts",
+    "setup:wechat-pay": "medusa exec ./src/scripts/setup-wechat-pay.ts",
     "start": "cd .medusa/server && medusa db:migrate && medusa start --verbose",
     "dev": "medusa develop",
     "test:integration:http": "cross-env TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",

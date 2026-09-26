@@ -30,7 +30,7 @@ const Review = ({ cart }: { cart: any }) => {
             }
           )}
         >
-          Review
+          确认订单
         </Heading>
       </div>
       {isOpen && previousStepsCompleted && (
@@ -38,10 +38,7 @@ const Review = ({ cart }: { cart: any }) => {
           <div className="flex items-start gap-x-1 w-full mb-6">
             <div className="w-full">
               <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                By clicking the Place Order button, you confirm that you have
-                read, understand and accept our Terms of Use, Terms of Sale and
-                Returns Policy and acknowledge that you have read Medusa
-                Store&apos;s Privacy Policy.
+                点击“提交订单”即表示您已阅读、理解并接受使用条款、销售条款和退货政策，并确认已阅读手作市集的隐私政策。
               </Text>
             </div>
           </div>

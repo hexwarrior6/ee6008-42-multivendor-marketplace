@@ -21,15 +21,15 @@ const ProductTabs = ({
 }: ProductTabsProps) => {
   const tabs = [
     {
-      label: "Product Information",
+      label: "商品信息",
       component: <ProductInfoTab product={product} />,
     },
     {
-      label: "Shipping & Returns",
+      label: "配送与退换货",
       component: <ShippingInfoTab />,
     },
     {
-      label: "Store Information",
+      label: "店铺信息",
       component: (
         <StoreInfoTab
           product={product}
@@ -64,25 +64,25 @@ const ProductInfoTab = ({ product }: Pick<ProductTabsProps, "product">) => {
       <div className="grid grid-cols-2 gap-x-8">
         <div className="flex flex-col gap-y-4">
           <div>
-            <span className="font-semibold">Material</span>
+            <span className="font-semibold">材质</span>
             <p>{product.material ? product.material : "-"}</p>
           </div>
           <div>
-            <span className="font-semibold">Country of origin</span>
+            <span className="font-semibold">原产地</span>
             <p>{product.origin_country ? product.origin_country : "-"}</p>
           </div>
           <div>
-            <span className="font-semibold">Type</span>
+            <span className="font-semibold">类型</span>
             <p>{product.type ? product.type.value : "-"}</p>
           </div>
         </div>
         <div className="flex flex-col gap-y-4">
           <div>
-            <span className="font-semibold">Weight</span>
+            <span className="font-semibold">重量</span>
             <p>{product.weight ? `${product.weight} g` : "-"}</p>
           </div>
           <div>
-            <span className="font-semibold">Dimensions</span>
+            <span className="font-semibold">尺寸</span>
             <p>
               {product.length && product.width && product.height
                 ? `${product.length}L x ${product.width}W x ${product.height}H`
@@ -102,31 +102,27 @@ const ShippingInfoTab = () => {
         <div className="flex items-start gap-x-2">
           <FastDelivery />
           <div>
-            <span className="font-semibold">Fast delivery</span>
+            <span className="font-semibold">快速配送</span>
             <p className="max-w-sm">
-              Your package will arrive in 3-5 business days at your pick up
-              location or in the comfort of your home.
+              商品将在 3–5 个工作日内送达取货点或您的家中。
             </p>
           </div>
         </div>
         <div className="flex items-start gap-x-2">
           <Refresh />
           <div>
-            <span className="font-semibold">Simple exchanges</span>
+            <span className="font-semibold">简单换货</span>
             <p className="max-w-sm">
-              Is the fit not quite right? No worries - we&apos;ll exchange your
-              product for a new one.
+              如果商品不合适，无需担心，我们会为您更换新品。
             </p>
           </div>
         </div>
         <div className="flex items-start gap-x-2">
           <Back />
           <div>
-            <span className="font-semibold">Easy returns</span>
+            <span className="font-semibold">轻松退货</span>
             <p className="max-w-sm">
-              Just return your product and we&apos;ll refund your money. No
-              questions asked – we&apos;ll do our best to make sure your return
-              is hassle-free.
+              退回商品即可获得退款，我们会尽力让退货流程简单顺利。
             </p>
           </div>
         </div>
@@ -146,15 +142,15 @@ const StoreInfoTab = ({
     <div className="text-small-regular py-8">
       <div className="grid grid-cols-1 gap-y-4">
         <div>
-          <span className="font-semibold">Store Name</span>
-          <p>{store?.name || "Not Medusa Store"}</p>
+          <span className="font-semibold">店铺名称</span>
+          <p>{store?.name || "手作市集"}</p>
         </div>
         {artisanProfileId && (
           <Link
             href={`/${countryCode}/artisans/${artisanProfileId}`}
             className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover underline underline-offset-4"
           >
-            View artisan profile
+            查看手艺人主页
           </Link>
         )}
       </div>

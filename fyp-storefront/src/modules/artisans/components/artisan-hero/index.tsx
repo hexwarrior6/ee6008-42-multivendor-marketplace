@@ -14,7 +14,7 @@ const ArtisanHero = ({ artisan, countryCode }: ArtisanHeroProps) => {
         <div className="grid grid-cols-1 small:grid-cols-[1fr_220px] gap-10 items-center">
           <div className="max-w-3xl">
             <Text className="text-ui-fg-muted mb-3">
-              {artisan.location || "Independent"} artisan
+              {artisan.location || "独立"} 工匠
             </Text>
             <Heading
               level="h1"
@@ -24,7 +24,7 @@ const ArtisanHero = ({ artisan, countryCode }: ArtisanHeroProps) => {
             </Heading>
             <Text className="text-xl text-ui-fg-subtle mt-4 max-w-2xl">
               {artisan.bio ||
-                "Independent handmade studio creating small-batch goods with a personal touch."}
+                "专注小批量手作，以独特心意打造每件作品。"}
             </Text>
             {!!artisan.specialties?.length && (
               <div className="flex flex-wrap gap-2 mt-6">
@@ -40,12 +40,12 @@ const ArtisanHero = ({ artisan, countryCode }: ArtisanHeroProps) => {
             )}
             <div className="flex flex-wrap gap-3 mt-8">
               <Link href={`/${countryCode}/store`}>
-                <Button variant="secondary">View all products</Button>
+                <Button variant="secondary">查看全部商品</Button>
               </Link>
               <Link
                 href={`/${countryCode}/custom-orders/new?artisan_id=${artisan.id}`}
               >
-                <Button>Request custom order</Button>
+                <Button>申请定制订单</Button>
               </Link>
             </div>
           </div>

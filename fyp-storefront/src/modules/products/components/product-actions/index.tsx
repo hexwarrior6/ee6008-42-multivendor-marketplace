@@ -184,10 +184,10 @@ export default function ProductActions({
           data-testid="add-product-button"
         >
           {!selectedVariant && !options
-            ? "Select variant"
+            ? "请选择规格"
             : !inStock || !isValidVariant
-            ? "Out of stock"
-            : "Add to cart"}
+            ? "暂时缺货"
+            : "加入购物车"}
         </Button>
         <MobileActions
           product={product}

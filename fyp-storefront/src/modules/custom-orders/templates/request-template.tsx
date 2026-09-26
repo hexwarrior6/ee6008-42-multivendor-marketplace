@@ -20,13 +20,12 @@ export default function CustomOrderRequestTemplate({
   return (
     <main className="content-container py-12 small:py-16">
       <div className="max-w-5xl">
-        <Text className="text-ui-fg-muted mb-3">Custom order request</Text>
+        <Text className="text-ui-fg-muted mb-3">定制订单申请</Text>
         <Heading level="h1" className="text-3xl small:text-4xl font-normal">
-          Start a project with {artisan.display_name}
+          与 {artisan.display_name} 开始合作
         </Heading>
         <Text className="text-ui-fg-subtle mt-3 max-w-2xl">
-          Share your idea and estimated budget. The artisan can review the
-          request and follow up with a quote.
+          分享您的想法和预算，工匠会审核需求并提供报价。
         </Text>
       </div>
 
@@ -37,7 +36,7 @@ export default function CustomOrderRequestTemplate({
             level="h2"
             className="text-xl mb-6"
           >
-            Request details
+            需求详情
           </Heading>
           {isAuthenticated ? (
             <CustomOrderRequestForm
@@ -48,14 +47,13 @@ export default function CustomOrderRequestTemplate({
           ) : (
             <div className="border border-ui-border-base bg-ui-bg-subtle p-6">
               <Heading level="h3" className="text-lg">
-                Sign in to continue
+                登录后继续
               </Heading>
               <Text className="text-ui-fg-muted mt-2 mb-5">
-                Custom requests are linked to your customer account so you can
-                track quotes and order progress.
+                定制需求会关联到您的账户，方便您跟踪报价和订单进度。
               </Text>
               <Link href={`/${countryCode}/account`}>
-                <Button>Sign in or create an account</Button>
+                <Button>登录或创建账户</Button>
               </Link>
             </div>
           )}
@@ -78,19 +76,19 @@ export default function CustomOrderRequestTemplate({
             <div>
               <Text className="font-medium">{artisan.display_name}</Text>
               <Text className="text-ui-fg-muted">
-                {artisan.location || "Independent artisan"}
+                {artisan.location || "独立工匠"}
               </Text>
             </div>
           </div>
 
           <div className="mt-8">
             <Heading level="h3" className="text-base mb-4">
-              What happens next
+              接下来会发生什么
             </Heading>
             <ol className="flex flex-col gap-y-4 text-ui-fg-subtle">
-              <li>1. The artisan reviews your request.</li>
-              <li>2. You receive a quote and discuss the details.</li>
-              <li>3. Production starts after confirmation.</li>
+              <li>1. 工匠审核您的需求。</li>
+              <li>2. 您收到报价并沟通细节。</li>
+              <li>3. 确认后开始生产。</li>
             </ol>
           </div>
         </aside>

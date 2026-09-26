@@ -7,8 +7,8 @@ import { getRegion } from "@lib/data/regions"
 import CustomOrderRequestTemplate from "@modules/custom-orders/templates/request-template"
 
 export const metadata: Metadata = {
-  title: "Request a custom order | Medusa Store",
-  description: "Send a custom order request to an artisan.",
+  title: "提交定制需求 | 手作市集",
+  description: "向手艺人提交定制订单需求。",
 }
 
 type Props = {

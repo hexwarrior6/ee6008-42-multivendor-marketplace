@@ -3,6 +3,11 @@ import { Logger, ProviderSendNotificationDTO, ProviderSendNotificationResultsDTO
 import { CreateEmailOptions, Resend } from "resend"
 import { orderPlacedEmail } from "./emails/order-placed"
 import { orderDeliveredEmail } from "./emails/order-delivered"
+import {
+    orderPlacedEmailZhCN,
+    orderDeliveredEmailZhCN,
+} from "./emails/order-zh-cn"
+import { resolveOrderEmailLocale } from "./locale"
 
 
 type ResendOptions = {
@@ -27,6 +32,11 @@ const templates: {[key in Templates]?: (props: unknown) => React.ReactNode} = {
     //Add templates here
     [Templates.ORDER_PLACED]: orderPlacedEmail,
     [Templates.ORDER_DELIVERED]: orderDeliveredEmail,
+}
+
+const chineseTemplates: {[key in Templates]?: (props: unknown) => React.ReactNode} = {
+    [Templates.ORDER_PLACED]: orderPlacedEmailZhCN,
+    [Templates.ORDER_DELIVERED]: orderDeliveredEmailZhCN,
 }
 
 class ResendNotificationProviderService extends AbstractNotificationProviderService {
@@ -83,7 +93,16 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
     }
 
     async send(notification: ProviderSendNotificationDTO): Promise<ProviderSendNotificationResultsDTO> {
-        const template = this.getTemplate(notification.template as Templates)
+        const templateKey = notification.template as Templates
+        const locale = resolveOrderEmailLocale(
+            ((notification.data as any)?.order || notification.data || {}) as any
+        )
+        const localizedTemplate =
+            locale === "zh-CN"
+                ? chineseTemplates[templateKey]
+                : undefined
+        const template =
+            localizedTemplate || this.getTemplate(templateKey)
 
         if(!template) {
             this.logger.error(`Could not find email template for ${notification.template}. The valid options are: ${Object.values(templates)}`)
@@ -92,7 +111,14 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
         const commonOptions = {
             from: this.options.from,
             to: notification.to,
-            subject: this.getTemplateSubject(notification.template as Templates),
+            subject:
+                locale === "zh-CN"
+                    ? templateKey === Templates.ORDER_PLACED
+                        ? "订单确认"
+                        : templateKey === Templates.ORDER_DELIVERED
+                        ? "您的订单已送达"
+                        : this.getTemplateSubject(templateKey)
+                    : this.getTemplateSubject(templateKey),
         }
 
         let emailOptions: CreateEmailOptions

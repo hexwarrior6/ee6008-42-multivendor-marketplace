@@ -38,21 +38,21 @@ export default async function OrderReviewTemplate({
             level="h1"
             className="flex flex-col gap-y-3 text-ui-fg-base text-3xl mb-4"
           >
-            <span>We hope you enjoyed your order!</span>
+            <span>希望您喜欢这次订单！</span>
           </Heading>
           <div>
             <Text className="mt-2">
-              Order date:{" "}
+              下单日期：{" "}
               <span data-testid="order-date">
                 {new Date(order.created_at).toDateString()}
               </span>
             </Text>
             <Text className="mt-2 text-ui-fg-interactive">
-              Order number: <span data-testid="order-id">{order.display_id}</span>
+              订单编号：<span data-testid="order-id">{order.display_id}</span>
             </Text>
           </div>
           <Heading level="h2" className="flex flex-row text-3xl-regular">
-            Reviews
+            商品评价
           </Heading>
           <ul role="list" className="mt-4 divide-y divide-gray-200 text-ui-fg-base">
               {Object.values(uniqueItems).map((item) => {

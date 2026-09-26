@@ -11,13 +11,13 @@ const Hero = () => {
             level="h1"
             className="text-3xl leading-10 text-ui-fg-base font-normal"
           >
-            Multi Vendor E Commerce Platform
+            多商家手作电商平台
           </Heading>
           <Heading
             level="h2"
             className="text-3xl leading-10 text-ui-fg-subtle font-normal"
           >
-            Powered by Medusa and Next.js
+            汇聚独立手艺人与原创作品
           </Heading>
         </span>
         <a
@@ -25,7 +25,7 @@ const Hero = () => {
           target="_blank"
         >
           <Button variant="secondary">
-            Become a seller
+            成为商家
             {/* <Github /> */}
           </Button>
         </a>
