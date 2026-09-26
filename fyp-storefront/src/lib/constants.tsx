@@ -6,6 +6,8 @@ import Bancontact from "@modules/common/icons/bancontact"
 import PayPal from "@modules/common/icons/paypal"
 import WeChatPay from "@modules/common/icons/wechat-pay"
 
+export const STOREFRONT_LANGUAGE_SWITCH_ENABLED = false
+
 /* Map of payment provider_id to their title and icon. Add in any payment providers you want to use. */
 export const paymentInfoMap: Record<
   string,

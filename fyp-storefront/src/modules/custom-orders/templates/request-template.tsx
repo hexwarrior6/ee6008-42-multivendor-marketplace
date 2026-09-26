@@ -3,12 +3,17 @@ import Link from "next/link"
 
 import type { ArtisanProfile } from "@lib/data/artisans"
 import CustomOrderRequestForm from "@modules/custom-orders/components/request-form"
+import {
+  getStorefrontDictionary,
+  type StorefrontLocale,
+} from "@lib/i18n/storefront"
 
 type CustomOrderRequestTemplateProps = {
   artisan: ArtisanProfile
   countryCode: string
   currencyCode: string
   isAuthenticated: boolean
+  locale: StorefrontLocale
 }
 
 export default function CustomOrderRequestTemplate({
@@ -16,16 +21,19 @@ export default function CustomOrderRequestTemplate({
   countryCode,
   currencyCode,
   isAuthenticated,
+  locale,
 }: CustomOrderRequestTemplateProps) {
+  const t = getStorefrontDictionary(locale).customOrder
+
   return (
     <main className="content-container py-12 small:py-16">
       <div className="max-w-5xl">
-        <Text className="text-ui-fg-muted mb-3">定制订单申请</Text>
+        <Text className="text-ui-fg-muted mb-3">{t.requestEyebrow}</Text>
         <Heading level="h1" className="text-3xl small:text-4xl font-normal">
-          与 {artisan.display_name} 开始合作
+          {t.startProject} {artisan.display_name}
         </Heading>
         <Text className="text-ui-fg-subtle mt-3 max-w-2xl">
-          分享您的想法和预算，工匠会审核需求并提供报价。
+          {t.requestIntro}
         </Text>
       </div>
 
@@ -36,24 +44,23 @@ export default function CustomOrderRequestTemplate({
             level="h2"
             className="text-xl mb-6"
           >
-            需求详情
+            {t.requestDetails}
           </Heading>
           {isAuthenticated ? (
             <CustomOrderRequestForm
               artisan={artisan}
               countryCode={countryCode}
               currencyCode={currencyCode}
+              locale={locale}
             />
           ) : (
             <div className="border border-ui-border-base bg-ui-bg-subtle p-6">
               <Heading level="h3" className="text-lg">
-                登录后继续
+                {t.signInTitle}
               </Heading>
-              <Text className="text-ui-fg-muted mt-2 mb-5">
-                定制需求会关联到您的账户，方便您跟踪报价和订单进度。
-              </Text>
+              <Text className="text-ui-fg-muted mt-2 mb-5">{t.signInBody}</Text>
               <Link href={`/${countryCode}/account`}>
-                <Button>登录或创建账户</Button>
+                <Button>{t.signInAction}</Button>
               </Link>
             </div>
           )}
@@ -76,19 +83,21 @@ export default function CustomOrderRequestTemplate({
             <div>
               <Text className="font-medium">{artisan.display_name}</Text>
               <Text className="text-ui-fg-muted">
-                {artisan.location || "独立工匠"}
+                {artisan.location || t.independentArtisan}
               </Text>
             </div>
           </div>
 
           <div className="mt-8">
             <Heading level="h3" className="text-base mb-4">
-              接下来会发生什么
+              {t.nextTitle}
             </Heading>
             <ol className="flex flex-col gap-y-4 text-ui-fg-subtle">
-              <li>1. 工匠审核您的需求。</li>
-              <li>2. 您收到报价并沟通细节。</li>
-              <li>3. 确认后开始生产。</li>
+              {t.nextSteps.map((step, index) => (
+                <li key={step}>
+                  {index + 1}. {step}
+                </li>
+              ))}
             </ol>
           </div>
         </aside>

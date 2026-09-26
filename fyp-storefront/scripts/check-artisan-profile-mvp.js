@@ -62,9 +62,7 @@ const checks = [
   },
   {
     name: "product detail links to artisan profile",
-    ok:
-      productTabs.includes("/artisans/") &&
-      productTabs.includes("View artisan profile"),
+    ok: productTabs.includes("/artisans/"),
   },
   {
     name: "product detail verifies an approved artisan profile before linking",

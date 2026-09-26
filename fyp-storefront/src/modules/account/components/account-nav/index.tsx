@@ -11,14 +11,22 @@ import Package from "@modules/common/icons/package"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { HttpTypes } from "@medusajs/types"
 import { signout } from "@lib/data/customer"
+import {
+  getStorefrontDictionary,
+  type StorefrontLocale,
+} from "@lib/i18n/storefront"
 
 const AccountNav = ({
   customer,
+  locale,
 }: {
   customer: HttpTypes.StoreCustomer | null
+  locale: StorefrontLocale
 }) => {
   const route = usePathname()
   const { countryCode } = useParams() as { countryCode: string }
+  const customOrdersLabel =
+    getStorefrontDictionary(locale).customOrder.listTitle
 
   const handleLogout = async () => {
     await signout(countryCode)
@@ -96,7 +104,7 @@ const AccountNav = ({
                   >
                     <div className="flex items-center gap-x-2">
                       <Package size={20} />
-                      <span>定制订单</span>
+                      <span>{customOrdersLabel}</span>
                     </div>
                     <ChevronDown className="transform -rotate-90" />
                   </LocalizedClientLink>
@@ -169,7 +177,7 @@ const AccountNav = ({
                   route={route!}
                   data-testid="custom-orders-link"
                 >
-                  定制订单
+                  {customOrdersLabel}
                 </AccountNavLink>
               </li>
               <li className="text-grey-700">

@@ -2,6 +2,8 @@ import { Metadata } from "next"
 
 import { listCustomOrders } from "@lib/data/custom-orders"
 import CustomOrderOverview from "@modules/custom-orders/components/custom-order-overview"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
 export const metadata: Metadata = {
   title: "Custom orders",
@@ -9,17 +11,19 @@ export const metadata: Metadata = {
 }
 
 export default async function CustomOrdersPage() {
-  const orders = await listCustomOrders()
+  const [orders, locale] = await Promise.all([
+    listCustomOrders(),
+    getStorefrontLocale(),
+  ])
+  const t = getStorefrontDictionary(locale).customOrder
 
   return (
     <div className="w-full">
       <div className="mb-8">
-        <h1 className="text-2xl-semi">Custom orders</h1>
-        <p className="text-base-regular mt-3">
-          Review your requests, quotes, and production progress.
-        </p>
+        <h1 className="text-2xl-semi">{t.listTitle}</h1>
+        <p className="text-base-regular mt-3">{t.listIntro}</p>
       </div>
-      <CustomOrderOverview orders={orders} />
+      <CustomOrderOverview orders={orders} locale={locale} />
     </div>
   )
 }

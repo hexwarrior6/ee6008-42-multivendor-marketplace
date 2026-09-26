@@ -1,0 +1,243 @@
+export const STOREFRONT_LOCALE_COOKIE = "storefront_locale"
+
+export const STOREFRONT_LOCALES = ["en", "zh-CN"] as const
+
+export type StorefrontLocale = (typeof STOREFRONT_LOCALES)[number]
+
+const en = {
+  language: { english: "EN", chinese: "中文", label: "Language" },
+  shell: {},
+  account: {},
+  catalog: {},
+  checkout: {},
+  order: {},
+  artisan: {
+    independent: "Independent",
+    artisan: "artisan",
+    defaultBio:
+      "Independent handmade studio creating small-batch goods with a personal touch.",
+    viewProducts: "View all products",
+    requestOrder: "Request custom order",
+    avatar: "avatar",
+    story: "Artisan story",
+    storyIntro: "A closer look at the people and process behind this store.",
+    biography: "Biography",
+    biographyFallback:
+      "This artisan profile is ready for a biography once the seller adds more story details.",
+    inspiration: "Inspiration",
+    inspirationFallback:
+      "Inspiration notes will appear here after the artisan profile is completed.",
+    process: "Creative process",
+    processFallback:
+      "Creative process details will appear here after the artisan profile is completed.",
+    behindScenes: "Behind the scenes",
+    behindScenesIntro:
+      "Studio moments and process highlights from this artisan.",
+    studioVideo: "Artisan studio video",
+    studioMedia: "Artisan studio media",
+    studioHighlight: "Studio highlight",
+    videoDescription: "Video from the artisan studio.",
+    imageDescription: "Image from the artisan studio.",
+    noMedia: "No behind-the-scenes media has been published yet.",
+    productsBy: "Products by",
+    productsIntro:
+      "Browse the products currently linked to this artisan store.",
+    noProducts: "No published products are linked to this artisan yet.",
+    profileLink: "View artisan profile",
+  },
+  customOrder: {
+    requestEyebrow: "Custom order request",
+    startProject: "Start a project with",
+    requestIntro:
+      "Share your idea and estimated budget. The artisan can review the request and follow up with a quote.",
+    requestDetails: "Request details",
+    signInTitle: "Sign in to continue",
+    signInBody:
+      "Custom requests are linked to your customer account so you can track quotes and order progress.",
+    signInAction: "Sign in or create an account",
+    independentArtisan: "Independent artisan",
+    nextTitle: "What happens next",
+    nextSteps: [
+      "The artisan reviews your request.",
+      "You receive a quote and discuss the details.",
+      "Production starts after confirmation.",
+    ],
+    submitted: "Request submitted",
+    requestId: "Request ID",
+    statusLabel: "Status",
+    messages: "Messages",
+    messagesPending:
+      "Buyer and artisan messaging will appear here after the chat integration is connected.",
+    backToArtisan: "Back to artisan profile",
+    titleLabel: "Request title",
+    titlePlaceholder: "e.g. Personalised ceramic tea set",
+    categoryLabel: "Product category",
+    selectCategory: "Select a category",
+    categories: {
+      Ceramics: "Ceramics",
+      Textiles: "Textiles",
+      Jewellery: "Jewellery",
+      Woodwork: "Woodwork",
+      "Art and prints": "Art and prints",
+      Other: "Other",
+    },
+    descriptionLabel: "What would you like made?",
+    descriptionPlaceholder:
+      "Describe the item, size, materials, colours, quantity, deadline, and any personalisation.",
+    descriptionHint:
+      "Include enough detail for the artisan to prepare an accurate quote.",
+    budgetLabel: "Estimated budget (optional)",
+    submit: "Submit request",
+    cancel: "Cancel",
+    customOrder: "Custom order",
+    orderProgress: "Order progress",
+    currentStatus: "Current status",
+    cancelled: "Order cancelled",
+    reason: "Reason",
+    artisan: "Artisan",
+    category: "Category",
+    requested: "Requested",
+    budget: "Budget",
+    artisanQuote: "Artisan quote",
+    payment: "Payment",
+    description: "Description",
+    notSpecified: "Not specified",
+    chatUnavailable:
+      "Chat is temporarily unavailable. Order details and status are still up to date.",
+    listTitle: "Custom orders",
+    listIntro: "Review your requests, quotes, and production progress.",
+    noRequests: "No custom requests yet",
+    noRequestsBody: "Visit an artisan profile to start a personalised project.",
+    browseProducts: "Browse products",
+    viewRequest: "View request",
+    status: {
+      request: "Request",
+      quote: "Quote",
+      confirmed: "Confirmed",
+      produced: "Produced",
+      delivered: "Delivered",
+      cancelled: "Cancelled",
+    },
+  },
+}
+
+export type StorefrontDictionary = typeof en
+
+const zhCN: StorefrontDictionary = {
+  language: { english: "EN", chinese: "中文", label: "语言" },
+  shell: {},
+  account: {},
+  catalog: {},
+  checkout: {},
+  order: {},
+  artisan: {
+    independent: "独立",
+    artisan: "匠人",
+    defaultBio: "独立手作工作室，以用心设计和小批量制作打造独特作品。",
+    viewProducts: "查看全部商品",
+    requestOrder: "申请定制订单",
+    avatar: "头像",
+    story: "匠人故事",
+    storyIntro: "了解这家店铺背后的匠人及其创作过程。",
+    biography: "个人简介",
+    biographyFallback: "卖家完善资料后，个人简介将显示在这里。",
+    inspiration: "灵感来源",
+    inspirationFallback: "匠人完善资料后，创作灵感将显示在这里。",
+    process: "创作过程",
+    processFallback: "匠人完善资料后，创作过程将显示在这里。",
+    behindScenes: "幕后创作",
+    behindScenesIntro: "来自匠人工作室的创作瞬间与过程记录。",
+    studioVideo: "匠人工作室视频",
+    studioMedia: "匠人工作室媒体",
+    studioHighlight: "工作室精选",
+    videoDescription: "来自匠人工作室的视频。",
+    imageDescription: "来自匠人工作室的图片。",
+    noMedia: "暂未发布幕后创作内容。",
+    productsBy: "匠人作品",
+    productsIntro: "浏览当前与该匠人店铺关联的商品。",
+    noProducts: "该匠人暂时没有已发布的商品。",
+    profileLink: "查看匠人主页",
+  },
+  customOrder: {
+    requestEyebrow: "定制订单申请",
+    startProject: "发起定制项目：",
+    requestIntro: "分享你的想法和预算，匠人查看后可与你沟通并提供报价。",
+    requestDetails: "申请详情",
+    signInTitle: "请先登录",
+    signInBody: "定制申请将关联到你的账户，方便查看报价和制作进度。",
+    signInAction: "登录或创建账户",
+    independentArtisan: "独立匠人",
+    nextTitle: "后续流程",
+    nextSteps: [
+      "匠人查看你的申请。",
+      "你会收到报价并与匠人讨论细节。",
+      "确认后开始制作。",
+    ],
+    submitted: "申请已提交",
+    requestId: "申请编号",
+    statusLabel: "状态",
+    messages: "消息",
+    messagesPending: "聊天功能连接后，买家与匠人的消息将显示在这里。",
+    backToArtisan: "返回匠人主页",
+    titleLabel: "申请标题",
+    titlePlaceholder: "例如：个性化陶瓷茶具",
+    categoryLabel: "商品类别",
+    selectCategory: "选择类别",
+    categories: {
+      Ceramics: "陶瓷",
+      Textiles: "纺织品",
+      Jewellery: "珠宝首饰",
+      Woodwork: "木制品",
+      "Art and prints": "艺术品与版画",
+      Other: "其他",
+    },
+    descriptionLabel: "你希望定制什么？",
+    descriptionPlaceholder:
+      "请描述物品、尺寸、材料、颜色、数量、期限及个性化要求。",
+    descriptionHint: "请提供足够的信息，以便匠人给出准确报价。",
+    budgetLabel: "预计预算（选填）",
+    submit: "提交申请",
+    cancel: "取消",
+    customOrder: "定制订单",
+    orderProgress: "订单进度",
+    currentStatus: "当前状态",
+    cancelled: "订单已取消",
+    reason: "原因",
+    artisan: "匠人",
+    category: "类别",
+    requested: "申请时间",
+    budget: "预算",
+    artisanQuote: "匠人报价",
+    payment: "付款状态",
+    description: "需求描述",
+    notSpecified: "未填写",
+    chatUnavailable: "聊天暂时不可用，订单详情和状态仍为最新信息。",
+    listTitle: "定制订单",
+    listIntro: "查看你的申请、报价和制作进度。",
+    noRequests: "暂无定制申请",
+    noRequestsBody: "前往匠人主页即可发起个性化定制项目。",
+    browseProducts: "浏览商品",
+    viewRequest: "查看申请",
+    status: {
+      request: "已申请",
+      quote: "已报价",
+      confirmed: "已确认",
+      produced: "已完成制作",
+      delivered: "已交付",
+      cancelled: "已取消",
+    },
+  },
+}
+
+export const storefrontDictionaries = {
+  en,
+  "zh-CN": zhCN,
+}
+
+export function isStorefrontLocale(value?: string): value is StorefrontLocale {
+  return STOREFRONT_LOCALES.includes(value as StorefrontLocale)
+}
+
+export function getStorefrontDictionary(locale: StorefrontLocale) {
+  return storefrontDictionaries[locale]
+}

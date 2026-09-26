@@ -5,20 +5,27 @@ import {
   getCustomOrderTimeline,
   type CustomOrderStatus,
 } from "@lib/util/custom-order-status"
+import {
+  getStorefrontDictionary,
+  type StorefrontLocale,
+} from "@lib/i18n/storefront"
 
 type CustomOrderStatusTimelineProps = {
   status: CustomOrderStatus
+  locale: StorefrontLocale
 }
 
 export default function CustomOrderStatusTimeline({
   status,
+  locale,
 }: CustomOrderStatusTimelineProps) {
   const steps = getCustomOrderTimeline(status)
+  const t = getStorefrontDictionary(locale).customOrder
 
   if (status === "cancelled") {
     return (
       <div className="border border-ui-border-error bg-ui-bg-subtle px-4 py-3">
-        <Text className="font-medium text-ui-fg-error">Order cancelled</Text>
+        <Text className="font-medium text-ui-fg-error">{t.cancelled}</Text>
       </div>
     )
   }
@@ -26,7 +33,7 @@ export default function CustomOrderStatusTimeline({
   return (
     <ol
       className="grid grid-cols-1 small:grid-cols-5 gap-4"
-      aria-label="Custom order progress"
+      aria-label={t.orderProgress}
     >
       {steps.map((step, index) => (
         <li
@@ -64,11 +71,11 @@ export default function CustomOrderStatusTimeline({
                 "text-ui-fg-muted": step.state === "upcoming",
               })}
             >
-              {step.label}
+              {t.status[step.status]}
             </Text>
             {step.state === "current" && (
               <Text size="xsmall" className="text-ui-fg-interactive">
-                Current status
+                {t.currentStatus}
               </Text>
             )}
           </div>

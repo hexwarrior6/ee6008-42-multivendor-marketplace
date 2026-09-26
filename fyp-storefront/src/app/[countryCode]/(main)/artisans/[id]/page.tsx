@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { listArtisanProducts, retrieveArtisanProfile } from "@lib/data/artisans"
 import { getRegion } from "@lib/data/regions"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 import ArtisanTemplate from "@modules/artisans/templates"
 
 type Props = {
@@ -27,7 +28,10 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 export default async function ArtisanPage(props: Props) {
   const params = await props.params
-  const region = await getRegion(params.countryCode)
+  const [region, locale] = await Promise.all([
+    getRegion(params.countryCode),
+    getStorefrontLocale(),
+  ])
 
   if (!region) {
     notFound()
@@ -50,6 +54,7 @@ export default async function ArtisanPage(props: Props) {
       products={products}
       region={region}
       countryCode={params.countryCode}
+      locale={locale}
     />
   )
 }

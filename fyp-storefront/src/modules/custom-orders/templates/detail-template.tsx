@@ -5,19 +5,30 @@ import type { CustomOrder, TalkJsSession } from "@lib/data/custom-orders"
 import { convertToLocale } from "@lib/util/money"
 import CustomOrderChat from "@modules/custom-orders/components/chat"
 import CustomOrderStatusTimeline from "@modules/custom-orders/components/status-timeline"
+import {
+  getStorefrontDictionary,
+  type StorefrontLocale,
+} from "@lib/i18n/storefront"
 
 type CustomOrderDetailTemplateProps = {
   order: CustomOrder
   artisan: ArtisanProfile | null
   talkJsSession: TalkJsSession | null
+  locale: StorefrontLocale
 }
 
-function formatAmount(amount: number | null, currencyCode: string) {
+function formatAmount(
+  amount: number | null,
+  currencyCode: string,
+  notSpecified: string,
+  locale: StorefrontLocale
+) {
   return amount === null
-    ? "未指定"
+    ? notSpecified
     : convertToLocale({
         amount: amount / 100,
         currency_code: currencyCode,
+        locale,
       })
 }
 
@@ -25,11 +36,14 @@ export default function CustomOrderDetailTemplate({
   order,
   artisan,
   talkJsSession,
+  locale,
 }: CustomOrderDetailTemplateProps) {
+  const t = getStorefrontDictionary(locale).customOrder
+
   return (
     <div className="w-full">
       <div className="mb-8">
-        <Text className="text-ui-fg-muted mb-2">定制订单</Text>
+        <Text className="text-ui-fg-muted mb-2">{t.customOrder}</Text>
         <Heading level="h1" className="text-2xl">
           {order.title}
         </Heading>
@@ -41,12 +55,12 @@ export default function CustomOrderDetailTemplate({
         className="border-y border-ui-border-base py-7"
       >
         <Heading id="progress-heading" level="h2" className="text-lg mb-6">
-          订单进度
+          {t.orderProgress}
         </Heading>
-        <CustomOrderStatusTimeline status={order.status} />
+        <CustomOrderStatusTimeline status={order.status} locale={locale} />
         {order.status === "cancelled" && order.cancellation_reason && (
           <Text className="text-ui-fg-muted mt-3">
-            原因：{order.cancellation_reason}
+            {t.reason}: {order.cancellation_reason}
           </Text>
         )}
       </section>
@@ -56,29 +70,43 @@ export default function CustomOrderDetailTemplate({
         className="py-7 border-b border-ui-border-base"
       >
         <Heading id="request-heading" level="h2" className="text-lg mb-5">
-          需求详情
+          {t.requestDetails}
         </Heading>
         <dl className="grid grid-cols-1 small:grid-cols-[11rem_1fr] gap-x-8 gap-y-4">
-          <dt className="text-ui-fg-muted">手艺人</dt>
+          <dt className="text-ui-fg-muted">{t.artisan}</dt>
           <dd>{artisan?.display_name || order.artisan_id}</dd>
-          <dt className="text-ui-fg-muted">类别</dt>
+          <dt className="text-ui-fg-muted">{t.category}</dt>
           <dd>{order.product_category}</dd>
-          <dt className="text-ui-fg-muted">提交时间</dt>
-          <dd>{new Date(order.created_at).toLocaleString()}</dd>
-          <dt className="text-ui-fg-muted">预算</dt>
-          <dd>{formatAmount(order.budget_amount, order.currency_code)}</dd>
-          <dt className="text-ui-fg-muted">手艺人报价</dt>
-          <dd>{formatAmount(order.quoted_amount, order.currency_code)}</dd>
-          <dt className="text-ui-fg-muted">付款</dt>
+          <dt className="text-ui-fg-muted">{t.requested}</dt>
+          <dd>{new Date(order.created_at).toLocaleString(locale)}</dd>
+          <dt className="text-ui-fg-muted">{t.budget}</dt>
+          <dd>
+            {formatAmount(
+              order.budget_amount,
+              order.currency_code,
+              t.notSpecified,
+              locale
+            )}
+          </dd>
+          <dt className="text-ui-fg-muted">{t.artisanQuote}</dt>
+          <dd>
+            {formatAmount(
+              order.quoted_amount,
+              order.currency_code,
+              t.notSpecified,
+              locale
+            )}
+          </dd>
+          <dt className="text-ui-fg-muted">{t.payment}</dt>
           <dd className="capitalize">{order.payment_status}</dd>
-          <dt className="text-ui-fg-muted">描述</dt>
+          <dt className="text-ui-fg-muted">{t.description}</dt>
           <dd className="whitespace-pre-wrap">{order.description}</dd>
         </dl>
       </section>
 
       <section aria-labelledby="messages-heading" className="py-7">
         <Heading id="messages-heading" level="h2" className="text-lg">
-          消息
+          {t.messages}
         </Heading>
         {talkJsSession ? (
           <CustomOrderChat session={talkJsSession} />
@@ -87,10 +115,7 @@ export default function CustomOrderDetailTemplate({
             role="status"
             className="mt-4 flex items-center justify-center border border-ui-border-base bg-ui-bg-subtle px-4 py-10"
           >
-            <Text className="text-ui-fg-muted">
-              Chat is temporarily unavailable. Order details and status are
-              still up to date.
-            </Text>
+            <Text className="text-ui-fg-muted">{t.chatUnavailable}</Text>
           </div>
         )}
       </section>

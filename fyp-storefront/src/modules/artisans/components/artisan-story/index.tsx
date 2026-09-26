@@ -1,29 +1,29 @@
 import { Heading, Text } from "@medusajs/ui"
 import { ArtisanProfile } from "@lib/data/artisans"
+import {
+  getStorefrontDictionary,
+  type StorefrontLocale,
+} from "@lib/i18n/storefront"
 
 type ArtisanStoryProps = {
   artisan: ArtisanProfile
+  locale: StorefrontLocale
 }
 
-const ArtisanStory = ({ artisan }: ArtisanStoryProps) => {
+const ArtisanStory = ({ artisan, locale }: ArtisanStoryProps) => {
+  const t = getStorefrontDictionary(locale).artisan
   const sections = [
     {
-      title: "Biography",
-      body:
-        artisan.bio ||
-        "This artisan profile is ready for a biography once the seller adds more story details.",
+      title: t.biography,
+      body: artisan.bio || t.biographyFallback,
     },
     {
-      title: "Inspiration",
-      body:
-        artisan.inspiration ||
-        "Inspiration notes will appear here after the artisan profile is completed.",
+      title: t.inspiration,
+      body: artisan.inspiration || t.inspirationFallback,
     },
     {
-      title: "Creative process",
-      body:
-        artisan.creative_process ||
-        "Creative process details will appear here after the artisan profile is completed.",
+      title: t.process,
+      body: artisan.creative_process || t.processFallback,
     },
   ]
 
@@ -32,11 +32,9 @@ const ArtisanStory = ({ artisan }: ArtisanStoryProps) => {
       <div className="grid grid-cols-1 small:grid-cols-[240px_1fr] gap-10">
         <div>
           <Heading level="h2" className="text-2xl font-normal">
-            Artisan story
+            {t.story}
           </Heading>
-          <Text className="text-ui-fg-subtle mt-2">
-            A closer look at the people and process behind this store.
-          </Text>
+          <Text className="text-ui-fg-subtle mt-2">{t.storyIntro}</Text>
         </div>
         <div className="grid grid-cols-1 gap-8">
           {sections.map((section) => (

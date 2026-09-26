@@ -1,20 +1,27 @@
 import { Avatar, Button, Heading, Text } from "@medusajs/ui"
 import Link from "next/link"
 import { ArtisanProfile } from "@lib/data/artisans"
+import {
+  getStorefrontDictionary,
+  type StorefrontLocale,
+} from "@lib/i18n/storefront"
 
 type ArtisanHeroProps = {
   artisan: ArtisanProfile
   countryCode: string
+  locale: StorefrontLocale
 }
 
-const ArtisanHero = ({ artisan, countryCode }: ArtisanHeroProps) => {
+const ArtisanHero = ({ artisan, countryCode, locale }: ArtisanHeroProps) => {
+  const t = getStorefrontDictionary(locale).artisan
+
   return (
     <section className="border-b border-ui-border-base bg-ui-bg-subtle">
       <div className="content-container py-16 small:py-24">
         <div className="grid grid-cols-1 small:grid-cols-[1fr_220px] gap-10 items-center">
           <div className="max-w-3xl">
             <Text className="text-ui-fg-muted mb-3">
-              {artisan.location || "独立"} 工匠
+              {artisan.location || t.independent} {t.artisan}
             </Text>
             <Heading
               level="h1"
@@ -23,8 +30,7 @@ const ArtisanHero = ({ artisan, countryCode }: ArtisanHeroProps) => {
               {artisan.display_name}
             </Heading>
             <Text className="text-xl text-ui-fg-subtle mt-4 max-w-2xl">
-              {artisan.bio ||
-                "专注小批量手作，以独特心意打造每件作品。"}
+              {artisan.bio || t.defaultBio}
             </Text>
             {!!artisan.specialties?.length && (
               <div className="flex flex-wrap gap-2 mt-6">
@@ -40,12 +46,12 @@ const ArtisanHero = ({ artisan, countryCode }: ArtisanHeroProps) => {
             )}
             <div className="flex flex-wrap gap-3 mt-8">
               <Link href={`/${countryCode}/store`}>
-                <Button variant="secondary">查看全部商品</Button>
+                <Button variant="secondary">{t.viewProducts}</Button>
               </Link>
               <Link
                 href={`/${countryCode}/custom-orders/new?artisan_id=${artisan.id}`}
               >
-                <Button>申请定制订单</Button>
+                <Button>{t.requestOrder}</Button>
               </Link>
             </div>
           </div>
@@ -53,7 +59,7 @@ const ArtisanHero = ({ artisan, countryCode }: ArtisanHeroProps) => {
             {artisan.avatar_url ? (
               <img
                 src={artisan.avatar_url}
-                alt={`${artisan.display_name} avatar`}
+                alt={`${artisan.display_name} ${t.avatar}`}
                 className="h-40 w-40 rounded-full object-cover border border-ui-border-base"
               />
             ) : (

@@ -7,6 +7,7 @@ import {
   retrieveCustomOrderTalkJsSession,
 } from "@lib/data/custom-orders"
 import CustomOrderDetailTemplate from "@modules/custom-orders/templates/detail-template"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
 export const metadata: Metadata = {
   title: "Custom order details",
@@ -25,12 +26,13 @@ export default async function CustomOrderDetailPage(props: Props) {
     notFound()
   }
 
-  const [artisan, talkJsSession] = await Promise.all([
+  const [artisan, talkJsSession, locale] = await Promise.all([
     retrieveArtisanProfile(order.artisan_id).catch(() => null),
     // Chat is an enhancement of the order detail page: if TalkJS is not
     // configured or temporarily unreachable, the order and its status must
     // still be shown with a degraded messages section.
     retrieveCustomOrderTalkJsSession(order.id).catch(() => null),
+    getStorefrontLocale(),
   ])
 
   return (
@@ -38,6 +40,7 @@ export default async function CustomOrderDetailPage(props: Props) {
       order={order}
       artisan={artisan}
       talkJsSession={talkJsSession}
+      locale={locale}
     />
   )
 }

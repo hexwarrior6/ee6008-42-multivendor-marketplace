@@ -8,11 +8,16 @@ import { createCustomOrder } from "@lib/data/custom-orders"
 import type { CreateCustomOrderState } from "@lib/data/custom-orders"
 import type { ArtisanProfile } from "@lib/data/artisans"
 import { SubmitButton } from "@modules/checkout/components/submit-button"
+import {
+  getStorefrontDictionary,
+  type StorefrontLocale,
+} from "@lib/i18n/storefront"
 
 type CustomOrderRequestFormProps = {
   artisan: ArtisanProfile
   countryCode: string
   currencyCode: string
+  locale: StorefrontLocale
 }
 
 const initialState: CreateCustomOrderState = {
@@ -27,41 +32,45 @@ export default function CustomOrderRequestForm({
   artisan,
   countryCode,
   currencyCode,
+  locale,
 }: CustomOrderRequestFormProps) {
   const [state, formAction] = useActionState(createCustomOrder, initialState)
+  const t = getStorefrontDictionary(locale).customOrder
 
   if (state.success && state.customOrder) {
+    const submittedStatus =
+      t.status[state.customOrder.status as keyof typeof t.status] ||
+      state.customOrder.status
+
     return (
       <div className="border border-ui-border-base bg-ui-bg-base p-6 small:p-8">
-        <Text className="text-ui-fg-muted mb-2">需求已提交</Text>
+        <Text className="text-ui-fg-muted mb-2">{t.submitted}</Text>
         <Heading level="h2" className="text-2xl mb-3">
           {state.customOrder.title}
         </Heading>
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 py-5 border-y border-ui-border-base">
           <dt>
-            <Text className="text-ui-fg-muted">需求编号</Text>
+            <Text className="text-ui-fg-muted">{t.requestId}</Text>
           </dt>
           <dd>
             <Text className="break-all">{state.customOrder.id}</Text>
           </dd>
           <dt>
-            <Text className="text-ui-fg-muted">状态</Text>
+            <Text className="text-ui-fg-muted">{t.statusLabel}</Text>
           </dt>
           <dd>
-            <Text className="capitalize">{state.customOrder.status}</Text>
+            <Text>{submittedStatus}</Text>
           </dd>
         </dl>
         <div className="mt-6 border border-dashed border-ui-border-strong p-4">
-          <Text className="font-medium">消息</Text>
-          <Text className="text-ui-fg-muted mt-1">
-            买家和手艺人可以在订单详情页中实时沟通。
-          </Text>
+          <Text className="font-medium">{t.messages}</Text>
+          <Text className="text-ui-fg-muted mt-1">{t.messagesPending}</Text>
         </div>
         <Link
           href={`/${countryCode}/artisans/${artisan.id}`}
           className="inline-block mt-6"
         >
-          <Button variant="secondary">返回手艺人主页</Button>
+          <Button variant="secondary">{t.backToArtisan}</Button>
         </Link>
       </div>
     )
@@ -73,18 +82,18 @@ export default function CustomOrderRequestForm({
       <input type="hidden" name="currency_code" value={currencyCode} />
 
       <div className={fieldClassName}>
-        <Label htmlFor="title">需求标题</Label>
+        <Label htmlFor="title">{t.titleLabel}</Label>
         <Input
           id="title"
           name="title"
           maxLength={200}
           required
-          placeholder="例如：定制陶瓷茶具"
+          placeholder={t.titlePlaceholder}
         />
       </div>
 
       <div className={fieldClassName}>
-        <Label htmlFor="product_category">商品类别</Label>
+        <Label htmlFor="product_category">{t.categoryLabel}</Label>
         <select
           id="product_category"
           name="product_category"
@@ -93,34 +102,33 @@ export default function CustomOrderRequestForm({
           className="h-10 rounded-md border border-ui-border-base bg-ui-bg-field px-3 text-ui-fg-base outline-none focus:border-ui-border-interactive"
         >
           <option value="" disabled>
-            请选择类别
+            {t.selectCategory}
           </option>
-          <option value="Ceramics">陶瓷</option>
-          <option value="Textiles">纺织品</option>
-          <option value="Jewellery">珠宝</option>
-          <option value="Woodwork">木工</option>
-          <option value="Art and prints">艺术品与版画</option>
-          <option value="Other">其他</option>
+          {Object.entries(t.categories).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
       </div>
 
       <div className={fieldClassName}>
-        <Label htmlFor="description">您希望定制什么？</Label>
+        <Label htmlFor="description">{t.descriptionLabel}</Label>
         <Textarea
           id="description"
           name="description"
           maxLength={5000}
           required
           rows={7}
-          placeholder="请描述商品、尺寸、材质、颜色、数量、交付期限和个性化要求。"
+          placeholder={t.descriptionPlaceholder}
         />
         <Text size="xsmall" className="text-ui-fg-muted">
-          请提供足够细节，方便手艺人准确报价。
+          {t.descriptionHint}
         </Text>
       </div>
 
       <div className={fieldClassName}>
-        <Label htmlFor="budget_amount">预计预算（可选）</Label>
+        <Label htmlFor="budget_amount">{t.budgetLabel}</Label>
         <div className="grid grid-cols-[5rem_1fr] gap-2">
           <div className="h-10 flex items-center justify-center rounded-md border border-ui-border-base bg-ui-bg-subtle text-ui-fg-muted uppercase">
             {currencyCode}
@@ -147,10 +155,10 @@ export default function CustomOrderRequestForm({
       )}
 
       <div className="flex flex-wrap items-center gap-3 pt-2">
-        <SubmitButton>提交需求</SubmitButton>
+        <SubmitButton>{t.submit}</SubmitButton>
         <Link href={`/${countryCode}/artisans/${artisan.id}`}>
           <Button type="button" variant="secondary">
-           取消
+            {t.cancel}
           </Button>
         </Link>
       </div>

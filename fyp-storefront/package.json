@@ -15,7 +15,8 @@
     "lint": "next lint",
     "analyze": "ANALYZE=true next build",
     "test:artisan-profile": "node scripts/check-artisan-profile-mvp.js",
-    "test:custom-order": "node scripts/test-custom-order-request.js"
+    "test:custom-order": "node scripts/test-custom-order-request.js",
+    "test:s2-localization": "node scripts/test-s2-localization.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
