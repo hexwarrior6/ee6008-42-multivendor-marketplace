@@ -27,7 +27,7 @@ const CartDropdown = ({
     undefined
   )
   const [cartDropdownOpen, setCartDropdownOpen] = useState(false)
-  const { t } = useStorefrontI18n()
+  const { locale, t } = useStorefrontI18n()
   
   const open = () => setCartDropdownOpen(true)
   const close = () => setCartDropdownOpen(false)
@@ -227,7 +227,7 @@ const CartDropdown = ({
                       data-testid="cart-subtotal"
                       data-value={totalAmount}
                     >
-                      {convertToLocale({
+                      {convertToLocale({ locale,
                         amount: totalAmount,
                         currency_code: defaultCurrencyCode,
                       })}

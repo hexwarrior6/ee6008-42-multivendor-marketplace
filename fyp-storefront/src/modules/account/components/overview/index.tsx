@@ -115,6 +115,7 @@ const Overview = ({ customer, orders, locale }: OverviewProps) => {
                                 {convertToLocale({
                                   amount: order.total,
                                   currency_code: order.currency_code,
+                                  locale,
                                 })}
                               </span>
                             </div>

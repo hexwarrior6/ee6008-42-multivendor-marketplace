@@ -25,7 +25,7 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
     shipping_subtotal,
     discount_subtotal,
   } = totals
-  const { t } = useStorefrontI18n()
+  const { locale, t } = useStorefrontI18n()
 
   return (
     <div>
@@ -33,13 +33,13 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
         <div className="flex items-center justify-between">
           <span>{t.totals.subtotal}</span>
           <span data-testid="cart-subtotal" data-value={item_subtotal || 0}>
-            {convertToLocale({ amount: item_subtotal ?? 0, currency_code })}
+            {convertToLocale({ locale, amount: item_subtotal ?? 0, currency_code })}
           </span>
         </div>
         <div className="flex items-center justify-between">
           <span>{t.totals.shipping}</span>
           <span data-testid="cart-shipping" data-value={shipping_subtotal || 0}>
-            {convertToLocale({ amount: shipping_subtotal ?? 0, currency_code })}
+            {convertToLocale({ locale, amount: shipping_subtotal ?? 0, currency_code })}
           </span>
         </div>
         {!!discount_subtotal && (
@@ -51,7 +51,7 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
               data-value={discount_subtotal || 0}
             >
               -{" "}
-              {convertToLocale({
+              {convertToLocale({ locale,
                 amount: discount_subtotal ?? 0,
                 currency_code,
               })}
@@ -61,7 +61,7 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
         <div className="flex justify-between">
           <span className="flex gap-x-1 items-center ">{t.totals.taxes}</span>
           <span data-testid="cart-taxes" data-value={tax_total || 0}>
-            {convertToLocale({ amount: tax_total ?? 0, currency_code })}
+            {convertToLocale({ locale, amount: tax_total ?? 0, currency_code })}
           </span>
         </div>
       </div>
@@ -73,7 +73,7 @@ const CartTotals: React.FC<CartTotalsProps> = ({ totals }) => {
           data-testid="cart-total"
           data-value={total || 0}
         >
-          {convertToLocale({ amount: total ?? 0, currency_code })}
+          {convertToLocale({ locale, amount: total ?? 0, currency_code })}
         </span>
       </div>
       <div className="h-px w-full border-b border-gray-200 mt-4" />

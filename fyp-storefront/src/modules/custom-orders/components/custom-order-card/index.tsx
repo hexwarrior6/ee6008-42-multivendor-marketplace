@@ -45,6 +45,7 @@ export default function CustomOrderCard({
               : convertToLocale({
                   amount: order.budget_amount / 100,
                   currency_code: order.currency_code,
+                  locale,
                 })}
           </Text>
         </div>
