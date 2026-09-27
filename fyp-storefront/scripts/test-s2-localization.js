@@ -70,6 +70,15 @@ const mobileProductActions = read(
 const productTabs = read(
   "src/modules/products/components/product-tabs/index.tsx"
 )
+const productReviews = read(
+  "src/modules/products/components/product-reviews/product-review-section.tsx"
+)
+const relatedProducts = read(
+  "src/modules/products/components/related-products/index.tsx"
+)
+const productPrice = read(
+  "src/modules/products/components/product-price/index.tsx"
+)
 const emptyCart = read(
   "src/modules/cart/components/empty-cart-message/index.tsx"
 )
@@ -166,6 +175,20 @@ for (const expected of [
   'productInformation: "商品信息"',
   'viewArtisanProfile: "View artisan profile"',
   'viewArtisanProfile: "查看手艺人主页"',
+  'productReviews: "Product reviews"',
+  'productReviews: "商品评价"',
+  'productReviewsIntro: "See what our customers are saying about this product"',
+  'productReviewsIntro: "看看顾客对这件商品的评价"',
+  'basedOnReviews: "Based on {count} reviews"',
+  'basedOnReviews: "基于 {count} 条评价"',
+  'relatedProducts: "Related products"',
+  'relatedProducts: "相关商品"',
+  'ratingNotRated: "Not rated"',
+  'ratingNotRated: "暂无评分"',
+  'priceFrom: "From"',
+  'priceFrom: "起"',
+  'originalPrice: "Original"',
+  'originalPrice: "原价"',
   'emptyTitle: "Cart"',
   'emptyTitle: "购物车"',
   'checkoutFrom: "Checkout from"',
@@ -286,6 +309,9 @@ for (const [name, source] of [
   ["product actions", productActions],
   ["mobile product actions", mobileProductActions],
   ["product tabs", productTabs],
+  ["product reviews", productReviews],
+  ["related products", relatedProducts],
+  ["product price", productPrice],
 ]) {
   if (
     !source.includes("getStorefrontDictionary") &&
@@ -293,6 +319,10 @@ for (const [name, source] of [
   ) {
     throw new Error(`${name} must read catalog copy from the dictionary`)
   }
+}
+
+if (!productReviews.includes("invisibleLabel")) {
+  throw new Error("Product review ratings must expose localized labels")
 }
 
 for (const [name, source] of [
@@ -314,8 +344,8 @@ if (!dictionary.includes("export type StorefrontDictionary")) {
   throw new Error("The storefront dictionary must export its inferred type")
 }
 
-if (!constants.includes("STOREFRONT_LANGUAGE_SWITCH_ENABLED = false")) {
-  throw new Error("The language switch must remain disabled during migration")
+if (!constants.includes("STOREFRONT_LANGUAGE_SWITCH_ENABLED = true")) {
+  throw new Error("The language switch must be enabled after migration")
 }
 
 if (!serverLocale.includes("STOREFRONT_LANGUAGE_SWITCH_ENABLED")) {
@@ -367,6 +397,10 @@ if (
 
 if (!nav.includes("STOREFRONT_LANGUAGE_SWITCH_ENABLED")) {
   throw new Error("Navigation must gate the language switcher during migration")
+}
+
+if (!nav.includes("<LanguageSwitcher")) {
+  throw new Error("Navigation must render the language switcher")
 }
 
 for (const [name, source, expectedAccess] of [
