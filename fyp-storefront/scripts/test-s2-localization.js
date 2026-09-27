@@ -545,6 +545,10 @@ const s5LocalizedComponents = [
   ["custom orders dashboard page", "src/app/[countryCode]/(main)/account/@dashboard/custom-orders/page.tsx"],
   ["custom order card", "src/modules/custom-orders/components/custom-order-card/index.tsx"],
   ["custom order detail template", "src/modules/custom-orders/templates/detail-template.tsx"],
+  ["cart line item", "src/modules/cart/components/item/index.tsx"],
+  ["order details template", "src/modules/order/templates/order-details-template.tsx"],
+  ["order completed template", "src/modules/order/templates/order-completed-template.tsx"],
+  ["checkout page metadata", "src/app/[countryCode]/(checkout)/checkout/[id]/page.tsx"],
 ]
 
 for (const [name, relativePath] of s5LocalizedComponents) {
@@ -623,6 +627,16 @@ const s5ResidueChecks = [
   ["side menu country select", "src/modules/layout/components/country-select/index.tsx", ["Shipping to:"]],
   ["home page metadata", "src/app/[countryCode]/(main)/page.tsx", [
     "Medusa Next.js Starter Template",
+  ]],
+  ["checkout page metadata", "src/app/[countryCode]/(checkout)/checkout/[id]/page.tsx", [
+    'title: "Checkout"',
+  ]],
+  ["cart line item", "src/modules/cart/components/item/index.tsx", [
+    "Variant: ",
+    'placeholder = "Select..."',
+  ]],
+  ["nav cart dropdown", "src/modules/layout/components/cart-dropdown/index.tsx", [
+    "Variant: ",
   ]],
 ]
 

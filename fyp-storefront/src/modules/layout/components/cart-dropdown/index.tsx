@@ -181,6 +181,7 @@ const CartDropdown = ({
                                         </h3>
                                         <LineItemOptions
                                           variant={item.variant}
+                                          variantLabel={t.cart.variantLabel}
                                           data-testid="cart-item-variant"
                                           data-value={item.variant}
                                         />

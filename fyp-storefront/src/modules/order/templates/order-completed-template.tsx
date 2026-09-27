@@ -44,7 +44,10 @@ export default async function OrderCompletedTemplate({
           <Heading level="h2" className="flex flex-row text-3xl-regular">
             {t.summary}
           </Heading>
-          <Items order={order} />
+          <Items
+            order={order}
+            variantLabel={getStorefrontDictionary(locale).cart.variantLabel}
+          />
           <CartTotals totals={order} />
           <ShippingDetails order={order} />
           <PaymentDetails order={order} />
