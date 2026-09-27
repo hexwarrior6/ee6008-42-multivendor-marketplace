@@ -43,6 +43,8 @@ describe("Chinese order email templates", () => {
     )
     expect(html).toContain("您的订单已送达")
     expect(html).toContain("感谢您的支持")
+    expect(html).toContain("点击这里为您的商品写评价")
+    expect(html).toContain(`/order/${baseOrder.id}/reviews`)
   })
 
   it("resolves the email locale from customer metadata and shipping country", () => {
