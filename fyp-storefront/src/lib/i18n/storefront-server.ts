@@ -17,5 +17,5 @@ export async function getStorefrontLocale(): Promise<StorefrontLocale> {
   const cookieStore = await cookies()
   const selectedLocale = cookieStore.get(STOREFRONT_LOCALE_COOKIE)?.value
 
-  return isStorefrontLocale(selectedLocale) ? selectedLocale : "en"
+  return isStorefrontLocale(selectedLocale) ? selectedLocale : "zh-CN"
 }

@@ -360,11 +360,11 @@ if (!serverLocale.includes('return "zh-CN"')) {
 
 if (
   !serverLocale.includes(
-    'return isStorefrontLocale(selectedLocale) ? selectedLocale : "en"'
+    'return isStorefrontLocale(selectedLocale) ? selectedLocale : "zh-CN"'
   )
 ) {
   throw new Error(
-    "Enabled rollout must retain the invalid-cookie English fallback"
+    "The invalid-cookie fallback must resolve to the default Chinese storefront"
   )
 }
 
