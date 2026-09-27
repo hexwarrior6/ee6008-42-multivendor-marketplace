@@ -29,12 +29,13 @@ export default function CustomOrderCard({
               {order.title}
             </h2>
             <span className="border border-ui-border-base px-2 py-1 text-xs uppercase text-ui-fg-muted">
-              {t.status[order.status]}
+              {t.status[order.status] ?? t.unknownStatus}
             </span>
           </div>
           <Text className="text-ui-fg-muted mt-2">
-            {order.product_category} ·{" "}
-            {new Date(order.created_at).toLocaleDateString(locale)}
+            {t.categories[order.product_category as keyof typeof t.categories] ??
+              order.product_category}{" "}
+            · {new Date(order.created_at).toLocaleDateString(locale)}
           </Text>
           <Text className="mt-3 line-clamp-2">{order.description}</Text>
           <Text className="mt-3 font-medium">

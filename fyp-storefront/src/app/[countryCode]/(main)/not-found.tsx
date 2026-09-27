@@ -4,9 +4,14 @@ import InteractiveLink from "@modules/common/components/interactive-link"
 import { getStorefrontDictionary } from "@lib/i18n/storefront"
 import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
-export const metadata: Metadata = {
-  title: "404",
-  description: "Something went wrong",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).shell
+
+  return {
+    title: t.notFoundTitle,
+    description: t.notFoundBody,
+  }
 }
 
 export default async function NotFound() {

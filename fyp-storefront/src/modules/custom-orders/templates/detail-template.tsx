@@ -76,7 +76,10 @@ export default function CustomOrderDetailTemplate({
           <dt className="text-ui-fg-muted">{t.artisan}</dt>
           <dd>{artisan?.display_name || order.artisan_id}</dd>
           <dt className="text-ui-fg-muted">{t.category}</dt>
-          <dd>{order.product_category}</dd>
+          <dd>
+            {t.categories[order.product_category as keyof typeof t.categories] ??
+              order.product_category}
+          </dd>
           <dt className="text-ui-fg-muted">{t.requested}</dt>
           <dd>{new Date(order.created_at).toLocaleString(locale)}</dd>
           <dt className="text-ui-fg-muted">{t.budget}</dt>

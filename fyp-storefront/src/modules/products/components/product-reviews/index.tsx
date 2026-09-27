@@ -23,7 +23,7 @@ export const ProductReviewsComponent: FC<ProductReviewsProps> = ({ lineItem, pro
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
             <div className="col-span-1">
                 {lineItem.thumbnail ? (
-                    <img src={lineItem.thumbnail} alt="Product thumbnail" className="h-24 w-24 flex-none rounded-md bg-ui-bg-subtle object-cover object-center" />
+                    <img src={lineItem.thumbnail} alt="" className="h-24 w-24 flex-none rounded-md bg-ui-bg-subtle object-cover object-center" />
                 ): (
                     <div className="h-24 w-24 flex items-center justify-center rounded-md bg-ui-bg-subtle">
                         <PlaceholderImage size={48}/>

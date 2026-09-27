@@ -5,9 +5,14 @@ import CustomOrderOverview from "@modules/custom-orders/components/custom-order-
 import { getStorefrontDictionary } from "@lib/i18n/storefront"
 import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
-export const metadata: Metadata = {
-  title: "Custom orders",
-  description: "Track your custom order requests.",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).customOrder
+
+  return {
+    title: t.listTitle,
+    description: t.listIntro,
+  }
 }
 
 export default async function CustomOrdersPage() {

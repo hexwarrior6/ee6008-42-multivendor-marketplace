@@ -11,6 +11,8 @@ import { HttpTypes } from "@medusajs/types"
 import { StoreProductWithStore } from "types/global"
 import { ProductReviewSection } from "@modules/products/components/product-reviews/product-review-section"
 import { retrieveArtisanProfileByStoreId } from "@lib/data/artisans"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
 type Props = {
   params: Promise<{ countryCode: string; handle: string }>
@@ -54,11 +56,14 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     notFound()
   }
 
+  const locale = await getStorefrontLocale()
+  const brand = getStorefrontDictionary(locale).shell.brand
+
   return {
-    title: `${product.title} | Medusa Store`,
+    title: `${product.title} | ${brand}`,
     description: `${product.title}`,
     openGraph: {
-      title: `${product.title} | Medusa Store`,
+      title: `${product.title} | ${brand}`,
       description: `${product.title}`,
       images: product.thumbnail ? [product.thumbnail] : [],
     },
