@@ -6,6 +6,7 @@ import { mapKeys } from "lodash"
 import React, { useEffect, useMemo, useState } from "react"
 import AddressSelect from "../address-select"
 import CountrySelect from "../country-select"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 
 const ShippingAddress = ({
   customer,
@@ -18,6 +19,7 @@ const ShippingAddress = ({
   checked: boolean
   onChange: () => void
 }) => {
+  const { t } = useStorefrontI18n()
   const [formData, setFormData] = useState<Record<string, any>>({
     "shipping_address.first_name": cart?.shipping_address?.first_name || "",
     "shipping_address.last_name": cart?.shipping_address?.last_name || "",
@@ -97,7 +99,7 @@ const ShippingAddress = ({
       {customer && (addressesInRegion?.length || 0) > 0 && (
         <Container className="mb-6 flex flex-col gap-y-4 p-5">
           <p className="text-small-regular">
-            {`${customer.first_name}，是否使用已保存的地址？`}
+            {customer.first_name}: {t.checkout.savedAddressQuestion}
           </p>
           <AddressSelect
             addresses={customer.addresses}
@@ -112,7 +114,7 @@ const ShippingAddress = ({
       )}
       <div className="grid grid-cols-2 gap-4">
         <Input
-          label="名"
+          label={t.checkout.firstName}
           name="shipping_address.first_name"
           autoComplete="given-name"
           value={formData["shipping_address.first_name"]}
@@ -121,7 +123,7 @@ const ShippingAddress = ({
           data-testid="shipping-first-name-input"
         />
         <Input
-          label="姓"
+          label={t.checkout.lastName}
           name="shipping_address.last_name"
           autoComplete="family-name"
           value={formData["shipping_address.last_name"]}
@@ -130,7 +132,7 @@ const ShippingAddress = ({
           data-testid="shipping-last-name-input"
         />
         <Input
-          label="地址"
+          label={t.checkout.address}
           name="shipping_address.address_1"
           autoComplete="address-line1"
           value={formData["shipping_address.address_1"]}
@@ -139,7 +141,7 @@ const ShippingAddress = ({
           data-testid="shipping-address-input"
         />
         <Input
-          label="公司"
+          label={t.checkout.company}
           name="shipping_address.company"
           value={formData["shipping_address.company"]}
           onChange={handleChange}
@@ -147,7 +149,7 @@ const ShippingAddress = ({
           data-testid="shipping-company-input"
         />
         <Input
-          label="邮政编码"
+          label={t.checkout.postalCode}
           name="shipping_address.postal_code"
           autoComplete="postal-code"
           value={formData["shipping_address.postal_code"]}
@@ -156,7 +158,7 @@ const ShippingAddress = ({
           data-testid="shipping-postal-code-input"
         />
         <Input
-          label="城市"
+          label={t.checkout.city}
           name="shipping_address.city"
           autoComplete="address-level2"
           value={formData["shipping_address.city"]}
@@ -165,6 +167,7 @@ const ShippingAddress = ({
           data-testid="shipping-city-input"
         />
         <CountrySelect
+          placeholder={t.checkout.country}
           name="shipping_address.country_code"
           autoComplete="country"
           region={cart?.region}
@@ -174,7 +177,7 @@ const ShippingAddress = ({
           data-testid="shipping-country-select"
         />
         <Input
-          label="省/州"
+          label={t.checkout.province}
           name="shipping_address.province"
           autoComplete="address-level1"
           value={formData["shipping_address.province"]}
@@ -184,7 +187,7 @@ const ShippingAddress = ({
       </div>
       <div className="my-8">
         <Checkbox
-          label="Billing address same as shipping address"
+          label={t.checkout.billingSameAsShipping}
           name="same_as_billing"
           checked={checked}
           onChange={onChange}
@@ -193,10 +196,10 @@ const ShippingAddress = ({
       </div>
       <div className="grid grid-cols-2 gap-4 mb-4">
         <Input
-          label="Email"
+          label={t.checkout.email}
           name="email"
           type="email"
-          title="Enter a valid email address."
+          title={t.checkout.emailValidation}
           autoComplete="email"
           value={formData.email}
           onChange={handleChange}
@@ -204,7 +207,7 @@ const ShippingAddress = ({
           data-testid="shipping-email-input"
         />
         <Input
-          label="电话"
+          label={t.checkout.phone}
           name="shipping_address.phone"
           autoComplete="tel"
           value={formData["shipping_address.phone"]}

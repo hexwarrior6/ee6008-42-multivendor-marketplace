@@ -2,6 +2,7 @@
 
 import { isManual, isStripeLike, isWeChatPay } from "@lib/constants"
 import { placeOrder } from "@lib/data/seller-cart"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
 import { useElements, useStripe } from "@stripe/react-stripe-js"
@@ -18,6 +19,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
   cart,
   "data-testid": dataTestId,
 }) => {
+  const { t } = useStorefrontI18n()
   const notReady =
     !cart ||
     !cart.shipping_address ||
@@ -57,7 +59,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
         />
       )
     default:
-      return <Button disabled>请选择支付方式</Button>
+      return <Button disabled>{t.checkout.selectPaymentMethod}</Button>
   }
 }
 
@@ -70,6 +72,7 @@ const StripePaymentButton = ({
   notReady: boolean
   "data-testid"?: string
 }) => {
+  const { t } = useStorefrontI18n()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -190,7 +193,7 @@ const StripePaymentButton = ({
         isLoading={submitting}
         data-testid={dataTestId}
       >
-        提交订单
+        {t.checkout.placeOrder}
       </Button>
       <ErrorMessage
         error={errorMessage}
@@ -207,6 +210,7 @@ const ManualTestPaymentButton = ({
   notReady: boolean
   cart: HttpTypes.StoreCart
 }) => {
+  const { t } = useStorefrontI18n()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -235,7 +239,7 @@ const ManualTestPaymentButton = ({
         size="large"
         data-testid="submit-order-button"
       >
-        提交订单
+        {t.checkout.placeOrder}
       </Button>
       <ErrorMessage
         error={errorMessage}
@@ -254,6 +258,7 @@ const WeChatPaymentButton = ({
   cart: HttpTypes.StoreCart
   "data-testid"?: string
 }) => {
+  const { t } = useStorefrontI18n()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const paymentSession = cart.payment_collection?.payment_sessions?.find(
@@ -267,9 +272,7 @@ const WeChatPaymentButton = ({
     try {
       await placeOrder(cart.id)
     } catch (error: any) {
-      setErrorMessage(
-        error.message || "尚未检测到微信支付成功，请完成扫码后再试。"
-      )
+      setErrorMessage(error.message || t.checkout.wechatPaymentIncomplete)
     } finally {
       setSubmitting(false)
     }
@@ -284,11 +287,11 @@ const WeChatPaymentButton = ({
         size="large"
         data-testid={dataTestId}
       >
-        {isMock ? "模拟支付并提交订单" : "我已完成微信支付，提交订单"}
+        {isMock ? t.checkout.wechatMockSubmit : t.checkout.wechatSubmit}
       </Button>
       {isMock && (
         <p className="mt-2 text-xs text-ui-fg-muted">
-          当前是本地模拟模式，不会产生真实扣款。
+          {t.checkout.wechatMockHint}
         </p>
       )}
       <ErrorMessage

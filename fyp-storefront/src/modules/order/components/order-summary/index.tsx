@@ -1,3 +1,6 @@
+"use client"
+
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 
@@ -6,6 +9,7 @@ type OrderSummaryProps = {
 }
 
 const OrderSummary = ({ order }: OrderSummaryProps) => {
+  const { t } = useStorefrontI18n()
   const getAmount = (amount?: number | null) => {
     if (!amount) {
       return
@@ -19,37 +23,37 @@ const OrderSummary = ({ order }: OrderSummaryProps) => {
 
   return (
     <div>
-      <h2 className="text-base-semi">订单摘要</h2>
+      <h2 className="text-base-semi">{t.order.orderSummary}</h2>
       <div className="text-small-regular text-ui-fg-base my-2">
         <div className="flex items-center justify-between text-base-regular text-ui-fg-base mb-2">
-          <span>小计</span>
+          <span>{t.order.subtotal}</span>
           <span>{getAmount(order.subtotal)}</span>
         </div>
         <div className="flex flex-col gap-y-1">
           {order.discount_total > 0 && (
             <div className="flex items-center justify-between">
-              <span>折扣</span>
+              <span>{t.order.discount}</span>
               <span>- {getAmount(order.discount_total)}</span>
             </div>
           )}
           {order.gift_card_total > 0 && (
             <div className="flex items-center justify-between">
-              <span>折扣</span>
+              <span>{t.order.giftCard}</span>
               <span>- {getAmount(order.gift_card_total)}</span>
             </div>
           )}
           <div className="flex items-center justify-between">
-            <span>运费</span>
+            <span>{t.order.shippingCost}</span>
             <span>{getAmount(order.shipping_total)}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span>税费</span>
+            <span>{t.order.tax}</span>
             <span>{getAmount(order.tax_total)}</span>
           </div>
         </div>
         <div className="h-px w-full border-b border-gray-200 border-dashed my-4" />
         <div className="flex items-center justify-between text-base-regular text-ui-fg-base mb-2">
-          <span>总计</span>
+          <span>{t.order.total}</span>
           <span>{getAmount(order.total)}</span>
         </div>
       </div>

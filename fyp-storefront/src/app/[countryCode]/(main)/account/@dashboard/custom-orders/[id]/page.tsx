@@ -8,10 +8,16 @@ import {
 } from "@lib/data/custom-orders"
 import CustomOrderDetailTemplate from "@modules/custom-orders/templates/detail-template"
 import { getStorefrontLocale } from "@lib/i18n/storefront-server"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
 
-export const metadata: Metadata = {
-  title: "Custom order details",
-  description: "View a custom order request and its progress.",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).customOrder
+
+  return {
+    title: t.customOrder,
+    description: t.listIntro,
+  }
 }
 
 type Props = {

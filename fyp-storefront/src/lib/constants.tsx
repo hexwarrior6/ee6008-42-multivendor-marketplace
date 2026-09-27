@@ -38,7 +38,7 @@ export const paymentInfoMap: Record<
     icon: <CreditCard />,
   },
   pp_wechat_wechat: {
-    title: "微信支付",
+    title: "WeChat Pay",
     icon: <WeChatPay />,
   },
   // Add more payment providers here

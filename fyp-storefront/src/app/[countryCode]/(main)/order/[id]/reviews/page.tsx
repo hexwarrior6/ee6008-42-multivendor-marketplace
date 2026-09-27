@@ -3,13 +3,20 @@ import { getProductReviews } from "@lib/data/products"
 import OrderReviewTemplate from "@modules/order/templates/order-review-template"
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
 type Props = {
   params: Promise<{ id: string }>
 }
-export const metadata: Metadata = {
-  title: "Reviews",
-  description: "What did you think of your order?",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).order
+
+  return {
+    title: t.reviewMetadataTitle,
+    description: t.reviewMetadataDescription,
+  }
 }
 
 export default async function OrderConfirmedPage(props: Props) {
@@ -20,6 +27,5 @@ export default async function OrderConfirmedPage(props: Props) {
     return notFound()
   }
 
-  const fulfilledItems = order.items || [];
   return <OrderReviewTemplate order={order} />
 }

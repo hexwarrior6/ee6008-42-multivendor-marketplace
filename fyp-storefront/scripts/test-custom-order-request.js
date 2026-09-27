@@ -31,6 +31,16 @@ const requestSubject = loadTsModule(
 const trackingSubject = loadTsModule(
   path.resolve(__dirname, "../src/lib/util/custom-order-status.ts")
 )
+const dictionarySubject = loadTsModule(
+  path.resolve(__dirname, "../src/lib/i18n/storefront.ts")
+)
+const requestFormSource = fs.readFileSync(
+  path.resolve(
+    __dirname,
+    "../src/modules/custom-orders/components/request-form/index.tsx"
+  ),
+  "utf8"
+)
 
 const backendStateMachineSource = fs.readFileSync(
   path.resolve(
@@ -123,11 +133,11 @@ test("marks the completed and current steps for an order in production", () => {
   assert.equal(typeof getCustomOrderTimeline, "function")
 
   assert.deepEqual(getCustomOrderTimeline("produced"), [
-    { status: "request", label: "提交需求", state: "complete" },
-    { status: "quote", label: "报价", state: "complete" },
-    { status: "confirmed", label: "已确认", state: "complete" },
-    { status: "produced", label: "已生产", state: "current" },
-    { status: "delivered", label: "已交付", state: "upcoming" },
+    { status: "request", state: "complete" },
+    { status: "quote", state: "complete" },
+    { status: "confirmed", state: "complete" },
+    { status: "produced", state: "current" },
+    { status: "delivered", state: "upcoming" },
   ])
 })
 
@@ -135,7 +145,7 @@ test("represents cancellation as a separate terminal state", () => {
   assert.equal(typeof getCustomOrderTimeline, "function")
 
   assert.deepEqual(getCustomOrderTimeline("cancelled"), [
-    { status: "cancelled", label: "已取消", state: "current" },
+    { status: "cancelled", state: "current" },
   ])
 })
 
@@ -156,6 +166,40 @@ test("frontend status set stays identical to the backend state machine", () => {
     "delivered",
     "cancelled",
   ])
+
+  for (const locale of ["en", "zh-CN"]) {
+    assert.deepEqual(
+      Object.keys(
+        dictionarySubject.storefrontDictionaries[locale].customOrder.status
+      ),
+      backendStatuses
+    )
+  }
+})
+
+test("localized category labels preserve the backend category keys", () => {
+  assert.match(
+    requestFormSource,
+    /Object\.entries\(t\.categories\)\.map\(\(\[value, label\]\)/
+  )
+  assert.match(requestFormSource, /<option key=\{value\} value=\{value\}>/)
+
+  const expectedCategories = [
+    "Ceramics",
+    "Textiles",
+    "Jewellery",
+    "Woodwork",
+    "Art and prints",
+    "Other",
+  ]
+  for (const locale of ["en", "zh-CN"]) {
+    assert.deepEqual(
+      Object.keys(
+        dictionarySubject.storefrontDictionaries[locale].customOrder.categories
+      ),
+      expectedCategories
+    )
+  }
 })
 
 test("the timeline renders exactly the backend flow order for every status", () => {

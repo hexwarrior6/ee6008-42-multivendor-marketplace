@@ -2,13 +2,20 @@ import { retrieveOrder } from "@lib/data/orders"
 import OrderCompletedTemplate from "@modules/order/templates/order-completed-template"
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
 type Props = {
   params: Promise<{ id: string }>
 }
-export const metadata: Metadata = {
-  title: "订单已确认",
-  description: "您的订单已成功提交。",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).order
+
+  return {
+    title: t.confirmationMetadataTitle,
+    description: t.confirmationMetadataDescription,
+  }
 }
 
 export default async function OrderConfirmedPage(props: Props) {

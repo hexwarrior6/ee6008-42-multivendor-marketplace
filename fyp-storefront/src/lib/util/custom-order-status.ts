@@ -8,34 +8,28 @@ export type CustomOrderStatus =
 
 export type CustomOrderTimelineStep = {
   status: CustomOrderStatus
-  label: string
   state: "complete" | "current" | "upcoming"
 }
 
-const ORDER_FLOW: Array<{
-  status: Exclude<CustomOrderStatus, "cancelled">
-  label: string
-}> = [
-  { status: "request", label: "提交需求" },
-  { status: "quote", label: "报价" },
-  { status: "confirmed", label: "已确认" },
-  { status: "produced", label: "已生产" },
-  { status: "delivered", label: "已交付" },
+const ORDER_FLOW: Array<Exclude<CustomOrderStatus, "cancelled">> = [
+  "request",
+  "quote",
+  "confirmed",
+  "produced",
+  "delivered",
 ]
 
 export function getCustomOrderTimeline(
   currentStatus: CustomOrderStatus
 ): CustomOrderTimelineStep[] {
   if (currentStatus === "cancelled") {
-    return [{ status: "cancelled", label: "已取消", state: "current" }]
+    return [{ status: "cancelled", state: "current" }]
   }
 
-  const currentIndex = ORDER_FLOW.findIndex(
-    ({ status }) => status === currentStatus
-  )
+  const currentIndex = ORDER_FLOW.indexOf(currentStatus)
 
-  return ORDER_FLOW.map((step, index) => ({
-    ...step,
+  return ORDER_FLOW.map((status, index) => ({
+    status,
     state:
       index < currentIndex
         ? "complete"

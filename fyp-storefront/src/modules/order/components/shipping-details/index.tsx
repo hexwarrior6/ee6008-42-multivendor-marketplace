@@ -1,3 +1,6 @@
+"use client"
+
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 import { Heading, Text } from "@medusajs/ui"
@@ -9,10 +12,11 @@ type ShippingDetailsProps = {
 }
 
 const ShippingDetails = ({ order }: ShippingDetailsProps) => {
+  const { t } = useStorefrontI18n()
   return (
     <div>
       <Heading level="h2" className="flex flex-row text-3xl-regular my-6">
-        配送
+        {t.order.shipping}
       </Heading>
       <div className="flex items-start gap-x-8">
         <div
@@ -20,7 +24,7 @@ const ShippingDetails = ({ order }: ShippingDetailsProps) => {
           data-testid="shipping-address-summary"
         >
           <Text className="txt-medium-plus text-ui-fg-base mb-1">
-            收货地址
+            {t.order.shippingAddress}
           </Text>
           <Text className="txt-medium text-ui-fg-subtle">
             {order.shipping_address?.first_name}{" "}
@@ -43,7 +47,9 @@ const ShippingDetails = ({ order }: ShippingDetailsProps) => {
           className="flex flex-col w-1/3 "
           data-testid="shipping-contact-summary"
         >
-          <Text className="txt-medium-plus text-ui-fg-base mb-1">联系方式</Text>
+          <Text className="txt-medium-plus text-ui-fg-base mb-1">
+            {t.order.contact}
+          </Text>
           <Text className="txt-medium text-ui-fg-subtle">
             {order.shipping_address?.phone}
           </Text>
@@ -54,7 +60,9 @@ const ShippingDetails = ({ order }: ShippingDetailsProps) => {
           className="flex flex-col w-1/3"
           data-testid="shipping-method-summary"
         >
-          <Text className="txt-medium-plus text-ui-fg-base mb-1">配送方式</Text>
+          <Text className="txt-medium-plus text-ui-fg-base mb-1">
+            {t.order.shippingMethod}
+          </Text>
           <Text className="txt-medium text-ui-fg-subtle">
             {(order as any).shipping_methods[0]?.name} (
             {convertToLocale({

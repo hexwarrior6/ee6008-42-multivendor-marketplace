@@ -5,6 +5,8 @@ import { Button, Heading, Table } from "@medusajs/ui"
 import Item from "@modules/cart/components/item"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import SkeletonLineItem from "@modules/skeletons/components/skeleton-line-item"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
 type ItemsTemplateProps = {
   cart?: HttpTypes.StoreCart
@@ -20,20 +22,25 @@ function getCheckoutStep(cart: HttpTypes.StoreCart) {
   }
 }
 
-const ItemsTemplate = ({ cart }: ItemsTemplateProps) => {
+const ItemsTemplate = async ({ cart }: ItemsTemplateProps) => {
   if (!cart) {
     return null
   }
 
   const items = cart?.items
   const step = getCheckoutStep(cart)
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).cart
 
-  let sellerName = "商家"
+  let sellerName = t.sellerFallback
 
-  if(cart?.metadata?.store_name) {
-    if (typeof cart.metadata.store_name === 'string') {
+  if (cart?.metadata?.store_name) {
+    if (typeof cart.metadata.store_name === "string") {
       sellerName = cart.metadata.store_name
-    } else if (cart.metadata.store_name && typeof cart.metadata.store_name === 'object') {
+    } else if (
+      cart.metadata.store_name &&
+      typeof cart.metadata.store_name === "object"
+    ) {
       // Try to get string representation if it's an object
       sellerName = String(JSON.stringify(cart.metadata.store_name))
     }
@@ -47,14 +54,14 @@ const ItemsTemplate = ({ cart }: ItemsTemplateProps) => {
       <Table>
         <Table.Header className="border-t-0">
           <Table.Row className="text-ui-fg-subtle txt-medium-plus">
-            <Table.HeaderCell className="!pl-0">商品</Table.HeaderCell>
+            <Table.HeaderCell className="!pl-0">{t.product}</Table.HeaderCell>
             <Table.HeaderCell></Table.HeaderCell>
-            <Table.HeaderCell>数量</Table.HeaderCell>
+            <Table.HeaderCell>{t.quantity}</Table.HeaderCell>
             <Table.HeaderCell className="hidden small:table-cell">
-              价格
+              {t.price}
             </Table.HeaderCell>
             <Table.HeaderCell className="!pr-0 text-right">
-              合计
+              {t.total}
             </Table.HeaderCell>
           </Table.Row>
         </Table.Header>
@@ -82,7 +89,9 @@ const ItemsTemplate = ({ cart }: ItemsTemplateProps) => {
 
       <div className="mt-6">
         <LocalizedClientLink href={`/checkout/${cart.id}?step=` + step}>
-          <Button size="large" className="w-full">从 {sellerName} 结算</Button>
+          <Button size="large" className="w-full">
+            {t.checkoutFrom} {sellerName}
+          </Button>
         </LocalizedClientLink>
       </div>
     </div>

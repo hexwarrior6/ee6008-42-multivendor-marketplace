@@ -4,9 +4,11 @@ import { Heading, Text, clx } from "@medusajs/ui"
 
 import PaymentButton from "../payment-button"
 import { useSearchParams } from "next/navigation"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 
 const Review = ({ cart }: { cart: any }) => {
   const searchParams = useSearchParams()
+  const { t } = useStorefrontI18n()
 
   const isOpen = searchParams.get("step") === "review"
 
@@ -30,7 +32,7 @@ const Review = ({ cart }: { cart: any }) => {
             }
           )}
         >
-          确认订单
+          {t.checkout.reviewOrder}
         </Heading>
       </div>
       {isOpen && previousStepsCompleted && (
@@ -38,7 +40,7 @@ const Review = ({ cart }: { cart: any }) => {
           <div className="flex items-start gap-x-1 w-full mb-6">
             <div className="w-full">
               <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                点击“提交订单”即表示您已阅读、理解并接受使用条款、销售条款和退货政策，并确认已阅读手作市集的隐私政策。
+                {t.checkout.reviewTerms}
               </Text>
             </div>
           </div>

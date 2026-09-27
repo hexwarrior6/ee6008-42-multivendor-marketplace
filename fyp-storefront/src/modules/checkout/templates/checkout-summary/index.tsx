@@ -4,8 +4,13 @@ import ItemsPreviewTemplate from "@modules/cart/templates/preview"
 import DiscountCode from "@modules/checkout/components/discount-code"
 import CartTotals from "@modules/common/components/cart-totals"
 import Divider from "@modules/common/components/divider"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
-const CheckoutSummary = ({ cart }: { cart: any }) => {
+const CheckoutSummary = async ({ cart }: { cart: any }) => {
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).checkout
+
   return (
     <div className="sticky top-0 flex flex-col-reverse small:flex-col gap-y-8 py-8 small:py-0 ">
       <div className="w-full bg-white flex flex-col">
@@ -14,7 +19,7 @@ const CheckoutSummary = ({ cart }: { cart: any }) => {
           level="h2"
           className="flex flex-row text-3xl-regular items-baseline"
         >
-          购物车商品
+          {t.cartItems}
         </Heading>
         <Divider className="my-6" />
         <CartTotals totals={cart} />

@@ -13,6 +13,7 @@ import BillingAddress from "../billing_address"
 import ErrorMessage from "../error-message"
 import ShippingAddress from "../shipping-address"
 import { SubmitButton } from "../submit-button"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 
 const Addresses = ({
   cart,
@@ -24,6 +25,7 @@ const Addresses = ({
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
+  const { t } = useStorefrontI18n()
 
   const isOpen = searchParams.get("step") === "address"
 
@@ -38,7 +40,9 @@ const Addresses = ({
   }
 
   const [message, formAction] = useActionState(
-    (state: any, formData: FormData) => setAddresses(cart?.id || "", state, formData), null
+    (state: any, formData: FormData) =>
+      setAddresses(cart?.id || "", state, formData),
+    null
   )
 
   return (
@@ -48,7 +52,7 @@ const Addresses = ({
           level="h2"
           className="flex flex-row text-3xl-regular gap-x-2 items-baseline"
         >
-          收货地址
+          {t.checkout.shippingAddress}
           {!isOpen && <CheckCircleSolid />}
         </Heading>
         {!isOpen && cart?.shipping_address && (
@@ -58,7 +62,7 @@ const Addresses = ({
               className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
               data-testid="edit-address-button"
             >
-              修改
+              {t.checkout.edit}
             </button>
           </Text>
         )}
@@ -79,14 +83,14 @@ const Addresses = ({
                   level="h2"
                   className="text-3xl-regular gap-x-4 pb-6 pt-8"
                 >
-                  账单地址
+                  {t.checkout.billingAddress}
                 </Heading>
 
                 <BillingAddress cart={cart} />
               </div>
             )}
             <SubmitButton className="mt-6" data-testid="submit-address-button">
-              继续配送
+              {t.checkout.continueToDelivery}
             </SubmitButton>
             <ErrorMessage error={message} data-testid="address-error-message" />
           </div>
@@ -102,7 +106,7 @@ const Addresses = ({
                     data-testid="shipping-address-summary"
                   >
                     <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                      收货地址
+                      {t.checkout.shippingAddress}
                     </Text>
                     <Text className="txt-medium text-ui-fg-subtle">
                       {cart.shipping_address.first_name}{" "}
@@ -126,7 +130,7 @@ const Addresses = ({
                     data-testid="shipping-contact-summary"
                   >
                     <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                      联系方式
+                      {t.checkout.contact}
                     </Text>
                     <Text className="txt-medium text-ui-fg-subtle">
                       {cart.shipping_address.phone}
@@ -141,12 +145,12 @@ const Addresses = ({
                     data-testid="billing-address-summary"
                   >
                     <Text className="txt-medium-plus text-ui-fg-base mb-1">
-                      账单地址
+                      {t.checkout.billingAddress}
                     </Text>
 
                     {sameAsBilling ? (
                       <Text className="txt-medium text-ui-fg-subtle">
-                        账单地址与收货地址相同。
+                        {t.checkout.sameAsShipping}
                       </Text>
                     ) : (
                       <>

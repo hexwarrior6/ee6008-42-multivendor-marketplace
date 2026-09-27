@@ -1,10 +1,12 @@
 "use client"
 
 import QRCode from "qrcode"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { useEffect, useState } from "react"
 
 export default function WeChatQrCode({ value }: { value: string }) {
   const [src, setSrc] = useState("")
+  const { t } = useStorefrontI18n()
 
   useEffect(() => {
     let current = true
@@ -27,7 +29,7 @@ export default function WeChatQrCode({ value }: { value: string }) {
       src={src}
       width={240}
       height={240}
-      alt="微信支付二维码"
+      alt={t.checkout.wechatQrAlt}
       className="rounded-lg border border-ui-border-base"
     />
   )

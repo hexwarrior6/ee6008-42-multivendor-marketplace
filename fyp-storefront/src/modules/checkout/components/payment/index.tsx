@@ -2,6 +2,7 @@
 
 import { isStripeLike, isWeChatPay, paymentInfoMap } from "@lib/constants"
 import { initiatePaymentSession } from "@lib/data/cart"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { RadioGroup } from "@headlessui/react"
 import { CheckCircleSolid, CreditCard } from "@medusajs/icons"
 import { Button, Container, Heading, Text, clx } from "@medusajs/ui"
@@ -34,17 +35,18 @@ const StripePaymentFields = ({
 }) => {
   const stripe = useStripe()
   const elements = useElements()
+  const { t } = useStorefrontI18n()
 
   useEffect(() => {
     submitRef.current = async () => {
-      if (!stripe || !elements) return "银行卡支付尚未准备好，请稍后重试。"
+      if (!stripe || !elements) return t.checkout.cardNotReady
       const result = await elements.submit()
       return result.error?.message || null
     }
     return () => {
       submitRef.current = null
     }
-  }, [elements, stripe, submitRef])
+  }, [elements, stripe, submitRef, t.checkout.cardNotReady])
 
   return (
     <div className="mt-4">
@@ -65,6 +67,7 @@ const Payment = ({
   cart: any
   availablePaymentMethods: any[]
 }) => {
+  const { t } = useStorefrontI18n()
   const activeSession = cart.payment_collection?.payment_sessions?.find(
     (session: any) => ["pending", "requires_more"].includes(session.status)
   )
@@ -87,6 +90,31 @@ const Payment = ({
   const providerIds = useMemo(
     () => availablePaymentMethods?.map((method) => method.id) || [],
     [availablePaymentMethods]
+  )
+  const localizedPaymentInfoMap: Record<
+    string,
+    { title: string; icon: React.ReactElement }
+  > = useMemo(
+    () => ({
+      ...paymentInfoMap,
+      pp_stripe_stripe: {
+        ...paymentInfoMap.pp_stripe_stripe,
+        title: t.checkout.creditCard,
+      },
+      "pp_medusa-payments_default": {
+        ...paymentInfoMap["pp_medusa-payments_default"],
+        title: t.checkout.creditCard,
+      },
+      pp_system_default: {
+        ...paymentInfoMap.pp_system_default,
+        title: t.checkout.manualPayment,
+      },
+      pp_wechat_wechat: {
+        ...paymentInfoMap.pp_wechat_wechat,
+        title: t.checkout.wechatPay,
+      },
+    }),
+    [t.checkout.creditCard, t.checkout.manualPayment, t.checkout.wechatPay]
   )
 
   useEffect(() => {
@@ -113,7 +141,7 @@ const Payment = ({
       await initiatePaymentSession(cart, { provider_id: providerId })
       router.refresh()
     } catch (err: any) {
-      setError(err.message || "无法初始化支付方式，请重试。")
+      setError(err.message || t.checkout.initializePaymentError)
     } finally {
       setIsLoading(false)
     }
@@ -132,13 +160,13 @@ const Payment = ({
     setError(null)
     try {
       if (!activeSession || activeProviderId !== selectedPaymentMethod) {
-        setError("请先选择并初始化支付方式。")
+        setError(t.checkout.selectPaymentFirst)
         return
       }
       if (isStripeLike(selectedPaymentMethod)) {
         const stripeError = await stripeSubmitRef.current?.()
         if (stripeError || !stripeSubmitRef.current) {
-          setError(stripeError || "银行卡支付尚未准备好，请稍后重试。")
+          setError(stripeError || t.checkout.cardNotReady)
           return
         }
       }
@@ -146,7 +174,7 @@ const Payment = ({
         scroll: false,
       })
     } catch (err: any) {
-      setError(err.message || "支付方式验证失败。")
+      setError(err.message || t.checkout.paymentValidationError)
     } finally {
       setIsLoading(false)
     }
@@ -182,7 +210,7 @@ const Payment = ({
             }
           )}
         >
-          支付方式
+          {t.checkout.paymentMethod}
           {!isOpen && paymentReady && <CheckCircleSolid />}
         </Heading>
         {!isOpen && paymentReady && (
@@ -192,7 +220,7 @@ const Payment = ({
               className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
               data-testid="edit-payment-button"
             >
-              修改
+              {t.checkout.edit}
             </button>
           </Text>
         )}
@@ -206,7 +234,7 @@ const Payment = ({
                 key={providerId}
                 paymentProviderId={providerId}
                 selectedPaymentOptionId={selectedPaymentMethod}
-                paymentInfoMap={paymentInfoMap}
+                paymentInfoMap={localizedPaymentInfoMap}
                 disabled={isLoading}
               >
                 {providerId === selectedPaymentMethod &&
@@ -229,11 +257,11 @@ const Payment = ({
                     <div className="mt-4 flex flex-col items-center gap-3 rounded-lg bg-ui-bg-subtle p-5">
                       <WeChatQrCode value={codeUrl} />
                       <Text className="text-center text-ui-fg-subtle">
-                        请使用微信“扫一扫”完成支付，然后进入订单确认。
+                        {t.checkout.wechatScanInstruction}
                       </Text>
                       {isMock && (
                         <Text className="rounded-full bg-yellow-100 px-3 py-1 text-xs text-yellow-800">
-                          本地模拟模式：不会产生真实扣款
+                          {t.checkout.wechatMockBadge}
                         </Text>
                       )}
                     </div>
@@ -245,11 +273,11 @@ const Payment = ({
 
         {!paidByGiftcard && providerIds.length === 0 && (
           <Text className="text-ui-fg-error">
-            当前区域没有可用支付方式，请检查后台区域配置。
+            {t.checkout.noPaymentMethods}
           </Text>
         )}
 
-        {paidByGiftcard && <Text>礼品卡已支付全部金额。</Text>}
+        {paidByGiftcard && <Text>{t.checkout.giftCardPaid}</Text>}
         <ErrorMessage
           error={error}
           data-testid="payment-method-error-message"
@@ -262,7 +290,7 @@ const Payment = ({
           disabled={continueDisabled}
           data-testid="submit-payment-button"
         >
-          继续确认订单
+          {t.checkout.continueToReview}
         </Button>
       </div>
 
@@ -271,36 +299,36 @@ const Payment = ({
           <div className="flex w-full items-start gap-x-1">
             <div className="flex w-1/3 flex-col">
               <Text className="mb-1 txt-medium-plus text-ui-fg-base">
-                支付方式
+                {t.checkout.paymentMethod}
               </Text>
               <Text
                 className="txt-medium text-ui-fg-subtle"
                 data-testid="payment-method-summary"
               >
-                {paymentInfoMap[activeProviderId || ""]?.title ||
+                {localizedPaymentInfoMap[activeProviderId || ""]?.title ||
                   activeProviderId}
               </Text>
             </div>
             <div className="flex w-1/3 flex-col">
               <Text className="mb-1 txt-medium-plus text-ui-fg-base">
-                支付详情
+                {t.checkout.paymentDetails}
               </Text>
               <div className="flex items-center gap-2 txt-medium text-ui-fg-subtle">
                 <Container className="flex h-7 w-fit items-center bg-ui-button-neutral-hover p-2">
-                  {paymentInfoMap[activeProviderId || ""]?.icon || (
+                  {localizedPaymentInfoMap[activeProviderId || ""]?.icon || (
                     <CreditCard />
                   )}
                 </Container>
                 <Text>
                   {isWeChatPay(activeProviderId)
-                    ? "扫码支付"
-                    : "将在下一步完成"}
+                    ? t.checkout.wechatScan
+                    : t.checkout.paymentNextStep}
                 </Text>
               </div>
             </div>
           </div>
         ) : paidByGiftcard ? (
-          <Text>礼品卡</Text>
+          <Text>{t.checkout.giftCard}</Text>
         ) : null}
       </div>
       <Divider className="mt-8" />

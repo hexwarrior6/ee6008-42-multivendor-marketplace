@@ -7,21 +7,25 @@ import { Text } from "@medusajs/ui"
 import { HttpTypes } from "@medusajs/types"
 import { getProductReviews } from "@lib/data/products"
 import { ProductReviewsComponent } from "@modules/products/components/product-reviews"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
 type OrderReviewTemplateProps = {
   order: HttpTypes.StoreOrder
 }
 
 export default async function OrderReviewTemplate({
-  order
+  order,
 }: OrderReviewTemplateProps) {
   const cookies = await nextCookies()
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).order
 
   const isOnboarding = cookies.get("_medusa_onboarding")?.value === "true"
-  const fulfilledItems = order.items || [];
-  const uniqueItems: { [key: string]: any } = {};
-  const { product_reviews } = await getProductReviews({ order_id: order?.id})
-  
+  const fulfilledItems = order.items || []
+  const uniqueItems: { [key: string]: any } = {}
+  const { product_reviews } = await getProductReviews({ order_id: order?.id })
+
   for (const item of fulfilledItems) {
     uniqueItems[item.product_id as string] = item
   }
@@ -38,31 +42,43 @@ export default async function OrderReviewTemplate({
             level="h1"
             className="flex flex-col gap-y-3 text-ui-fg-base text-3xl mb-4"
           >
-            <span>希望您喜欢这次订单！</span>
+            <span>{t.reviewTitle}</span>
           </Heading>
           <div>
             <Text className="mt-2">
-              下单日期：{" "}
+              {t.orderDate}:{" "}
               <span data-testid="order-date">
-                {new Date(order.created_at).toDateString()}
+                {new Date(order.created_at).toLocaleDateString(locale)}
               </span>
             </Text>
             <Text className="mt-2 text-ui-fg-interactive">
-              订单编号：<span data-testid="order-id">{order.display_id}</span>
+              {t.orderId}:{" "}
+              <span data-testid="order-id">{order.display_id}</span>
             </Text>
           </div>
           <Heading level="h2" className="flex flex-row text-3xl-regular">
-            商品评价
+            {t.reviews}
           </Heading>
-          <ul role="list" className="mt-4 divide-y divide-gray-200 text-ui-fg-base">
-              {Object.values(uniqueItems).map((item) => {
-                const review = product_reviews ? product_reviews.find((review) => review.product_id === item.variant.product.id) : undefined;
-                return (
-                  <li key={item.id} className="flex py-4">
-                    <ProductReviewsComponent orderId={order.id} lineItem={item} productReview={review} />
-                  </li>
-                )
-              })}
+          <ul
+            role="list"
+            className="mt-4 divide-y divide-gray-200 text-ui-fg-base"
+          >
+            {Object.values(uniqueItems).map((item) => {
+              const review = product_reviews
+                ? product_reviews.find(
+                    (review) => review.product_id === item.variant.product.id
+                  )
+                : undefined
+              return (
+                <li key={item.id} className="flex py-4">
+                  <ProductReviewsComponent
+                    orderId={order.id}
+                    lineItem={item}
+                    productReview={review}
+                  />
+                </li>
+              )
+            })}
           </ul>
           {/* <Items order={order} />
           <CartTotals totals={order} />

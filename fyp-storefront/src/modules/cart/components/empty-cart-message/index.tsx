@@ -1,21 +1,29 @@
 import { Heading, Text } from "@medusajs/ui"
 
 import InteractiveLink from "@modules/common/components/interactive-link"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
-const EmptyCartMessage = () => {
+const EmptyCartMessage = async () => {
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).cart
+
   return (
-    <div className="py-48 px-2 flex flex-col justify-center items-start" data-testid="empty-cart-message">
+    <div
+      className="py-48 px-2 flex flex-col justify-center items-start"
+      data-testid="empty-cart-message"
+    >
       <Heading
         level="h1"
         className="flex flex-row text-3xl-regular gap-x-2 items-baseline"
       >
-        购物车
+        {t.emptyTitle}
       </Heading>
       <Text className="text-base-regular mt-4 mb-6 max-w-[32rem]">
-        您的购物车还是空的。请通过下面的链接浏览商品。
+        {t.emptyBody}
       </Text>
       <div>
-        <InteractiveLink href="/store">浏览商品</InteractiveLink>
+        <InteractiveLink href="/store">{t.browseProducts}</InteractiveLink>
       </div>
     </div>
   )
