@@ -8,6 +8,7 @@ module.exports = {
       {
         jsc: {
           parser: { syntax: "typescript", decorators: true },
+          transform: { react: { runtime: "automatic" } },
         },
       },
     ],
