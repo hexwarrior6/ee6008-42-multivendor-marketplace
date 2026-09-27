@@ -1,8 +1,11 @@
+"use client"
+
 import { forwardRef, useImperativeHandle, useMemo, useRef } from "react"
 
 import NativeSelect, {
   NativeSelectProps,
 } from "@modules/common/components/native-select"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { HttpTypes } from "@medusajs/types"
 
 const CountrySelect = forwardRef<
@@ -10,8 +13,9 @@ const CountrySelect = forwardRef<
   NativeSelectProps & {
     region?: HttpTypes.StoreRegion
   }
->(({ placeholder = "Country", region, defaultValue, ...props }, ref) => {
+>(({ placeholder, region, defaultValue, ...props }, ref) => {
   const innerRef = useRef<HTMLSelectElement>(null)
+  const { t } = useStorefrontI18n()
 
   useImperativeHandle<HTMLSelectElement | null, HTMLSelectElement | null>(
     ref,
@@ -32,7 +36,7 @@ const CountrySelect = forwardRef<
   return (
     <NativeSelect
       ref={innerRef}
-      placeholder={placeholder}
+      placeholder={placeholder ?? t.checkout.country}
       defaultValue={defaultValue}
       {...props}
     >

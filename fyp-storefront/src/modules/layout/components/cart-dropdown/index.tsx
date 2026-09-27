@@ -9,6 +9,7 @@ import {
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import DeleteButton from "@modules/common/components/delete-button"
 import LineItemOptions from "@modules/common/components/line-item-options"
 import LineItemPrice from "@modules/common/components/line-item-price"
@@ -26,6 +27,7 @@ const CartDropdown = ({
     undefined
   )
   const [cartDropdownOpen, setCartDropdownOpen] = useState(false)
+  const { t } = useStorefrontI18n()
   
   const open = () => setCartDropdownOpen(true)
   const close = () => setCartDropdownOpen(false)
@@ -105,7 +107,7 @@ const CartDropdown = ({
             className="hover:text-ui-fg-base"
             href="/cart"
             data-testid="nav-cart-link"
-          >{`Cart (${totalItems})`}</LocalizedClientLink>
+          >{t.cart.navLink.replace("{count}", String(totalItems))}</LocalizedClientLink>
         </PopoverButton>
         <Transition
           show={cartDropdownOpen}
@@ -123,7 +125,7 @@ const CartDropdown = ({
             data-testid="nav-cart-dropdown"
           >
             <div className="p-4 flex items-center justify-center">
-              <h3 className="text-large-semi">Cart</h3>
+              <h3 className="text-large-semi">{t.cart.title}</h3>
             </div>
             {validCarts.length > 0 ? (
               <>
@@ -131,9 +133,9 @@ const CartDropdown = ({
                   {validCarts.map((cart) => {
                     if (!cart.items?.length) return null
                     
-                    const storeName = typeof cart.metadata?.store_name === 'string' 
-                      ? cart.metadata.store_name 
-                      : 'Seller'
+                    const storeName = typeof cart.metadata?.store_name === 'string'
+                      ? cart.metadata.store_name
+                      : t.cart.sellerFallback
                     
                     return (
                       <div key={cart.id} className="mb-4">
@@ -186,7 +188,7 @@ const CartDropdown = ({
                                           data-testid="cart-item-quantity"
                                           data-value={item.quantity}
                                         >
-                                          Quantity: {item.quantity}
+                                          {t.cart.quantityLabel.replace("{count}", String(item.quantity))}
                                         </span>
                                       </div>
                                       <div className="flex justify-end">
@@ -204,7 +206,7 @@ const CartDropdown = ({
                                     className="mt-1"
                                     data-testid="cart-item-remove-button"
                                   >
-                                    Remove
+                                    {t.cart.remove}
                                   </DeleteButton>
                                 </div>
                               </div>
@@ -217,8 +219,7 @@ const CartDropdown = ({
                 <div className="p-4 flex flex-col gap-y-4 text-small-regular border-t border-gray-200">
                   <div className="flex items-center justify-between">
                     <span className="text-ui-fg-base font-semibold">
-                      Subtotal{" "}
-                      <span className="font-normal">(excl. taxes)</span>
+                      {t.cart.subtotalExclTaxes}
                     </span>
                     <span
                       className="text-large-semi"
@@ -237,18 +238,18 @@ const CartDropdown = ({
                       size="large"
                       data-testid="go-to-cart-button"
                     >
-                      Go to cart
+                      {t.cart.goToCart}
                     </Button>
                   </LocalizedClientLink>
                 </div>
               </>
             ) : (
               <div className="p-4 flex flex-col gap-y-4 text-small-regular items-center justify-center">
-                <span>Your shopping cart is empty.</span>
+                <span>{t.cart.emptyShort}</span>
                 <div className="w-full">
                   <LocalizedClientLink href="/store" passHref>
                     <Button className="w-full" size="large">
-                      Start shopping
+                      {t.cart.startShopping}
                     </Button>
                   </LocalizedClientLink>
                 </div>

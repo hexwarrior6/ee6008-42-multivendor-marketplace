@@ -5,10 +5,17 @@ import CartTemplate from "@modules/cart/templates"
 import MultiVendorCartTemplate from "@modules/cart/templates/multivendor-cart"
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
-export const metadata: Metadata = {
-  title: "Cart",
-  description: "View your cart",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).cart
+
+  return {
+    title: t.emptyTitle,
+    description: t.metadataDescription,
+  }
 }
 
 export default async function Cart() {
