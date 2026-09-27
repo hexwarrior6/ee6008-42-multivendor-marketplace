@@ -437,4 +437,205 @@ if (unexpectedChineseFiles.length) {
   )
 }
 
+// ---------------------------------------------------------------------------
+// S5 localization regression checks
+// ---------------------------------------------------------------------------
+
+const typescript = require("typescript")
+
+function collectDictionaryEntries(value, prefix = "") {
+  return Object.entries(value).flatMap(([key, child]) => {
+    const entryPath = prefix ? `${prefix}.${key}` : key
+    return child && typeof child === "object"
+      ? collectDictionaryEntries(child, entryPath)
+      : [[entryPath, child]]
+  })
+}
+
+const transpiledDictionary = typescript.transpileModule(
+  fs.readFileSync(path.join(root, "src/lib/i18n/storefront.ts"), "utf8"),
+  {
+    compilerOptions: {
+      module: typescript.ModuleKind.CommonJS,
+      target: typescript.ScriptTarget.ES2019,
+    },
+  }
+).outputText
+
+const dictionaryModule = { exports: {} }
+new Function("module", "exports", transpiledDictionary)(
+  dictionaryModule,
+  dictionaryModule.exports
+)
+const { storefrontDictionaries } = dictionaryModule.exports
+
+const enEntries = collectDictionaryEntries(storefrontDictionaries.en)
+const zhEntries = collectDictionaryEntries(storefrontDictionaries["zh-CN"])
+const enEntryMap = new Map(enEntries)
+const zhEntryMap = new Map(zhEntries)
+
+const missingInZh = enEntries
+  .map(([entryPath]) => entryPath)
+  .filter((entryPath) => !zhEntryMap.has(entryPath))
+const missingInEn = zhEntries
+  .map(([entryPath]) => entryPath)
+  .filter((entryPath) => !enEntryMap.has(entryPath))
+
+if (missingInZh.length || missingInEn.length) {
+  throw new Error(
+    `Dictionary key parity failed. Missing in zh-CN: ${missingInZh.join(
+      ", "
+    ) || "none"}. Missing in en: ${missingInEn.join(", ") || "none"}.`
+  )
+}
+
+const placeholderMismatch = enEntries.filter(([entryPath, enValue]) => {
+  if (typeof enValue !== "string") {
+    return false
+  }
+  const placeholders = enValue.match(/\{[a-zA-Z]+\}/g) ?? []
+  const zhValue = zhEntryMap.get(entryPath)
+  return placeholders.some(
+    (placeholder) => !String(zhValue).includes(placeholder)
+  )
+})
+
+if (placeholderMismatch.length) {
+  throw new Error(
+    `zh-CN values are missing interpolation placeholders: ${placeholderMismatch
+      .map(([entryPath]) => entryPath)
+      .join(", ")}`
+  )
+}
+
+const s5LocalizedComponents = [
+  ["nav cart dropdown", "src/modules/layout/components/cart-dropdown/index.tsx"],
+  [
+    "cart mismatch banner",
+    "src/modules/layout/components/cart-mismatch-banner/index.tsx",
+  ],
+  ["cart totals", "src/modules/common/components/cart-totals/index.tsx"],
+  ["cart page template", "src/modules/cart/templates/multivendor-cart.tsx"],
+  ["cart page metadata", "src/app/[countryCode]/(main)/cart/page.tsx"],
+  ["checkout header", "src/app/[countryCode]/(checkout)/layout.tsx"],
+  ["discount code", "src/modules/checkout/components/discount-code/index.tsx"],
+  ["address select", "src/modules/checkout/components/address-select/index.tsx"],
+  ["checkout country select", "src/modules/checkout/components/country-select/index.tsx"],
+  ["account orders page", "src/app/[countryCode]/(main)/account/@dashboard/orders/page.tsx"],
+  ["account order overview", "src/modules/account/components/order-overview/index.tsx"],
+  ["account order card", "src/modules/account/components/order-card/index.tsx"],
+  ["account profile page", "src/app/[countryCode]/(main)/account/@dashboard/profile/page.tsx"],
+  ["account info", "src/modules/account/components/account-info/index.tsx"],
+  ["profile name widget", "src/modules/account/components/profile-name/index.tsx"],
+  ["profile email widget", "src/modules/account/components/profile-email/index.tsx"],
+  ["profile phone widget", "src/modules/account/components/profile-phone/index.tsx"],
+  ["profile password widget", "src/modules/account/components/profile-password/index.tsx"],
+  ["profile billing address", "src/modules/account/components/profile-billing-address/index.tsx"],
+  ["add address form", "src/modules/account/components/address-card/add-address.tsx"],
+  ["edit address form", "src/modules/account/components/address-card/edit-address-modal.tsx"],
+  ["product review form", "src/modules/products/components/product-reviews/form.tsx"],
+  ["order transfer page", "src/app/[countryCode]/(main)/order/[id]/transfer/[token]/page.tsx"],
+  ["order transfer accept page", "src/app/[countryCode]/(main)/order/[id]/transfer/[token]/accept/page.tsx"],
+  ["order transfer decline page", "src/app/[countryCode]/(main)/order/[id]/transfer/[token]/decline/page.tsx"],
+  ["order transfer actions", "src/modules/order/components/transfer-actions/index.tsx"],
+  ["home page metadata", "src/app/[countryCode]/(main)/page.tsx"],
+  ["product page metadata", "src/app/[countryCode]/(main)/products/[handle]/page.tsx"],
+  ["footer medusa cta", "src/modules/layout/components/medusa-cta/index.tsx"],
+  ["side menu country select", "src/modules/layout/components/country-select/index.tsx"],
+  ["custom orders dashboard page", "src/app/[countryCode]/(main)/account/@dashboard/custom-orders/page.tsx"],
+  ["custom order card", "src/modules/custom-orders/components/custom-order-card/index.tsx"],
+  ["custom order detail template", "src/modules/custom-orders/templates/detail-template.tsx"],
+]
+
+for (const [name, relativePath] of s5LocalizedComponents) {
+  const source = read(relativePath)
+  if (
+    !source.includes("useStorefrontI18n") &&
+    !source.includes("getStorefrontDictionary")
+  ) {
+    throw new Error(`S5 regression: ${name} must read copy from the dictionary`)
+  }
+}
+
+const s5ResidueChecks = [
+  ["nav cart dropdown", "src/modules/layout/components/cart-dropdown/index.tsx", [
+    "Your shopping cart is empty.",
+    "Start shopping",
+    "Go to cart",
+    "(excl. taxes)",
+  ]],
+  ["cart mismatch banner", "src/modules/layout/components/cart-mismatch-banner/index.tsx", [
+    "Run transfer again",
+    "Transferring..",
+    "Something went wrong when we tried to transfer your cart",
+  ]],
+  ["cart totals", "src/modules/common/components/cart-totals/index.tsx", [
+    "Subtotal (excl. shipping and taxes)",
+  ]],
+  ["checkout header", "src/app/[countryCode]/(checkout)/layout.tsx", [
+    "Back to shopping cart",
+    "Medusa Store",
+  ]],
+  ["discount code", "src/modules/checkout/components/discount-code/index.tsx", [
+    "Add Promotion Code(s)",
+    "Promotion(s) applied:",
+  ]],
+  ["address select", "src/modules/checkout/components/address-select/index.tsx", [
+    "Choose an address",
+  ]],
+  ["account orders page", "src/app/[countryCode]/(main)/account/@dashboard/orders/page.tsx", [
+    "View your previous orders",
+  ]],
+  ["account order overview", "src/modules/account/components/order-overview/index.tsx", [
+    "Nothing to see here",
+    "Continue shopping",
+  ]],
+  ["account order card", "src/modules/account/components/order-card/index.tsx", [
+    "See details",
+    "toDateString",
+  ]],
+  ["account overview", "src/modules/account/components/overview/index.tsx", [
+    "toDateString",
+  ]],
+  ["account profile page", "src/app/[countryCode]/(main)/account/@dashboard/profile/page.tsx", [
+    "View and edit your Medusa Store profile",
+  ]],
+  ["account info", "src/modules/account/components/account-info/index.tsx", [
+    "succesfully",
+  ]],
+  ["product review form", "src/modules/products/components/product-reviews/form.tsx", [
+    "Add a review",
+    "Submit Review",
+    "Your review has been submitted.",
+    "Share your thoughts about this product",
+  ]],
+  ["order transfer page", "src/app/[countryCode]/(main)/order/[id]/transfer/[token]/page.tsx", [
+    "Transfer request for order",
+    "no further action is required",
+  ]],
+  ["order transfer accept page", "src/app/[countryCode]/(main)/order/[id]/transfer/[token]/accept/page.tsx", [
+    "transfered",
+  ]],
+  ["root not-found page", "src/app/not-found.tsx", ["Page not found"]],
+  ["checkout not-found page", "src/app/[countryCode]/(checkout)/not-found.tsx", ["Page not found"]],
+  ["cart not-found page", "src/app/[countryCode]/(main)/cart/not-found.tsx", ["Clear your cookies"]],
+  ["footer medusa cta", "src/modules/layout/components/medusa-cta/index.tsx", ["Powered by"]],
+  ["side menu country select", "src/modules/layout/components/country-select/index.tsx", ["Shipping to:"]],
+  ["home page metadata", "src/app/[countryCode]/(main)/page.tsx", [
+    "Medusa Next.js Starter Template",
+  ]],
+]
+
+for (const [name, relativePath, forbiddenStrings] of s5ResidueChecks) {
+  const source = read(relativePath)
+  for (const forbidden of forbiddenStrings) {
+    if (source.includes(forbidden)) {
+      throw new Error(
+        `S5 regression: ${name} still contains English copy "${forbidden}". Restore the dictionary lookup.`
+      )
+    }
+  }
+}
+
+console.log("S5 localization regression checks passed")
 console.log("S2 storefront localization checks passed")
