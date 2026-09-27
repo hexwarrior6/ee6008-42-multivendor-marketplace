@@ -9,9 +9,10 @@ import Thumbnail from "@modules/products/components/thumbnail"
 type ItemProps = {
   item: HttpTypes.StoreCartLineItem | HttpTypes.StoreOrderLineItem
   currencyCode: string
+  variantLabel?: string
 }
 
-const Item = ({ item, currencyCode }: ItemProps) => {
+const Item = ({ item, currencyCode, variantLabel }: ItemProps) => {
   return (
     <Table.Row className="w-full" data-testid="product-row">
       <Table.Cell className="!pl-0 p-4 w-24">
@@ -27,7 +28,11 @@ const Item = ({ item, currencyCode }: ItemProps) => {
         >
           {item.product_title}
         </Text>
-        <LineItemOptions variant={item.variant} data-testid="product-variant" />
+        <LineItemOptions
+          variant={item.variant}
+          variantLabel={variantLabel}
+          data-testid="product-variant"
+        />
       </Table.Cell>
 
       <Table.Cell className="!pr-0">

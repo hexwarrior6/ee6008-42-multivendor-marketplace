@@ -4,6 +4,7 @@ import {
   Head,
   Heading,
   Html,
+  Link,
   Preview,
   Section,
   Text,
@@ -63,6 +64,16 @@ function ChineseOrderEmail({ order, delivered }: OrderEmailProps & { delivered: 
           <Text className="text-gray-600">
             {name}，您好！{delivered ? "感谢您的支持，欢迎再次选购。" : "我们正在处理订单，发货后会及时通知您。"}
           </Text>
+          {delivered && (
+            <Text className="mt-2">
+              <Link
+                href={`${process.env.STORE_CORS}/order/${order.id}/reviews`}
+                className="text-blue-600 underline"
+              >
+                点击这里为您的商品写评价
+              </Link>
+            </Text>
+          )}
         </Container>
         <OrderSummary order={order} />
         <Section className="mt-8 bg-gray-50 p-6">

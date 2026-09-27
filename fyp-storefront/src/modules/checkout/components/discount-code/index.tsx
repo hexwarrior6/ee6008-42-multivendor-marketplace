@@ -20,7 +20,7 @@ type DiscountCodeProps = {
 const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
   const [isOpen, setIsOpen] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState("")
-  const { t } = useStorefrontI18n()
+  const { locale, t } = useStorefrontI18n()
 
   const { promotions = [] } = cart
   const removePromotionCode = async (code: string) => {
@@ -133,7 +133,7 @@ const DiscountCode: React.FC<DiscountCodeProps> = ({ cart }) => {
                               {promotion.application_method.type ===
                               "percentage"
                                 ? `${promotion.application_method.value}%`
-                                : convertToLocale({
+                                : convertToLocale({ locale,
                                     amount: +promotion.application_method.value,
                                     currency_code:
                                       promotion.application_method

@@ -1,6 +1,6 @@
 import { getBaseURL } from "@lib/util/env"
 import { Metadata } from "next"
-import "styles/globals.css"
+import "../styles/globals.css"
 import { StorefrontLocaleProvider } from "@lib/i18n/storefront-context"
 import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 

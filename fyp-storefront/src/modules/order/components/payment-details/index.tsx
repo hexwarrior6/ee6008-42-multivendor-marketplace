@@ -53,7 +53,7 @@ const PaymentDetails = ({ order }: PaymentDetailsProps) => {
                 <Text data-testid="payment-amount">
                   {isStripeLike(payment.provider_id) && payment.data?.card_last4
                     ? `**** **** **** ${payment.data.card_last4}`
-                    : `${convertToLocale({
+                    : `${convertToLocale({ locale,
                         amount: payment.amount,
                         currency_code: order.currency_code,
                       })}, ${t.order.paidAt}: ${new Date(

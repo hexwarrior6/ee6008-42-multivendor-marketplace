@@ -12,7 +12,7 @@ type ShippingDetailsProps = {
 }
 
 const ShippingDetails = ({ order }: ShippingDetailsProps) => {
-  const { t } = useStorefrontI18n()
+  const { locale, t } = useStorefrontI18n()
   return (
     <div>
       <Heading level="h2" className="flex flex-row text-3xl-regular my-6">
@@ -65,7 +65,7 @@ const ShippingDetails = ({ order }: ShippingDetailsProps) => {
           </Text>
           <Text className="txt-medium text-ui-fg-subtle">
             {(order as any).shipping_methods[0]?.name} (
-            {convertToLocale({
+            {convertToLocale({ locale,
               amount: order.shipping_methods?.[0].total ?? 0,
               currency_code: order.currency_code,
             })}

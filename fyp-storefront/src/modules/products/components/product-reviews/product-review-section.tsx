@@ -1,7 +1,9 @@
 "use client"
 
-import { StoreProductReviewStats } from "@lambdacurry/medusa-plugins-sdk/dist/esm/types/product-review-stats"
-import { StoreProductReview } from "@lambdacurry/medusa-plugins-sdk/dist/esm/types/product-reviews"
+import {
+  StoreProductReviewStats,
+  StoreProductReview,
+} from "@lambdacurry/medusa-plugins-sdk"
 import { FC } from "react"
 import { StarRating } from "./starRating"
 import { Text } from "@medusajs/ui"

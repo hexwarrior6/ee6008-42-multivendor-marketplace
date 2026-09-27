@@ -8,9 +8,10 @@ import SkeletonLineItem from "@modules/skeletons/components/skeleton-line-item"
 
 type ItemsProps = {
   order: HttpTypes.StoreOrder
+  variantLabel?: string
 }
 
-const Items = ({ order }: ItemsProps) => {
+const Items = ({ order, variantLabel }: ItemsProps) => {
   const items = order.items
 
   return (
@@ -29,6 +30,7 @@ const Items = ({ order }: ItemsProps) => {
                       key={item.id}
                       item={item}
                       currencyCode={order.currency_code}
+                      variantLabel={variantLabel}
                     />
                   )
                 })

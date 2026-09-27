@@ -121,9 +121,8 @@ describe("S5 customer guards on the storefront custom-order API", () => {
     const req = customerReq({ actor_type: "customer", actor_id: "customer-auth" }, {
       metadata: { gift: true },
     })
-    ;(req.scope as { resolve: (key: string) => unknown }).resolve = (
-      key: string
-    ) => (key === "custom_order" ? service : undefined)
+    ;(req as unknown as { scope: { resolve: (key: string) => unknown } }).scope.resolve =
+      (key: string) => (key === "custom_order" ? service : undefined)
 
     const { res, result } = response()
     await PATCH(req, res as never)

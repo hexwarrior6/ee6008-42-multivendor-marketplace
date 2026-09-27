@@ -52,7 +52,7 @@ const Shipping: React.FC<ShippingProps> = ({
   cart,
   availableShippingMethods,
 }) => {
-  const { t } = useStorefrontI18n()
+  const { locale, t } = useStorefrontI18n()
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingPrices, setIsLoadingPrices] = useState(true)
 
@@ -274,12 +274,12 @@ const Shipping: React.FC<ShippingProps> = ({
                         </div>
                         <span className="justify-self-end text-ui-fg-base">
                           {option.price_type === "flat" ? (
-                            convertToLocale({
+                            convertToLocale({ locale,
                               amount: option.amount!,
                               currency_code: cart?.currency_code,
                             })
                           ) : calculatedPricesMap[option.id] ? (
-                            convertToLocale({
+                            convertToLocale({ locale,
                               amount: calculatedPricesMap[option.id],
                               currency_code: cart?.currency_code,
                             })
@@ -351,7 +351,7 @@ const Shipping: React.FC<ShippingProps> = ({
                             </div>
                           </div>
                           <span className="justify-self-end text-ui-fg-base">
-                            {convertToLocale({
+                            {convertToLocale({ locale,
                               amount: option.amount!,
                               currency_code: cart?.currency_code,
                             })}
@@ -392,7 +392,7 @@ const Shipping: React.FC<ShippingProps> = ({
                 </Text>
                 <Text className="txt-medium text-ui-fg-subtle">
                   {cart.shipping_methods!.at(-1)!.name}{" "}
-                  {convertToLocale({
+                  {convertToLocale({ locale,
                     amount: cart.shipping_methods!.at(-1)!.amount!,
                     currency_code: cart?.currency_code,
                   })}

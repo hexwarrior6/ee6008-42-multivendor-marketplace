@@ -36,11 +36,12 @@ const MobileActions: React.FC<MobileActionsProps> = ({
   optionsDisabled,
 }) => {
   const { state, open, close } = useToggleState()
-  const { t } = useStorefrontI18n()
+  const { locale, t } = useStorefrontI18n()
 
   const price = getProductPrice({
     product: product,
     variantId: variant?.id,
+    locale,
   })
 
   const selectedPrice = useMemo(() => {

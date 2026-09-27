@@ -9,13 +9,13 @@ type OrderSummaryProps = {
 }
 
 const OrderSummary = ({ order }: OrderSummaryProps) => {
-  const { t } = useStorefrontI18n()
+  const { locale, t } = useStorefrontI18n()
   const getAmount = (amount?: number | null) => {
     if (!amount) {
       return
     }
 
-    return convertToLocale({
+    return convertToLocale({ locale,
       amount,
       currency_code: order.currency_code,
     })

@@ -30,6 +30,7 @@ const en = {
       "The cart you tried to access does not exist. Clear your cookies and try again.",
     shippingTo: "Shipping to:",
     poweredBy: "Powered by",
+    selectPlaceholder: "Select...",
   },
   account: {
     account: "Account",
@@ -186,6 +187,7 @@ const en = {
     checkoutFrom: "Checkout from",
     navLink: "Cart ({count})",
     title: "Cart",
+    variantLabel: "Variant: {title}",
     quantityLabel: "Quantity: {count}",
     remove: "Remove",
     subtotalExclTaxes: "Subtotal (excl. taxes)",
@@ -263,6 +265,7 @@ const en = {
     apply: "Apply",
     promotionsApplied: "Promotion(s) applied:",
     removePromotionSr: "Remove discount code from order",
+    metadataTitle: "Checkout",
   },
   order: {
     confirmationMetadataTitle: "Order confirmed",
@@ -494,6 +497,7 @@ const zhCN: StorefrontDictionary = {
     cartNotFoundBody: "您访问的购物车不存在。请清除 Cookie 后重试。",
     shippingTo: "配送至：",
     poweredBy: "技术支持：",
+    selectPlaceholder: "请选择",
   },
   account: {
     account: "账户",
@@ -645,6 +649,7 @@ const zhCN: StorefrontDictionary = {
     checkoutFrom: "结算商家：",
     navLink: "购物车 ({count})",
     title: "购物车",
+    variantLabel: "规格：{title}",
     quantityLabel: "数量：{count}",
     remove: "删除",
     subtotalExclTaxes: "小计（不含税）",
@@ -718,6 +723,7 @@ const zhCN: StorefrontDictionary = {
     apply: "使用",
     promotionsApplied: "已使用的优惠码：",
     removePromotionSr: "从订单中移除优惠码",
+    metadataTitle: "结账",
   },
   order: {
     confirmationMetadataTitle: "订单已确认",

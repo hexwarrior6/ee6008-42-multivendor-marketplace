@@ -13,10 +13,11 @@ export default function ProductPrice({
   product: HttpTypes.StoreProduct
   variant?: HttpTypes.StoreProductVariant
 }) {
-  const { t } = useStorefrontI18n()
+  const { locale, t } = useStorefrontI18n()
   const { cheapestPrice, variantPrice } = getProductPrice({
     product,
     variantId: variant?.id,
+    locale,
   })
 
   const selectedPrice = variant ? variantPrice : cheapestPrice
