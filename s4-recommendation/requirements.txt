@@ -1,0 +1,32 @@
+# =============================================================================
+# S4 AI 推荐引擎 — 依赖清单
+#
+# 安装：  pip install -r requirements.txt
+# 说明：  核心流程只需 numpy；PostgreSQL 与 LightFM 为可选，按需启用。
+#         不装可选依赖也能跑「离线 CSV」与「SQLite 模拟库」流程（见 README §6）。
+# =============================================================================
+
+# --- 核心（必需）-------------------------------------------------------------
+# 数值计算：稠密 SVD、隐反馈 ALS、评估指标
+numpy>=1.21
+
+# --- 可选：连接 PostgreSQL（云端 Railway / 本地）-----------------------------
+# 代码支持 psycopg3 或 psycopg2，二者装其一即可。
+# Windows + Python 3.9 有预编译 wheel，无需本地编译器：
+psycopg2-binary>=2.9
+# psycopg[binary]>=3.1
+
+# --- 可选：LightFM 对比模型 --------------------------------------------------
+# ⚠️ PyPI 没有 Windows 预编译 wheel，pip 直装会因缺少 MSVC 编译器而失败。
+# 推荐改用 conda-forge（会自动装好二进制包）：
+#     conda install -n <你的环境> -c conda-forge lightfm --solver=libmamba
+# 装好后用 `--models lightfm` 或 `--models all` 启用；未装则自动跳过该模型。
+# 为避免 `pip install -r requirements.txt` 失败，下面两行保持注释：
+# lightfm>=1.17
+# scipy>=1.10
+
+# --- 可选：开发 / 测试 -------------------------------------------------------
+# 单元测试仅用标准库 unittest，无需任何额外依赖。
+# 需要 lint 或 pytest 时再手动安装：
+# pytest>=7.4
+# ruff>=0.5

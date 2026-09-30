@@ -1,0 +1,22 @@
+# 生成物 — 避免入库
+artifacts/
+out/
+out_syn.csv
+__pycache__/
+*.pyc
+*.npz
+.env
+.env.*
+!.env.example
+build/
+dist/
+*.egg-info/
+src/**/__pycache__/
+scripts/**/__pycache__/
+tests/**/__pycache__/
+# IDE
+.idea/
+**/.idea/
+
+# 注意：simulated_marketplace.db 故意不忽略——它是给组员的单文件模拟数据，
+# 可随仓库一起分享；也可用 `python scripts/build_simulated_db.py` 随时重建。
