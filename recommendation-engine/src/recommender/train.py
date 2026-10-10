@@ -1,6 +1,6 @@
 """Command-line entry point for the recommender.
 
-Typical usage (from s4-recommendation/):
+Typical usage (from recommendation-engine/):
   python -m recommender.train --inspect
   python -m recommender.train --models all --export artifacts/recommendations.json
   python -m recommender.train --offline-rows scripts/sample_orders.csv

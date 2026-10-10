@@ -12,7 +12,7 @@ CI 模拟），读取平台自身的订单与商品元数据来训练，无新�
 ## 1. 目录结构
 
 ```
-s4-recommendation/
+recommendation-engine/
 ├─ pyproject.toml                 # 包定义（src 布局，可 pip install -e .）
 ├─ requirements.txt               # 依赖清单（核心 + 可选，清晰分组）
 ├─ README.md                      # 本文（快速上手）
@@ -51,7 +51,7 @@ s4-recommendation/
 ### 2.1 安装
 
 ```bash
-cd s4-recommendation
+cd recommendation-engine
 
 # 方式一（推荐）：以可编辑方式安装本包 → 之后任意目录都能 import recommender
 pip install -e .
@@ -72,7 +72,7 @@ export DATABASE_URL="postgresql://user:pass@host:5432/medusa"
 # B) 本地单文件模拟库（SQLite，没有真实数据时用）
 python scripts/build_simulated_db.py            # 默认 200 用户 / 60 商品
 export DATABASE_URL="sqlite:///$(pwd)/simulated_marketplace.db"
-# Windows:  $env:DATABASE_URL = "sqlite:///E:/path/to/s4-recommendation/simulated_marketplace.db"
+# Windows:  $env:DATABASE_URL = "sqlite:///E:/path/to/recommendation-engine/simulated_marketplace.db"
 ```
 
 ### 2.3 常用命令

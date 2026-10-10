@@ -137,7 +137,7 @@ def list_schema(cfg: Config) -> SchemaInfo:
     """Enumerate business tables/columns (PostgreSQL: information_schema; SQLite: sqlite_master)."""
     if not cfg.database_url:
         raise RuntimeError(
-            "DATABASE_URL is not configured. Set it in s4-recommendation/.env, or generate a "
+            "DATABASE_URL is not configured. Set it in recommendation-engine/.env, or generate a "
             "single-file simulation DB with scripts/build_simulated_db.py and set "
             "DATABASE_URL=sqlite:///<path>."
         )
