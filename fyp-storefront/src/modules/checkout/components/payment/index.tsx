@@ -23,6 +23,7 @@ import {
   type MutableRefObject,
 } from "react"
 import { StripeContext } from "../payment-wrapper/stripe-wrapper"
+import { getActivePaymentSession } from "@lib/util/payment-session"
 
 type StripeSubmit = () => Promise<string | null>
 
@@ -68,9 +69,7 @@ const Payment = ({
   availablePaymentMethods: any[]
 }) => {
   const { t } = useStorefrontI18n()
-  const activeSession = cart.payment_collection?.payment_sessions?.find(
-    (session: any) => ["pending", "requires_more"].includes(session.status)
-  )
+  const activeSession = getActivePaymentSession<any>(cart.payment_collection?.payment_sessions)
   const activeProviderId = activeSession?.provider_id as string | undefined
   const stripeReady = useContext(StripeContext)
   const stripeSubmitRef = useRef<StripeSubmit | null>(null)
@@ -163,7 +162,7 @@ const Payment = ({
         setError(t.checkout.selectPaymentFirst)
         return
       }
-      if (isStripeLike(selectedPaymentMethod)) {
+      if (isStripeLike(selectedPaymentMethod) && activeSession.status !== "authorized") {
         const stripeError = await stripeSubmitRef.current?.()
         if (stripeError || !stripeSubmitRef.current) {
           setError(stripeError || t.checkout.cardNotReady)
@@ -195,7 +194,7 @@ const Payment = ({
   const continueDisabled =
     isLoading ||
     (!paidByGiftcard && !activeSession) ||
-    (isStripeLike(selectedPaymentMethod) && (!stripeComplete || !stripeReady))
+    (isStripeLike(selectedPaymentMethod) && activeSession?.status !== "authorized" && (!stripeComplete || !stripeReady))
 
   return (
     <div className="bg-white">
@@ -239,6 +238,7 @@ const Payment = ({
               >
                 {providerId === selectedPaymentMethod &&
                   isStripeLike(providerId) &&
+                  activeSession?.status !== "authorized" &&
                   stripeReady &&
                   activeProviderId === providerId && (
                     <StripePaymentFields

@@ -8,6 +8,23 @@ import { MedusaError } from "@medusajs/framework/utils";
 import type { WeChatPayConfig } from "./config";
 
 export type WeChatNativeOrder = { code_url: string };
+export type WeChatRefund = {
+  refund_id: string;
+  out_refund_no: string;
+  out_trade_no: string;
+  transaction_id: string;
+  status: "SUCCESS" | "PROCESSING" | "CLOSED" | "ABNORMAL";
+  amount: { total: number; refund: number; currency: string };
+};
+/** The code is accepted only AFTER response signature verification. */
+export class WeChatApiError extends MedusaError {
+  constructor(readonly providerCode: string, readonly httpStatus: number) {
+    super(
+      MedusaError.Types.UNEXPECTED_STATE,
+      `WeChat Pay request failed (${httpStatus}): ${providerCode}`
+    );
+  }
+}
 
 export type WeChatOrder = {
   appid?: string;
@@ -95,6 +112,7 @@ export class WeChatPayClient {
         "User-Agent": "handmade-marketplace/1.0",
       },
       body: bodyText || undefined,
+      signal: AbortSignal.timeout(10000),
     });
     const responseText = await response.text();
 
@@ -113,7 +131,14 @@ export class WeChatPayClient {
         "WeChat Pay response used an unexpected public-key serial"
       );
     }
-    if (!responseTimestamp || !responseNonce || !responseSignature) {
+    if (
+      !responseTimestamp ||
+      !responseNonce ||
+      !responseSignature ||
+      !responseSerial ||
+      !/^\d+$/.test(responseTimestamp) ||
+      Math.abs(Date.now() / 1000 - Number(responseTimestamp)) > 300
+    ) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
         "WeChat Pay response signature headers are missing"
@@ -129,11 +154,9 @@ export class WeChatPayClient {
 
     const parsed = responseText ? JSON.parse(responseText) : {};
     if (!response.ok) {
-      throw new MedusaError(
-        MedusaError.Types.UNEXPECTED_STATE,
-        `WeChat Pay request failed (${response.status}): ${
-          parsed.message || parsed.code || "unknown error"
-        }`
+      throw new WeChatApiError(
+        typeof parsed.code === "string" ? parsed.code : "UNKNOWN",
+        response.status
       );
     }
     return parsed as T;
@@ -165,10 +188,17 @@ export class WeChatPayClient {
   }
 
   refund(body: Record<string, unknown>) {
-    return this.request<Record<string, unknown>>({
+    return this.request<WeChatRefund>({
       method: "POST",
       path: "/v3/refund/domestic/refunds",
       body,
+    });
+  }
+
+  queryRefund(reference: string) {
+    return this.request<WeChatRefund>({
+      method: "GET",
+      path: `/v3/refund/domestic/refunds/${encodeURIComponent(reference)}`,
     });
   }
 
@@ -197,7 +227,10 @@ export class WeChatPayClient {
         "WeChat Pay notification used an unexpected public-key serial"
       );
     }
-    if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) {
+    if (
+      !/^\d+$/.test(timestamp) ||
+      Math.abs(Date.now() / 1000 - Number(timestamp)) > 300
+    ) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
         "WeChat Pay notification timestamp is outside the five-minute window"

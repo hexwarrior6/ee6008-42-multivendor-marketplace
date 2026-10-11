@@ -37,45 +37,14 @@ export const retrieveRegion = async (id: string) => {
     .catch(medusaError)
 }
 
-const regionMap = new Map<string, HttpTypes.StoreRegion>()
-
-const cacheRegions = (regions: HttpTypes.StoreRegion[]) => {
-  regions.forEach((region) => {
-    region.countries?.forEach((country) => {
-      if (country?.iso_2) {
-        regionMap.set(country.iso_2.toLowerCase(), region)
-      }
-    })
-  })
-}
-
 export const getRegion = async (countryCode: string) => {
   try {
-    const normalizedCountryCode = countryCode?.toLowerCase()
-
-    if (regionMap.has(normalizedCountryCode)) {
-      return regionMap.get(normalizedCountryCode)
-    }
-
-    const regions = await listRegions()
-
-    if (!regions) {
-      return null
-    }
-
-    cacheRegions(regions)
-
-    let region = normalizedCountryCode
-      ? regionMap.get(normalizedCountryCode)
-      : regionMap.get("us")
-
-    if (!region && normalizedCountryCode) {
-      const freshRegions = await listRegions(true)
-      cacheRegions(freshRegions)
-      region = regionMap.get(normalizedCountryCode)
-    }
-
-    return region
+    const normalizedCountryCode = countryCode?.trim().toLowerCase() || "us"
+    // Cart mutations must use current currency/country settings, not process-wide snapshots.
+    const regions = await listRegions(true)
+    return regions?.find(region => region.countries?.some(
+      country => country.iso_2?.toLowerCase() === normalizedCountryCode
+    )) ?? null
   } catch (e: any) {
     return null
   }

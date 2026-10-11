@@ -30,7 +30,7 @@ const fileProvider = minioConfigured
     }
 
 const fileModule = {
-  resolve: "@medusajs/file",
+  resolve: "@medusajs/medusa/file",
   options: {
     providers: [fileProvider],
   },

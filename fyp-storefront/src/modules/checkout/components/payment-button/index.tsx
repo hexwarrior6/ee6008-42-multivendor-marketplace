@@ -6,7 +6,9 @@ import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
 import { useElements, useStripe } from "@stripe/react-stripe-js"
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useContext } from "react"
+import { StripeContext } from "../payment-wrapper/stripe-wrapper"
+import { getActivePaymentSession } from "@lib/util/payment-session"
 import ErrorMessage from "../error-message"
 import { useParams, usePathname, useRouter } from "next/navigation"
 
@@ -20,6 +22,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
   "data-testid": dataTestId,
 }) => {
   const { t } = useStorefrontI18n()
+  const stripeReady = useContext(StripeContext)
   const notReady =
     !cart ||
     !cart.shipping_address ||
@@ -28,15 +31,14 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
     (cart.shipping_methods?.length ?? 0) < 1
 
   const paymentSessions = cart.payment_collection?.payment_sessions || []
-  const paymentSession =
-    paymentSessions.find((session) =>
-      ["pending", "requires_more", "authorized"].includes(session.status)
-    ) || paymentSessions[0]
+  const paymentSession = getActivePaymentSession(paymentSessions)
 
   switch (true) {
     case isStripeLike(paymentSession?.provider_id):
+      if (!stripeReady) return <Button disabled>{t.checkout.cardNotReady}</Button>
       return (
         <StripePaymentButton
+          paymentSession={paymentSession!}
           notReady={notReady}
           cart={cart}
           data-testid={dataTestId}
@@ -53,6 +55,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
     case isWeChatPay(paymentSession?.provider_id):
       return (
         <WeChatPaymentButton
+          paymentSession={paymentSession!}
           cart={cart}
           notReady={notReady}
           data-testid={dataTestId}
@@ -65,10 +68,12 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
 
 const StripePaymentButton = ({
   cart,
+  paymentSession,
   notReady,
   "data-testid": dataTestId,
 }: {
   cart: HttpTypes.StoreCart
+  paymentSession: HttpTypes.StorePaymentSession
   notReady: boolean
   "data-testid"?: string
 }) => {
@@ -79,10 +84,6 @@ const StripePaymentButton = ({
   const { countryCode } = useParams()
   const router = useRouter()
   const pathname = usePathname()
-  const paymentSession = cart.payment_collection?.payment_sessions?.find(
-    (session) => session.provider_id === "pp_stripe_stripe"
-  )
-
   const onPaymentCompleted = async () => {
     await placeOrder(cart.id)
       .catch((err) => {
@@ -252,18 +253,17 @@ const ManualTestPaymentButton = ({
 const WeChatPaymentButton = ({
   notReady,
   cart,
+  paymentSession,
   "data-testid": dataTestId,
 }: {
   notReady: boolean
   cart: HttpTypes.StoreCart
+  paymentSession: HttpTypes.StorePaymentSession
   "data-testid"?: string
 }) => {
   const { t } = useStorefrontI18n()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const paymentSession = cart.payment_collection?.payment_sessions?.find(
-    (session) => isWeChatPay(session.provider_id)
-  )
   const isMock = paymentSession?.data?.mock === true
 
   const handlePayment = async () => {

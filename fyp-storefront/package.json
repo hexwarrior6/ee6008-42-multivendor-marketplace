@@ -13,8 +13,13 @@
     "build": "next build",
     "start": "next start -p 8080",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit --incremental false",
     "analyze": "ANALYZE=true next build",
     "test:artisan-profile": "node scripts/check-artisan-profile-mvp.js",
+    "test:cart-currency": "node scripts/test-cart-currency.cjs",
+    "test:storefront-edge-cases": "node scripts/test-storefront-edge-cases.cjs",
+    "test:checkout-state": "node scripts/test-checkout-state.cjs",
+    "test:custom-order-payments": "node scripts/test-custom-order-payments.cjs",
     "test:custom-order": "node scripts/test-custom-order-request.js",
     "test:s2-localization": "node scripts/test-s2-localization.js"
   },

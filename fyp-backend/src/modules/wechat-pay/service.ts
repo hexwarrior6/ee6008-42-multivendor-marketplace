@@ -32,6 +32,7 @@ import {
 import { createHash, randomUUID } from "crypto";
 import { WeChatPayClient, type WeChatOrder } from "./client";
 import { loadWeChatPayConfig, type WeChatPayConfig } from "./config";
+import { assertFullRefundReceipt } from "./custom-refund";
 
 type InjectedDependencies = { logger: Logger };
 
@@ -212,6 +213,51 @@ export default class WeChatPayProviderService extends AbstractPaymentProvider<We
     const outRefundNo = makeExternalId(
       `refund:${String(data.out_trade_no)}:${refundFen}`
     );
+    // Custom-order refund submission is a separate durable workflow. This
+    // branch only mirrors an already SUCCESSFUL full refund into Medusa.
+    const managedReference = data.__custom_order_refund_reference;
+    if (managedReference !== undefined) {
+      if (
+        typeof managedReference !== "string" ||
+        !/^CR[a-f0-9]{30}$/.test(managedReference) ||
+        refundFen !== totalFen
+      ) {
+        throw new MedusaError(
+          MedusaError.Types.INVALID_DATA,
+          "Managed refunds must match the full original amount"
+        );
+      }
+      let providerRefundId: string | undefined;
+      if (this.options_.mode === "live") {
+        if (process.env.CUSTOM_ORDER_LIVE_REFUNDS_ENABLED !== "true")
+          throw new MedusaError(
+            MedusaError.Types.NOT_ALLOWED,
+            "Live custom refunds are disabled"
+          );
+        const receipt = await this.client_.queryRefund(managedReference);
+        assertFullRefundReceipt(receipt, {
+          reference: managedReference,
+          outTradeNo: String(data.out_trade_no),
+          transactionId: String(data.transaction_id),
+          minorAmount: totalFen,
+        });
+        if (receipt.status !== "SUCCESS")
+          throw new MedusaError(
+            MedusaError.Types.CONFLICT,
+            "Refund is still processing; no ledger refund may be recorded"
+          );
+        providerRefundId = receipt.refund_id;
+      }
+      return {
+        data: {
+          ...data,
+          out_refund_no: managedReference,
+          refund_amount_fen: refundFen,
+          refund_status: "SUCCESS",
+          ...(providerRefundId ? { refund_id: providerRefundId } : {}),
+        },
+      };
+    }
     if (this.options_.mode !== "mock") {
       await this.client_.refund({
         out_trade_no: data.out_trade_no,

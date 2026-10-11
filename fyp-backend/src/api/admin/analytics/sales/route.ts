@@ -9,6 +9,7 @@ import {
   securityLog,
 } from "../../../utils/authz"
 import { parseCurrencyCode } from "../../../utils/validation"
+import { parseAnalyticsPeriod, parseAnalyticsStoreId } from "../../../utils/analytics"
 
 type OrderItem = {
   id?: string | null
@@ -49,6 +50,7 @@ type OrderRecord = {
   total?: number | string | null
   status?: string | null
   canceled_at?: string | Date | null
+  is_draft_order?: boolean
   payment_status?: string | null
   refunded_amount?: number | string | null
   created_at?: string | Date | null
@@ -63,21 +65,6 @@ type ProductStoreMap = Map<string, Set<string>>
 
 const ORDER_PAGE_SIZE = 1000
 const MAX_ANALYTICS_ORDERS = 100_000
-const MAX_ANALYTICS_RANGE_MS = 366 * 24 * 60 * 60 * 1000
-
-const parseDate = (value: unknown, fallback: Date, field: string) => {
-  if (value === undefined || value === null || value === "") {
-    return fallback
-  }
-  const date = new Date(String(value))
-  if (Number.isNaN(date.getTime())) {
-    throw new MedusaError(
-      MedusaError.Types.INVALID_DATA,
-      `${field} must be a valid ISO date`
-    )
-  }
-  return date
-}
 
 const emptyResponse = (
   from: Date,
@@ -111,8 +98,8 @@ const capturedCollectionStatuses = new Set([
 export const getOrderNetRevenue = (order: OrderRecord): number => {
   const orderStatus = String(order.status || "").trim().toLowerCase()
   if (
-    order.canceled_at ||
-    ["canceled", "cancelled", "failed", "draft", "pending", "requires_action"].includes(
+    order.canceled_at || order.is_draft_order ||
+    ["canceled", "cancelled", "failed", "draft", "requires_action"].includes(
       orderStatus
     )
   ) {
@@ -315,27 +302,9 @@ export const GET = async (
 ) => {
   const access = await getBackofficeAccess(req)
   const now = new Date()
-  const defaultFrom = new Date(now)
-  defaultFrom.setDate(defaultFrom.getDate() - 30)
-  const { from, to, store_id } = req.query
   const currencyCode = parseCurrencyCode(req.query.currency_code)
-  const fromDate = parseDate(from, defaultFrom, "from")
-  const toDate = parseDate(to, now, "to")
-
-  if (fromDate > toDate) {
-    throw new MedusaError(
-      MedusaError.Types.INVALID_DATA,
-      "from must be earlier than or equal to to"
-    )
-  }
-  if (toDate.getTime() - fromDate.getTime() > MAX_ANALYTICS_RANGE_MS) {
-    throw new MedusaError(
-      MedusaError.Types.INVALID_DATA,
-      "Analytics date range cannot exceed 366 days"
-    )
-  }
-
-  const requestedStoreId = store_id ? String(store_id).trim() : undefined
+  const { from: fromDate, to: toDate } = parseAnalyticsPeriod(req.query, now)
+  const requestedStoreId = parseAnalyticsStoreId(req.query.store_id)
   let permittedStoreIds: string[] | undefined
   if (access.isPlatformAdmin) {
     permittedStoreIds = requestedStoreId ? [requestedStoreId] : undefined
@@ -390,6 +359,7 @@ export const GET = async (
         "total",
         "status",
         "canceled_at",
+        "is_draft_order",
         "payment_status",
         "refunded_amount",
         "created_at",

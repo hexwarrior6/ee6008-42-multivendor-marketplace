@@ -1,19 +1,30 @@
 import "server-only"
 import { cookies as nextCookies } from "next/headers"
-import { CartDTO } from "@medusajs/types"
+type SellerCartMapping = Record<string, string>
 
-type SellerCartMapping = Record<string, CartDTO>
+const sanitizeSellerCartMapping = (value: unknown): SellerCartMapping => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+  return Object.fromEntries(Object.entries(value).filter(([storeId, cartId]) =>
+    storeId.length > 0 && !["__proto__", "constructor", "prototype"].includes(storeId) &&
+    typeof cartId === "string" && /^cart_[A-Za-z0-9_-]+$/.test(cartId)
+  ))
+}
 
-export const getSellerCartMapping = async () => {
+export const getSellerCartMapping = async (): Promise<SellerCartMapping> => {
   const cookies = await nextCookies()
   const mapping = cookies.get("_medusa_seller_cart_mapping")?.value
 
-  return mapping ? JSON.parse(mapping): {}
+  try {
+    return mapping ? sanitizeSellerCartMapping(JSON.parse(mapping)) : {}
+  } catch {
+    // Ignore damaged client cookies without changing cookies during server rendering.
+    return {}
+  }
 }
 
 export const setSellerCartMapping = async (mapping: SellerCartMapping) => {
   const cookies = await nextCookies()
-  cookies.set("_medusa_seller_cart_mapping", JSON.stringify(mapping), {
+  cookies.set("_medusa_seller_cart_mapping", JSON.stringify(sanitizeSellerCartMapping(mapping)), {
     maxAge: 60 * 60 * 24 * 7,
     httpOnly: true,
     sameSite: "strict",

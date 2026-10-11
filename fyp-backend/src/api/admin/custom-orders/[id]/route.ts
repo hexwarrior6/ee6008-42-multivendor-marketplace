@@ -23,6 +23,15 @@ import {
 import { dismissCustomOrderLinks } from "../../../utils/module-links"
 import { assertCustomOrderProductReferences } from "../../../utils/product-ownership"
 import {
+  customPaymentConfig,
+  paymentLedger,
+} from "../../../utils/custom-order-payments"
+import {
+  paymentCollectionId,
+  verifyCustomOrderPayment,
+} from "../../../../modules/custom-order/payment"
+import { Modules } from "@medusajs/framework/utils"
+import {
   isCustomOrderStatus,
   type CustomOrderStatus,
 } from "../../../../modules/custom-order/state-machine"
@@ -57,25 +66,31 @@ const assertExistingProductReferences = async (
     ["product_category_id", body.product_category_id],
     ["product_id", body.product_id],
   ] as const) {
-    if (value !== undefined && value !== null &&
-      (typeof value !== "string" || !value.trim())) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      (typeof value !== "string" || !value.trim())
+    ) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
         `${field} must be a non-empty string`
       )
     }
   }
-  const productCategoryId = body.product_category_id === undefined
-    ? current.product_category_id
-    : typeof body.product_category_id === "string"
+  const productCategoryId =
+    body.product_category_id === undefined
+      ? current.product_category_id
+      : typeof body.product_category_id === "string"
       ? body.product_category_id.trim()
       : body.product_category_id
-  const productId = body.product_id === undefined
-    ? current.product_id
-    : typeof body.product_id === "string"
+  const productId =
+    body.product_id === undefined
+      ? current.product_id
+      : typeof body.product_id === "string"
       ? body.product_id.trim()
       : body.product_id
-  const listingType = body.listing_type ?? current.listing_type ?? "custom_request"
+  const listingType =
+    body.listing_type ?? current.listing_type ?? "custom_request"
 
   const profileService: ArtisanProfileService = req.scope.resolve(
     ARTISAN_PROFILE_MODULE
@@ -99,9 +114,7 @@ const assertExistingProductReferences = async (
   })
 }
 
-const retrieveAuthorizedOrder = async (
-  req: AuthenticatedMedusaRequest
-) => {
+const retrieveAuthorizedOrder = async (req: AuthenticatedMedusaRequest) => {
   const service: CustomOrderService = req.scope.resolve(CUSTOM_ORDER_MODULE)
   const customOrder = await service.retrieveCustomOrderRequest(req.params.id)
   await assertCustomOrderAccess(req, customOrder, {
@@ -171,11 +184,12 @@ export const PATCH = async (
       "listing_type must be custom_request or product"
     )
   }
-  const effectiveProductId = body.product_id !== undefined
-    ? typeof body.product_id === "string"
-      ? body.product_id.trim()
-      : body.product_id
-    : current.product_id
+  const effectiveProductId =
+    body.product_id !== undefined
+      ? typeof body.product_id === "string"
+        ? body.product_id.trim()
+        : body.product_id
+      : current.product_id
   const effectiveListingType = body.listing_type ?? current.listing_type
   if (effectiveListingType === "product" && !effectiveProductId) {
     throw new MedusaError(
@@ -183,7 +197,10 @@ export const PATCH = async (
       "listing_type=product requires product_id"
     )
   }
-  if (body.cancellation_reason !== undefined && body.cancellation_reason !== null) {
+  if (
+    body.cancellation_reason !== undefined &&
+    body.cancellation_reason !== null
+  ) {
     if (
       typeof body.cancellation_reason !== "string" ||
       body.cancellation_reason.trim().length > 1000
@@ -215,7 +232,9 @@ export const PATCH = async (
   }
   if (
     body.payment_status !== undefined &&
-    !["pending", "authorized", "captured", "failed"].includes(body.payment_status)
+    !["pending", "authorized", "captured", "failed"].includes(
+      body.payment_status
+    )
   ) {
     throw new MedusaError(
       MedusaError.Types.INVALID_DATA,
@@ -224,9 +243,8 @@ export const PATCH = async (
   }
 
   await assertExistingProductReferences(req, body, current)
-  const metadata = body.metadata === undefined
-    ? undefined
-    : validateMetadata(body.metadata)
+  const metadata =
+    body.metadata === undefined ? undefined : validateMetadata(body.metadata)
 
   const hasChanges = [
     body.status !== undefined && body.status !== current.status,
@@ -275,6 +293,18 @@ export const PATCH = async (
           : {}),
         ...(body.reason !== undefined ? { reason: body.reason } : {}),
         actor,
+        verify_payment: async (lockedOrder) => {
+          const config = customPaymentConfig()
+          const payment = req.scope.resolve(Modules.PAYMENT)
+          const collectionId = paymentCollectionId(lockedOrder)
+          if (!collectionId) return false
+          const proof = verifyCustomOrderPayment(
+            lockedOrder,
+            await paymentLedger(payment, collectionId),
+            config
+          )
+          return proof.verification === "verified"
+        },
       })
     : current
 
