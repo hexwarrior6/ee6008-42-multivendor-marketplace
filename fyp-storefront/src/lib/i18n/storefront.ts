@@ -5,6 +5,11 @@ export const STOREFRONT_LOCALES = ["en", "zh-CN"] as const
 export type StorefrontLocale = (typeof STOREFRONT_LOCALES)[number]
 
 const en = {
+  recommendations: {
+    title: "You may also like",
+    homeIntro: "Discover more handmade pieces from independent artisans.",
+    productIntro: "Explore more pieces selected for this product.",
+  },
   language: { english: "EN", chinese: "中文", label: "Language" },
   shell: {
     brand: "Handmade Marketplace",
@@ -226,6 +231,10 @@ const en = {
     store: "Store",
     chooseStore: "Choose a store near you",
     continueToPayment: "Continue to payment",
+    currencyChanged: "The store currency has changed to {currency}. Update cart prices and review delivery and payment again.",
+    updateCartPrices: "Update cart prices",
+    updatingCartPrices: "Updating…",
+    updateCartPricesFailed: "Update failed. Retry or ask an administrator to check product prices.",
     reviewOrder: "Review order",
     reviewTerms:
       "By placing your order, you agree to the Terms of Use, Terms of Sale, and Returns Policy, and acknowledge the Privacy Policy.",
@@ -440,6 +449,19 @@ const en = {
     requested: "Requested",
     budget: "Budget",
     artisanQuote: "Artisan quote",
+    confirmQuote: "Accept quote",
+    confirmQuoteHint: "Accept the displayed quote to confirm your request. This does not charge you.",
+    quoteConfirmed: "Quote accepted",
+    confirmQuoteError: "Unable to confirm. Check the refreshed quote and try again.",
+    customPaymentHint: "WeChat payment for the accepted CNY quote. Preparing a payment does not itself charge you.",
+    customPaymentStart: "Prepare WeChat payment",
+    customPaymentRefresh: "Refresh payment status",
+    customPaymentScan: "Scan with WeChat to pay, then refresh the payment status.",
+    customPaymentMock: "Simulation only: this is not a real payment and does not authorize production.",
+    customPaymentVerified: "Real payment verified.",
+    customPaymentPending: "No verified full payment yet. Wait for the payment callback and refresh.",
+    customPaymentReview: "Payment or refund needs administrator review. Production is not authorized.",
+    customPaymentError: "Payment is unavailable. Refresh the order or contact the administrator.",
     payment: "Payment",
     description: "Description",
     notSpecified: "Not specified",
@@ -473,6 +495,11 @@ const en = {
 export type StorefrontDictionary = typeof en
 
 const zhCN: StorefrontDictionary = {
+  recommendations: {
+    title: "猜你喜欢",
+    homeIntro: "发现更多独立匠人的手作作品。",
+    productIntro: "看看为这件商品推荐的更多作品。",
+  },
   language: { english: "EN", chinese: "中文", label: "语言" },
   shell: {
     brand: "手作市集",
@@ -688,6 +715,10 @@ const zhCN: StorefrontDictionary = {
     store: "门店",
     chooseStore: "选择附近的门店",
     continueToPayment: "继续付款",
+    currencyChanged: "商店币种已调整为 {currency}。请更新购物车金额，并重新确认配送及支付方式。",
+    updateCartPrices: "更新购物车金额",
+    updatingCartPrices: "更新中…",
+    updateCartPricesFailed: "更新失败，请稍后重试或联系管理员检查商品价格配置。",
     reviewOrder: "确认订单",
     reviewTerms:
       "点击“提交订单”即表示您已阅读、理解并接受使用条款、销售条款和退货政策，并确认已阅读手作市集的隐私政策。",
@@ -787,7 +818,8 @@ const zhCN: StorefrontDictionary = {
     transferRequestTitle: "订单 {id} 的转移请求",
     transferInviteBody:
       "您收到一条转移订单 ({id}) 所有权的请求。如果您同意该请求，请点击下方按钮批准转移。",
-    transferResponsibilityBody: "接受后，新主人将接管与此订单相关的全部责任和权限。",
+    transferResponsibilityBody:
+      "接受后，新主人将接管与此订单相关的全部责任和权限。",
     transferNoActionBody: "如果您不认识此请求或希望保留订单，则无需任何操作。",
     acceptTransfer: "接受转移",
     declineTransfer: "拒绝转移",
@@ -882,6 +914,19 @@ const zhCN: StorefrontDictionary = {
     requested: "申请时间",
     budget: "预算",
     artisanQuote: "匠人报价",
+    confirmQuote: "确认报价",
+    confirmQuoteHint: "确认当前显示的报价以继续定制流程；此操作不会扣款。",
+    quoteConfirmed: "报价已确认",
+    confirmQuoteError: "确认失败，请核对刷新后的报价再试。",
+    customPaymentHint: "支付已确认的人民币定制报价。准备支付单本身不会扣款。",
+    customPaymentStart: "准备微信支付",
+    customPaymentRefresh: "刷新付款状态",
+    customPaymentScan: "请使用微信扫码付款，完成后刷新付款状态。",
+    customPaymentMock: "当前为模拟支付，不会真实收款，也不会放行生产。",
+    customPaymentVerified: "真实收款已核验。",
+    customPaymentPending: "尚未核验到全额收款，请等待支付回调后刷新。",
+    customPaymentReview: "付款或退款记录需要管理员核查，暂不放行生产。",
+    customPaymentError: "支付暂不可用，请刷新订单或联系管理员。",
     payment: "付款状态",
     description: "需求描述",
     notSpecified: "未填写",

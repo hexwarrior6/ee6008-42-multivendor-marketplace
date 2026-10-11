@@ -5,6 +5,8 @@ import type { CustomOrder, TalkJsSession } from "@lib/data/custom-orders"
 import { convertToLocale } from "@lib/util/money"
 import CustomOrderChat from "@modules/custom-orders/components/chat"
 import CustomOrderStatusTimeline from "@modules/custom-orders/components/status-timeline"
+import ConfirmQuote from "@modules/custom-orders/components/confirm-quote"
+import CustomOrderPayment from "@modules/custom-orders/components/payment"
 import {
   getStorefrontDictionary,
   type StorefrontLocale,
@@ -58,11 +60,32 @@ export default function CustomOrderDetailTemplate({
           {t.orderProgress}
         </Heading>
         <CustomOrderStatusTimeline status={order.status} locale={locale} />
+        {order.status === "quote" && order.quoted_amount !== null && (
+          <ConfirmQuote
+            id={order.id}
+            version={order.version}
+            quotedAmount={order.quoted_amount}
+            currencyCode={order.currency_code}
+            locale={locale}
+          />
+        )}
         {order.status === "cancelled" && order.cancellation_reason && (
           <Text className="text-ui-fg-muted mt-3">
             {t.reason}: {order.cancellation_reason}
           </Text>
         )}
+        {["confirmed", "produced", "delivered"].includes(order.status) &&
+          order.currency_code === "cny" && (
+            <CustomOrderPayment
+              id={order.id}
+              locale={locale}
+              canPrepare={
+                order.status === "confirmed" &&
+                ["pending", "failed"].includes(order.payment_status)
+              }
+              verification={order.metadata?.__custom_order_payment_verification}
+            />
+          )}
       </section>
 
       <section
@@ -77,8 +100,9 @@ export default function CustomOrderDetailTemplate({
           <dd>{artisan?.display_name || order.artisan_id}</dd>
           <dt className="text-ui-fg-muted">{t.category}</dt>
           <dd>
-            {t.categories[order.product_category as keyof typeof t.categories] ??
-              order.product_category}
+            {t.categories[
+              order.product_category as keyof typeof t.categories
+            ] ?? order.product_category}
           </dd>
           <dt className="text-ui-fg-muted">{t.requested}</dt>
           <dd>{new Date(order.created_at).toLocaleString(locale)}</dd>

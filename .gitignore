@@ -61,3 +61,4 @@ playwright/.auth/
 *.log
 *.tmp
 *.temp
+.zcodeignore

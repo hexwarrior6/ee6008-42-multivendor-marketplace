@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recommender"
+version = "0.1.0"
+description = "S4 AI-powered product recommendation engine (data pipeline, collaborative filtering, evaluation)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "S4 — AI Recommendation Engine" }]
+keywords = ["recommendation", "collaborative-filtering", "matrix-factorization", "lightfm", "medusa"]
+dependencies = [
+    "numpy>=1.21",
+]
+
+[project.optional-dependencies]
+# 连 PostgreSQL（云端 Railway 或本地）
+postgres = ["psycopg2-binary>=2.9"]
+# LightFM 对比模型（PyPI 无 Windows wheel，建议改用 conda-forge，见 README）
+lightfm = ["lightfm>=1.17", "scipy>=1.10"]
+# 打包/发布
+dev = ["build", "twine"]
+
+[project.scripts]
+recommender-train = "recommender.train:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["recommender", "recommender.models"]

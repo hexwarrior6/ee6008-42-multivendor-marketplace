@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 import FeaturedProducts from "@modules/home/components/featured-products"
 import Hero from "@modules/home/components/hero"
@@ -6,6 +7,8 @@ import { listCollections } from "@lib/data/collections"
 import { getRegion } from "@lib/data/regions"
 import { getStorefrontDictionary } from "@lib/i18n/storefront"
 import { getStorefrontLocale } from "@lib/i18n/storefront-server"
+import ProductRecommendations from "@modules/recommendations/components/product-recommendations"
+import RecommendationsSkeleton from "@modules/recommendations/components/recommendations-skeleton"
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getStorefrontLocale()
@@ -42,6 +45,9 @@ export default async function Home(props: {
           <FeaturedProducts collections={collections} region={region} />
         </ul>
       </div>
+      <Suspense fallback={<RecommendationsSkeleton />}>
+        <ProductRecommendations region={region} />
+      </Suspense>
     </>
   )
 }

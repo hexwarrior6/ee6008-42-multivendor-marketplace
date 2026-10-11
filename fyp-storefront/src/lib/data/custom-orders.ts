@@ -5,6 +5,7 @@ import { getAuthHeaders } from "@lib/data/cookies"
 import { buildCustomOrderPayload } from "@lib/util/custom-order-request"
 import type { CustomOrderPayload } from "@lib/util/custom-order-request"
 import type { CustomOrderStatus } from "@lib/util/custom-order-status"
+import { revalidatePath } from "next/cache"
 
 export type CustomOrder = {
   id: string
@@ -20,6 +21,7 @@ export type CustomOrder = {
   quoted_amount: number | null
   currency_code: string
   status: CustomOrderStatus
+  version: number
   payment_status: "pending" | "authorized" | "captured" | "failed"
   delivered_at: string | null
   cancelled_at: string | null
@@ -86,6 +88,35 @@ export async function retrieveCustomOrder(id: string): Promise<CustomOrder> {
   })
 
   return custom_order
+}
+
+export async function confirmCustomOrderQuote(
+  id: string,
+  version: number,
+  quotedAmount: number,
+  currencyCode: string
+) {
+  try {
+    const headers = await getAuthHeaders()
+    if (!("authorization" in headers)) return { success: false }
+    await sdk.client.fetch(
+      `/store/custom-orders/${encodeURIComponent(id)}/confirm`,
+      {
+        method: "POST",
+        headers,
+        body: {
+          version,
+          quoted_amount: quotedAmount,
+          currency_code: currencyCode,
+        },
+        cache: "no-store",
+      }
+    )
+    revalidatePath("/[countryCode]/account/custom-orders", "layout")
+    return { success: true }
+  } catch {
+    return { success: false }
+  }
 }
 
 export async function retrieveCustomOrderTalkJsSession(

@@ -13,16 +13,20 @@ import MedusaRadio from "@modules/common/components/radio"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useStorefrontI18n } from "@lib/i18n/storefront-context"
+import { getShippingAmount, isShippingUnavailable, resolveShippingPrices } from "@lib/util/shipping-prices"
 
 const PICKUP_OPTION_ON = "__PICKUP_ON"
 const PICKUP_OPTION_OFF = "__PICKUP_OFF"
 
 type ShippingProps = {
   cart: HttpTypes.StoreCart
-  availableShippingMethods: HttpTypes.StoreCartShippingOption[] | null
+  availableShippingMethods: HttpTypes.StoreCartShippingOptionWithServiceZone[] | null
 }
 
-function formatAddress(address: HttpTypes.StoreCartAddress) {
+function formatAddress(address?: {
+  address_1?: string | null; address_2?: string | null
+  postal_code?: string | null; city?: string | null; country_code?: string | null
+} | null) {
   if (!address) {
     return ""
   }
@@ -83,30 +87,24 @@ const Shipping: React.FC<ShippingProps> = ({
   const hasPickupOptions = !!_pickupMethods?.length
 
   useEffect(() => {
+    let cancelled = false
     setIsLoadingPrices(true)
+    setCalculatedPricesMap({})
+    resolveShippingPrices(availableShippingMethods ?? [], cart.id, calculatePriceForShippingOption)
+      .then(prices => {
+        if (!cancelled) setCalculatedPricesMap(prices)
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingPrices(false)
+      })
+    return () => { cancelled = true }
+  }, [availableShippingMethods, cart.id])
 
-    if (_shippingMethods?.length) {
-      const promises = _shippingMethods
-        .filter((sm) => sm.price_type === "calculated")
-        .map((sm) => calculatePriceForShippingOption(sm.id, cart.id))
-
-      if (promises.length) {
-        Promise.allSettled(promises).then((res) => {
-          const pricesMap: Record<string, number> = {}
-          res
-            .filter((r) => r.status === "fulfilled")
-            .forEach((p) => (pricesMap[p.value?.id || ""] = p.value?.amount!))
-
-          setCalculatedPricesMap(pricesMap)
-          setIsLoadingPrices(false)
-        })
-      }
-    }
-
-    if (_pickupMethods?.find((m) => m.id === shippingMethodId)) {
-      setShowPickupOptions(PICKUP_OPTION_ON)
-    }
-  }, [availableShippingMethods])
+  useEffect(() => {
+    const selected = availableShippingMethods?.find(option => option.id === shippingMethodId)
+    setShowPickupOptions(selected?.service_zone?.fulfillment_set?.type === "pickup"
+      ? PICKUP_OPTION_ON : PICKUP_OPTION_OFF)
+  }, [availableShippingMethods, shippingMethodId])
 
   const handleEdit = () => {
     router.push(pathname + "?step=delivery", { scroll: false })
@@ -128,12 +126,9 @@ const Shipping: React.FC<ShippingProps> = ({
       setShowPickupOptions(PICKUP_OPTION_OFF)
     }
 
-    let currentId: string | null = null
+    const currentId = shippingMethodId
     setIsLoading(true)
-    setShippingMethodId((prev) => {
-      currentId = prev
-      return id
-    })
+    setShippingMethodId(id)
 
     await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
       .catch((err) => {
@@ -201,7 +196,7 @@ const Shipping: React.FC<ShippingProps> = ({
                     value={showPickupOptions}
                     onChange={(value) => {
                       const id = _pickupMethods.find(
-                        (option) => !option.insufficient_inventory
+                        (option) => !isShippingUnavailable(option, calculatedPricesMap, isLoadingPrices)
                       )?.id
 
                       if (id) {
@@ -211,6 +206,7 @@ const Shipping: React.FC<ShippingProps> = ({
                   >
                     <Radio
                       value={PICKUP_OPTION_ON}
+                      disabled={isLoading || !_pickupMethods.some(option => !isShippingUnavailable(option, calculatedPricesMap, isLoadingPrices))}
                       data-testid="delivery-option-radio"
                       className={clx(
                         "flex items-center justify-between text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active",
@@ -243,10 +239,8 @@ const Shipping: React.FC<ShippingProps> = ({
                   }}
                 >
                   {_shippingMethods?.map((option) => {
-                    const isDisabled =
-                      option.price_type === "calculated" &&
-                      !isLoadingPrices &&
-                      typeof calculatedPricesMap[option.id] !== "number"
+                    const isDisabled = isLoading || isShippingUnavailable(option, calculatedPricesMap, isLoadingPrices)
+                    const amount = getShippingAmount(option, calculatedPricesMap)
 
                     return (
                       <Radio
@@ -273,14 +267,9 @@ const Shipping: React.FC<ShippingProps> = ({
                           </span>
                         </div>
                         <span className="justify-self-end text-ui-fg-base">
-                          {option.price_type === "flat" ? (
+                          {amount !== undefined ? (
                             convertToLocale({ locale,
-                              amount: option.amount!,
-                              currency_code: cart?.currency_code,
-                            })
-                          ) : calculatedPricesMap[option.id] ? (
-                            convertToLocale({ locale,
-                              amount: calculatedPricesMap[option.id],
+                              amount,
                               currency_code: cart?.currency_code,
                             })
                           ) : isLoadingPrices ? (
@@ -318,11 +307,13 @@ const Shipping: React.FC<ShippingProps> = ({
                     }}
                   >
                     {_pickupMethods?.map((option) => {
+                      const isDisabled = isLoading || isShippingUnavailable(option, calculatedPricesMap, isLoadingPrices)
+                      const amount = getShippingAmount(option, calculatedPricesMap)
                       return (
                         <Radio
                           key={option.id}
                           value={option.id}
-                          disabled={option.insufficient_inventory}
+                          disabled={isDisabled}
                           data-testid="delivery-option-radio"
                           className={clx(
                             "flex items-center justify-between text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active",
@@ -330,7 +321,7 @@ const Shipping: React.FC<ShippingProps> = ({
                               "border-ui-border-interactive":
                                 option.id === shippingMethodId,
                               "hover:shadow-brders-none cursor-not-allowed":
-                                option.insufficient_inventory,
+                                isDisabled,
                             }
                           )}
                         >
@@ -351,10 +342,10 @@ const Shipping: React.FC<ShippingProps> = ({
                             </div>
                           </div>
                           <span className="justify-self-end text-ui-fg-base">
-                            {convertToLocale({ locale,
-                              amount: option.amount!,
+                            {amount !== undefined ? convertToLocale({ locale,
+                              amount,
                               currency_code: cart?.currency_code,
-                            })}
+                            }) : isLoadingPrices ? <Loader /> : "-"}
                           </span>
                         </Radio>
                       )
@@ -375,7 +366,7 @@ const Shipping: React.FC<ShippingProps> = ({
               className="mt"
               onClick={handleSubmit}
               isLoading={isLoading}
-              disabled={!cart.shipping_methods?.[0]}
+              disabled={isLoading || !cart.shipping_methods?.[0]}
               data-testid="submit-delivery-option-button"
             >
               {t.checkout.continueToPayment}
