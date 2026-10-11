@@ -2,6 +2,7 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 import { Modules } from "@medusajs/framework/utils";
 import storePayoutAccountLink from "../../../../links/store-payout";
 import { STRIPE_CONNECT_MODULE } from "../../../../modules/stripe-connect";
+import type { StripeConnectModuleService } from "../../../../modules/stripe-connect/service";
 
 
 export const POST = async (req: AuthenticatedMedusaRequest, res: MedusaResponse) => {
@@ -9,7 +10,7 @@ export const POST = async (req: AuthenticatedMedusaRequest, res: MedusaResponse)
     const userModuleService = req.scope.resolve(Modules.USER)
     const logger = req.scope.resolve("logger")
     const query = req.scope.resolve("query")
-    const stripeConnectModuleService = req.scope.resolve(STRIPE_CONNECT_MODULE)
+    const stripeConnectModuleService = req.scope.resolve<StripeConnectModuleService>(STRIPE_CONNECT_MODULE)
       
     const user = await userModuleService.retrieveUser(req.auth_context.actor_id)
     

@@ -5,16 +5,18 @@ import medusaError from "@lib/util/medusa-error"
 import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
 
-export const listRegions = async () => {
-  const next = {
-    ...(await getCacheOptions("regions")),
-  }
+export const listRegions = async (forceRefresh = false) => {
+  const next = forceRefresh
+    ? undefined
+    : {
+        ...(await getCacheOptions("regions")),
+      }
 
   return sdk.client
     .fetch<{ regions: HttpTypes.StoreRegion[] }>(`/store/regions`, {
       method: "GET",
       next,
-      cache: "force-cache",
+      cache: forceRefresh ? "no-store" : "force-cache",
     })
     .then(({ regions }) => regions)
     .catch(medusaError)
@@ -37,10 +39,22 @@ export const retrieveRegion = async (id: string) => {
 
 const regionMap = new Map<string, HttpTypes.StoreRegion>()
 
+const cacheRegions = (regions: HttpTypes.StoreRegion[]) => {
+  regions.forEach((region) => {
+    region.countries?.forEach((country) => {
+      if (country?.iso_2) {
+        regionMap.set(country.iso_2.toLowerCase(), region)
+      }
+    })
+  })
+}
+
 export const getRegion = async (countryCode: string) => {
   try {
-    if (regionMap.has(countryCode)) {
-      return regionMap.get(countryCode)
+    const normalizedCountryCode = countryCode?.toLowerCase()
+
+    if (regionMap.has(normalizedCountryCode)) {
+      return regionMap.get(normalizedCountryCode)
     }
 
     const regions = await listRegions()
@@ -49,15 +63,17 @@ export const getRegion = async (countryCode: string) => {
       return null
     }
 
-    regions.forEach((region) => {
-      region.countries?.forEach((c) => {
-        regionMap.set(c?.iso_2 ?? "", region)
-      })
-    })
+    cacheRegions(regions)
 
-    const region = countryCode
-      ? regionMap.get(countryCode)
+    let region = normalizedCountryCode
+      ? regionMap.get(normalizedCountryCode)
       : regionMap.get("us")
+
+    if (!region && normalizedCountryCode) {
+      const freshRegions = await listRegions(true)
+      cacheRegions(freshRegions)
+      region = regionMap.get(normalizedCountryCode)
+    }
 
     return region
   } catch (e: any) {

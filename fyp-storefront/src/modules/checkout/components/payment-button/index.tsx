@@ -1,14 +1,14 @@
 "use client"
 
-import { isManual, isStripeLike } from "@lib/constants"
+import { isManual, isStripeLike, isWeChatPay } from "@lib/constants"
 import { placeOrder } from "@lib/data/seller-cart"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@medusajs/ui"
 import { useElements, useStripe } from "@stripe/react-stripe-js"
 import React, { useState, useEffect } from "react"
 import ErrorMessage from "../error-message"
 import { useParams, usePathname, useRouter } from "next/navigation"
-
 
 type PaymentButtonProps = {
   cart: HttpTypes.StoreCart
@@ -19,6 +19,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
   cart,
   "data-testid": dataTestId,
 }) => {
+  const { t } = useStorefrontI18n()
   const notReady =
     !cart ||
     !cart.shipping_address ||
@@ -26,7 +27,11 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
     !cart.email ||
     (cart.shipping_methods?.length ?? 0) < 1
 
-  const paymentSession = cart.payment_collection?.payment_sessions?.[0]
+  const paymentSessions = cart.payment_collection?.payment_sessions || []
+  const paymentSession =
+    paymentSessions.find((session) =>
+      ["pending", "requires_more", "authorized"].includes(session.status)
+    ) || paymentSessions[0]
 
   switch (true) {
     case isStripeLike(paymentSession?.provider_id):
@@ -39,10 +44,22 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
       )
     case isManual(paymentSession?.provider_id):
       return (
-        <ManualTestPaymentButton cart={cart} notReady={notReady} data-testid={dataTestId} />
+        <ManualTestPaymentButton
+          cart={cart}
+          notReady={notReady}
+          data-testid={dataTestId}
+        />
+      )
+    case isWeChatPay(paymentSession?.provider_id):
+      return (
+        <WeChatPaymentButton
+          cart={cart}
+          notReady={notReady}
+          data-testid={dataTestId}
+        />
       )
     default:
-      return <Button disabled>Select a payment method</Button>
+      return <Button disabled>{t.checkout.selectPaymentMethod}</Button>
   }
 }
 
@@ -55,6 +72,7 @@ const StripePaymentButton = ({
   notReady: boolean
   "data-testid"?: string
 }) => {
+  const { t } = useStorefrontI18n()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -84,9 +102,8 @@ const StripePaymentButton = ({
     if (!stripe || !elements || !cart) {
       return
     }
-    
-    setSubmitting(true)
 
+    setSubmitting(true)
 
     const { error: submitError } = await elements.submit()
     if (submitError) {
@@ -98,56 +115,56 @@ const StripePaymentButton = ({
     const clientSecret = paymentSession?.data?.client_secret as string
 
     await stripe
-    .confirmPayment({
-      elements,
-      clientSecret,
-      confirmParams: {
-        return_url: `${window.location.origin}/api/capture-payment/${cart.id}?country_code=${countryCode}`,
-        payment_method_data: {
-          billing_details: {
-            name:
-              cart.billing_address?.first_name +
-              " " +
-              cart.billing_address?.last_name,
-            address: {
-              city: cart.billing_address?.city ?? undefined,
-              country: cart.billing_address?.country_code ?? undefined,
-              line1: cart.billing_address?.address_1 ?? undefined,
-              line2: cart.billing_address?.address_2 ?? undefined,
-              postal_code: cart.billing_address?.postal_code ?? undefined,
-              state: cart.billing_address?.province ?? undefined,
+      .confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/api/capture-payment/${cart.id}?country_code=${countryCode}`,
+          payment_method_data: {
+            billing_details: {
+              name:
+                cart.billing_address?.first_name +
+                " " +
+                cart.billing_address?.last_name,
+              address: {
+                city: cart.billing_address?.city ?? undefined,
+                country: cart.billing_address?.country_code ?? undefined,
+                line1: cart.billing_address?.address_1 ?? undefined,
+                line2: cart.billing_address?.address_2 ?? undefined,
+                postal_code: cart.billing_address?.postal_code ?? undefined,
+                state: cart.billing_address?.province ?? undefined,
+              },
+              email: cart.email,
+              phone: cart.billing_address?.phone ?? undefined,
             },
-            email: cart.email,
-            phone: cart.billing_address?.phone ?? undefined,
           },
         },
-      },
-      redirect: "if_required",
-    })
-    .then(({ error, paymentIntent }) => {
-      if (error) {
-        const pi = error.payment_intent
+        redirect: "if_required",
+      })
+      .then(({ error, paymentIntent }) => {
+        if (error) {
+          const pi = error.payment_intent
 
-        if (
-          (pi && pi.status === "requires_capture") ||
-          (pi && pi.status === "succeeded")
-        ) {
-          onPaymentCompleted()
+          if (
+            (pi && pi.status === "requires_capture") ||
+            (pi && pi.status === "succeeded")
+          ) {
+            onPaymentCompleted()
+            return
+          }
+
+          setErrorMessage(error.message || null)
+          setSubmitting(false)
           return
         }
 
-        setErrorMessage(error.message || null)
-        setSubmitting(false)
-        return
-      }
-
-      if (
-        paymentIntent.status === "requires_capture" ||
-        paymentIntent.status === "succeeded"
-      ) {
-        onPaymentCompleted()
-      }
-    })
+        if (
+          paymentIntent.status === "requires_capture" ||
+          paymentIntent.status === "succeeded"
+        ) {
+          onPaymentCompleted()
+        }
+      })
   }
 
   useEffect(() => {
@@ -176,7 +193,7 @@ const StripePaymentButton = ({
         isLoading={submitting}
         data-testid={dataTestId}
       >
-        Place order
+        {t.checkout.placeOrder}
       </Button>
       <ErrorMessage
         error={errorMessage}
@@ -186,7 +203,14 @@ const StripePaymentButton = ({
   )
 }
 
-const ManualTestPaymentButton = ({ notReady, cart }: { notReady: boolean, cart: HttpTypes.StoreCart}) => {
+const ManualTestPaymentButton = ({
+  notReady,
+  cart,
+}: {
+  notReady: boolean
+  cart: HttpTypes.StoreCart
+}) => {
+  const { t } = useStorefrontI18n()
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -215,11 +239,64 @@ const ManualTestPaymentButton = ({ notReady, cart }: { notReady: boolean, cart: 
         size="large"
         data-testid="submit-order-button"
       >
-        Place order
+        {t.checkout.placeOrder}
       </Button>
       <ErrorMessage
         error={errorMessage}
         data-testid="manual-payment-error-message"
+      />
+    </>
+  )
+}
+
+const WeChatPaymentButton = ({
+  notReady,
+  cart,
+  "data-testid": dataTestId,
+}: {
+  notReady: boolean
+  cart: HttpTypes.StoreCart
+  "data-testid"?: string
+}) => {
+  const { t } = useStorefrontI18n()
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const paymentSession = cart.payment_collection?.payment_sessions?.find(
+    (session) => isWeChatPay(session.provider_id)
+  )
+  const isMock = paymentSession?.data?.mock === true
+
+  const handlePayment = async () => {
+    setSubmitting(true)
+    setErrorMessage(null)
+    try {
+      await placeOrder(cart.id)
+    } catch (error: any) {
+      setErrorMessage(error.message || t.checkout.wechatPaymentIncomplete)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+      <Button
+        disabled={notReady || !paymentSession}
+        isLoading={submitting}
+        onClick={handlePayment}
+        size="large"
+        data-testid={dataTestId}
+      >
+        {isMock ? t.checkout.wechatMockSubmit : t.checkout.wechatSubmit}
+      </Button>
+      {isMock && (
+        <p className="mt-2 text-xs text-ui-fg-muted">
+          {t.checkout.wechatMockHint}
+        </p>
+      )}
+      <ErrorMessage
+        error={errorMessage}
+        data-testid="wechat-payment-error-message"
       />
     </>
   )

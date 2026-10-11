@@ -5,9 +5,16 @@ import CheckoutForm from "@modules/checkout/templates/checkout-form"
 import CheckoutSummary from "@modules/checkout/templates/checkout-summary"
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
-export const metadata: Metadata = {
-  title: "Checkout",
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).checkout
+
+  return {
+    title: t.metadataTitle,
+  }
 }
 type Props = {
   params: Promise<{ countryCode: string; id: string }>

@@ -10,6 +10,7 @@ import LineItemOptions from "@modules/common/components/line-item-options"
 import LineItemPrice from "@modules/common/components/line-item-price"
 import LineItemUnitPrice from "@modules/common/components/line-item-unit-price"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import Spinner from "@modules/common/icons/spinner"
 import Thumbnail from "@modules/products/components/thumbnail"
 import { useState } from "react"
@@ -25,6 +26,7 @@ type ItemProps = {
 const Item = ({ item, cartId, type = "full", currencyCode }: ItemProps) => {
   const [updating, setUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { t } = useStorefrontI18n()
 
   const changeQuantity = async (quantity: number) => {
     setError(null)
@@ -68,7 +70,11 @@ const Item = ({ item, cartId, type = "full", currencyCode }: ItemProps) => {
         >
           {item.product_title}
         </Text>
-        <LineItemOptions variant={item.variant} data-testid="product-variant" />
+        <LineItemOptions
+          variant={item.variant}
+          variantLabel={t.cart.variantLabel}
+          data-testid="product-variant"
+        />
       </Table.Cell>
 
       {type === "full" && (
@@ -78,6 +84,7 @@ const Item = ({ item, cartId, type = "full", currencyCode }: ItemProps) => {
             <CartItemSelect
               value={item.quantity}
               onChange={(value) => changeQuantity(parseInt(value.target.value))}
+              placeholder={t.shell.selectPlaceholder}
               className="w-14 h-10 p-4"
               data-testid="product-select-button"
             >

@@ -5,6 +5,7 @@ import { Fragment, useMemo } from "react"
 
 import Radio from "@modules/common/components/radio"
 import compareAddresses from "@lib/util/compare-addresses"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { HttpTypes } from "@medusajs/types"
 
 type AddressSelectProps = {
@@ -21,6 +22,8 @@ const AddressSelect = ({
   addressInput,
   onSelect,
 }: AddressSelectProps) => {
+  const { t } = useStorefrontI18n()
+
   const handleSelect = (id: string) => {
     const savedAddress = addresses.find((a) => a.id === id)
     if (savedAddress) {
@@ -44,7 +47,7 @@ const AddressSelect = ({
               <span className="block truncate">
                 {selectedAddress
                   ? selectedAddress.address_1
-                  : "Choose an address"}
+                  : t.checkout.chooseAddress}
               </span>
               <ChevronUpDown
                 className={clx("transition-rotate duration-200", {

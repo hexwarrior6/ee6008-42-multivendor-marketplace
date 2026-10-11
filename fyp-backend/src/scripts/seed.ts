@@ -378,6 +378,11 @@ export default async function seedDemoData({ container }: ExecArgs) {
           name: "Merch",
           is_active: true,
         },
+        {
+          name: "Custom Order",
+          is_active: true,
+          metadata: { custom_order_enabled: true },
+        },
       ],
     },
   });

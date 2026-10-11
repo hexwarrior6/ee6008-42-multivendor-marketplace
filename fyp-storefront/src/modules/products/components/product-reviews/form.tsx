@@ -5,6 +5,7 @@ import { StoreOrderLineItem } from "@medusajs/types"
 import { StoreProductReview } from "@lambdacurry/medusa-plugins-sdk"
 import { Button, Input, Label, Textarea, toast, Toaster } from "@medusajs/ui"
 import { addProductReview } from "@lib/data/products"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { Star, StarSolid } from "@medusajs/icons"
 
 
@@ -30,12 +31,13 @@ const [isLoading, setIsLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [content, setContent] = useState(productReview?.content || "")
   const [rating, setRating] = useState(productReview?.rating || 0)
-
+  const { t } = useStorefrontI18n()
+  const tc = t.catalog
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     if (!content || !rating) {
-      toast.error("Error", {
-        description: "Please fill in all required fields.",
+      toast.error(tc.reviewErrorTitle, {
+        description: tc.reviewFillRequired,
       })
       return
     }
@@ -53,12 +55,12 @@ const [isLoading, setIsLoading] = useState(false)
       setShowForm(false)
       setContent("")
       setRating(0)
-      toast.success("Success", {
-        description: "Your review has been submitted.",
+      toast.success(tc.reviewSuccessTitle, {
+        description: tc.reviewSuccessBody,
       })
     }).catch(() => {
-      toast.error("Error", {
-        description: "There was an error submitting your review. Please try again.",
+      toast.error(tc.reviewErrorTitle, {
+        description: tc.reviewSubmitError,
       })
     }).finally(() => {
       setIsLoading(false)
@@ -69,24 +71,24 @@ const [isLoading, setIsLoading] = useState(false)
   <div className="w-full">
     {!showForm && (
       <div className="flex justify-start">
-        <Button variant="secondary" onClick={() => setShowForm(true)}>Add a review</Button>
+        <Button variant="secondary" onClick={() => setShowForm(true)}>{tc.reviewAdd}</Button>
       </div>
     )}
     {showForm && (
       <div className="flex flex-col gap-y-4">
         <form onSubmit={handleSubmit} className="flex flex-col gap-y-4">
           <div className="flex flex-col gap-y-2">
-            <Label className="txt-medium-plus text-ui-fg-base">Review</Label>
-            <Textarea 
-              name="content" 
-              value={content} 
-              onChange={(e) => setContent(e.target.value)} 
-              placeholder="Share your thoughts about this product"
+            <Label className="txt-medium-plus text-ui-fg-base">{tc.reviewLabel}</Label>
+            <Textarea
+              name="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder={tc.reviewPlaceholder}
               className="min-h-[120px]"
             />
           </div>
           <div className="flex flex-col gap-y-2">
-            <Label className="txt-medium-plus text-ui-fg-base">Rating</Label>
+            <Label className="txt-medium-plus text-ui-fg-base">{tc.ratingLabel}</Label>
             <div className="flex gap-x-1">
               {Array.from({ length: 5 }).map((_, index) => (
                 <Button 
@@ -109,14 +111,14 @@ const [isLoading, setIsLoading] = useState(false)
               variant="secondary" 
               onClick={() => setShowForm(false)}
             >
-              Cancel
+              {tc.cancel}
             </Button>
-            <Button 
-              type="submit" 
-              disabled={isLoading} 
+            <Button
+              type="submit"
+              disabled={isLoading}
               variant="primary"
             >
-              {isLoading ? "Submitting..." : "Submit Review"}
+              {isLoading ? tc.reviewSubmitting : tc.reviewSubmit}
             </Button>
           </div>
         </form>
