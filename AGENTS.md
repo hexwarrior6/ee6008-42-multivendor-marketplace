@@ -18,8 +18,9 @@
 - 分支一律基于 `origin/development` 新建，PR 回 `development`，合并后删除分支。
 - **永不直接 push `main`**（GitHub 受保护，合并被 workflow 限制）；`development`
   也统一走 PR，保持可审查历史——包括纯文档改动。
-- Commit message 用约定式前缀：`feat(scope): ...`、`fix(scope): ...`、
-  `refactor(s4): ...`、`docs: ...`。
+- Commit message 用约定式前缀：`feat(scope): ...`、`fix(scope): ...`、`docs: ...`。
+  scope 用**功能名**（如 `recommendation-engine`、`storefront`、`backend`），
+  不用成员代号（S1–S5）——成员归属由 git 记录，不进命名。
 - 提交前跑所在目录的验证命令（见下），不过不提交。
 
 ## CI/CD
