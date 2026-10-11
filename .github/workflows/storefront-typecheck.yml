@@ -1,0 +1,48 @@
+name: Storefront Type Check
+
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "fyp-storefront/**"
+      - ".github/workflows/storefront-typecheck.yml"
+  workflow_dispatch:
+
+jobs:
+  tsc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          # pinned here because packageManager lives in fyp-storefront/package.json,
+          # not in a root package.json (same as backend-ci.yml)
+          version: 11.23.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: fyp-storefront/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: fyp-storefront
+        run: pnpm install --frozen-lockfile
+
+      # development carries 18 known type errors (cart/checkout legacy code);
+      # the recommendation-engine PR (feat/recommendation-engine) fixes all of
+      # them. Fail only when a PR introduces NEW errors beyond the baseline —
+      # tighten to a strict `tsc --noEmit` gate once that cleanup lands.
+      - name: Type check against baseline
+        working-directory: fyp-storefront
+        run: |
+          npx tsc --noEmit > /tmp/tsc.log 2>&1 || true
+          COUNT=$(grep -c "error TS" /tmp/tsc.log || true)
+          echo "TypeScript errors: ${COUNT} (baseline: 18)"
+          if [ "${COUNT}" -gt 18 ]; then
+            echo "::error::TypeScript errors (${COUNT}) exceed the known baseline (18) — fix the new errors."
+            grep "error TS" /tmp/tsc.log || true
+            exit 1
+          fi

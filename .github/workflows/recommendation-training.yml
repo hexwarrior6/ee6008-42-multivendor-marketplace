@@ -1,0 +1,56 @@
+name: Recommendation Training (manual)
+
+# Trains the recommendation models against the platform PostgreSQL and
+# publishes recommendations.json as a workflow artifact. A teammate downloads
+# it and places it at fyp-backend/data/recommendations.json (see PR #9 notes),
+# or a future automation consumes it.
+
+on:
+  workflow_dispatch:
+    inputs:
+      models:
+        description: "Comma-separated models to train: svd, als, lightfm"
+        required: false
+        default: "svd,als"
+      k:
+        description: "Top-K per user/product in the export"
+        required: false
+        default: "8"
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package with PostgreSQL driver
+        working-directory: recommendation-engine
+        run: pip install -e ".[postgres]"
+
+      - name: Inspect platform database (role resolution sanity check)
+        working-directory: recommendation-engine
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m recommender.train --inspect
+
+      - name: Train, evaluate and export recommendations
+        working-directory: recommendation-engine
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python -m recommender.train \
+            --models "${{ github.event.inputs.models || 'svd,als' }}" \
+            --k "${{ github.event.inputs.k || '8' }}" \
+            --export artifacts/recommendations.json
+
+      - name: Upload recommendations.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: recommendations-json
+          path: recommendation-engine/artifacts/recommendations.json
+          if-no-files-found: error

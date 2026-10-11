@@ -1,0 +1,31 @@
+name: Recommendation Engine Checks
+
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "recommendation-engine/**"
+      - ".github/workflows/recommendation-engine.yml"
+  workflow_dispatch:
+
+jobs:
+  checks:
+    # The directory lands on development with the recommendation-engine PR;
+    # skip (instead of failing) while that PR is still open.
+    if: ${{ hashFiles('recommendation-engine/pyproject.toml') != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package (editable, numpy only)
+        working-directory: recommendation-engine
+        run: pip install -e .
+
+      - name: Unit tests + offline pipeline smoke
+        working-directory: recommendation-engine
+        run: python scripts/run_checks.py
