@@ -31,18 +31,8 @@ jobs:
         working-directory: fyp-storefront
         run: pnpm install --frozen-lockfile
 
-      # development carries 18 known type errors (cart/checkout legacy code);
-      # the recommendation-engine PR (feat/recommendation-engine) fixes all of
-      # them. Fail only when a PR introduces NEW errors beyond the baseline —
-      # tighten to a strict `tsc --noEmit` gate once that cleanup lands.
-      - name: Type check against baseline
+      # Strict gate: the recommendation-engine PR (PR #9) fixed all 18 known
+      # type errors, so development type-checks clean. Any new error fails.
+      - name: Type check (tsc --noEmit)
         working-directory: fyp-storefront
-        run: |
-          npx tsc --noEmit > /tmp/tsc.log 2>&1 || true
-          COUNT=$(grep -c "error TS" /tmp/tsc.log || true)
-          echo "TypeScript errors: ${COUNT} (baseline: 18)"
-          if [ "${COUNT}" -gt 18 ]; then
-            echo "::error::TypeScript errors (${COUNT}) exceed the known baseline (18) — fix the new errors."
-            grep "error TS" /tmp/tsc.log || true
-            exit 1
-          fi
+        run: npx tsc --noEmit
