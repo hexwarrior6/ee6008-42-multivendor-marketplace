@@ -11,6 +11,8 @@ import { notFound } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 import ProductActionsWrapper from "./product-actions-wrapper"
 import { StoreProductWithStore } from "types/global"
+import ProductRecommendations from "@modules/recommendations/components/product-recommendations"
+import RecommendationsSkeleton from "@modules/recommendations/components/recommendations-skeleton"
 
 type ProductTemplateProps = {
   product: StoreProductWithStore
@@ -67,6 +69,9 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
           </Suspense>
         </div>
       </div>
+      <Suspense fallback={<RecommendationsSkeleton />}>
+        <ProductRecommendations region={region} productId={product.id} />
+      </Suspense>
       <div
         className="content-container my-16 small:my-32"
         data-testid="related-products-container"

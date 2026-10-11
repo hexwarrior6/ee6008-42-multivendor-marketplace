@@ -5,6 +5,11 @@ export const STOREFRONT_LOCALES = ["en", "zh-CN"] as const
 export type StorefrontLocale = (typeof STOREFRONT_LOCALES)[number]
 
 const en = {
+  recommendations: {
+    title: "You may also like",
+    homeIntro: "Discover more handmade pieces from independent artisans.",
+    productIntro: "Explore more pieces selected for this product.",
+  },
   language: { english: "EN", chinese: "中文", label: "Language" },
   shell: {
     brand: "Handmade Marketplace",
@@ -473,6 +478,11 @@ const en = {
 export type StorefrontDictionary = typeof en
 
 const zhCN: StorefrontDictionary = {
+  recommendations: {
+    title: "猜你喜欢",
+    homeIntro: "发现更多独立匠人的手作作品。",
+    productIntro: "看看为这件商品推荐的更多作品。",
+  },
   language: { english: "EN", chinese: "中文", label: "语言" },
   shell: {
     brand: "手作市集",
@@ -787,7 +797,8 @@ const zhCN: StorefrontDictionary = {
     transferRequestTitle: "订单 {id} 的转移请求",
     transferInviteBody:
       "您收到一条转移订单 ({id}) 所有权的请求。如果您同意该请求，请点击下方按钮批准转移。",
-    transferResponsibilityBody: "接受后，新主人将接管与此订单相关的全部责任和权限。",
+    transferResponsibilityBody:
+      "接受后，新主人将接管与此订单相关的全部责任和权限。",
     transferNoActionBody: "如果您不认识此请求或希望保留订单，则无需任何操作。",
     acceptTransfer: "接受转移",
     declineTransfer: "拒绝转移",
