@@ -26,8 +26,11 @@
 
 - GitHub Actions 只认**仓库根目录**的 `.github/workflows/`；子目录里的 `.github/`
   副本不会被执行（如 `recommendation-engine/.github/` 仅作参考）。
-- 现有 workflow：`restrict-main-merge.yml`（合并限制）。
-- 规划中：推荐引擎检查接入（入口 `recommendation-engine/scripts/run_checks.py`，S5 维护）。
+- 现有 workflow：`restrict-main-merge.yml`（合并限制）；`backend-ci.yml`（后端
+  类型检查 + 单测 + HTTP 集成测试 + 构建）；`recommendation-engine.yml` 与
+  `storefront-typecheck.yml`（PR 质检门，按路径触发）；`recommendation-training.yml`
+  （手动触发：连平台库训练并导出 `recommendations.json` 产物）。推荐引擎的检查入口是
+  `recommendation-engine/scripts/run_checks.py`，由 S5 维护。
 
 ## 语言惯例
 

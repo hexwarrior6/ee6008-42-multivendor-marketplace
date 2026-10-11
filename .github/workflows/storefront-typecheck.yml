@@ -1,0 +1,33 @@
+name: Storefront Type Check
+
+on:
+  pull_request:
+    branches: [development]
+    paths:
+      - "fyp-storefront/**"
+      - ".github/workflows/storefront-typecheck.yml"
+  workflow_dispatch:
+
+jobs:
+  tsc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: fyp-storefront/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: fyp-storefront
+        run: pnpm install --frozen-lockfile
+
+      # Current baseline: zero errors. Any new TS error fails the check.
+      - name: Type check (tsc --noEmit)
+        working-directory: fyp-storefront
+        run: npx tsc --noEmit
