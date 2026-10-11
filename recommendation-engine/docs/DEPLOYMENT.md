@@ -48,7 +48,7 @@
 
 ### 3.1 服务形态
 
-在 `s4-recommendation/` 内新增一个轻量服务(建议 `FastAPI + uvicorn`,或 `Flask`),
+在 `recommendation-engine/` 内新增一个轻量服务(建议 `FastAPI + uvicorn`,或 `Flask`),
 **只读**地暴露推荐结果:
 
 | 方法 | 路径 | 说明 |
@@ -105,7 +105,7 @@ curl "http://127.0.0.1:8000/recommendations?customer_id=cus_00001&limit=5"
 
 ### 3.5 部署到 Railway
 
-1. Railway 新建一个 **Service**,根目录指向 `s4-recommendation/`。
+1. Railway 新建一个 **Service**,根目录指向 `recommendation-engine/`。
 2. 环境变量:在 Railway 面板配置 `DATABASE_URL`(与后端同一个 Postgres),**不要**把 `.env` 提交进仓库。
 3. Build:`pip install -e .` 或 `pip install -r requirements.txt`。
 4. Start:`uvicorn recommender.api:app --host 0.0.0.0 --port $PORT`。
