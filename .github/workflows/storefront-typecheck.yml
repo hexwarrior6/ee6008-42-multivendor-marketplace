@@ -16,6 +16,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
+        with:
+          # pinned here because packageManager lives in fyp-storefront/package.json,
+          # not in a root package.json (same as backend-ci.yml)
+          version: 11.23.0
 
       - uses: actions/setup-node@v4
         with:
