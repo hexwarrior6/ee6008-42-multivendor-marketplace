@@ -163,25 +163,39 @@ def _load(cfg, args):
 def _instantiate(name, cfg, args):
     factors = args.factors or cfg.factors
     iters = args.iters or cfg.iters
+    seed = int(args.seed)
     if name == "svd":
         from .models.svd_model import SVDPredictor
         return SVDPredictor(n_factors=factors, user_mean=True)
     if name == "als":
         from .models.als_model import ALSPredictor
-        return ALSPredictor(n_factors=factors, iters=iters)
+        return ALSPredictor(n_factors=factors, iters=iters, seed=seed)
     if name == "lightfm":
         from .models.lightfm_model import LightFMPredictor, available
         if not available():
             raise ImportError("LightFM is not installed (pip install lightfm scipy).")
-        return LightFMPredictor(n_factors=factors, iters=iters)
+        return LightFMPredictor(n_factors=factors, iters=iters, seed=seed)
     raise ValueError(name)
+
+
+# Backend contract cap: parseRecommendationArtifact (fyp-backend artifact.ts)
+# rejects any list longer than MODEL_CANDIDATE_LIMIT.
+MAX_EXPORT_K = 200
+
+
+def _effective_k(cfg, args) -> int:
+    """CLI/config K, clamped to the backend artifact limit."""
+    k = int(args.k or cfg.k)
+    if k > MAX_EXPORT_K:
+        print(f"[export] --k {k} exceeds the backend contract limit ({MAX_EXPORT_K}); clamping.")
+        return MAX_EXPORT_K
+    return k
 
 
 def _evaluate(name, model, ground, train_cd, cd, cfg, args):
     from . import evaluation as evalmod
 
-    k = args.k or cfg.k
-    bundle = evalmod.evaluate(model, ground, train_cd, cd.item_ids, int(k))
+    bundle = evalmod.evaluate(model, ground, train_cd, cd.item_ids, _effective_k(cfg, args))
     summary = bundle.as_dict()
     summary["model"] = name
     print(f"| {name:<9}" + "  ".join(f"{kk}={vv}" for kk, vv in summary.items() if kk != "model"))
@@ -211,12 +225,12 @@ def _word_masks(catalog_items) -> Tuple[Dict, Dict, Dict]:
 def _build_payload(cfg, winner_model, cd, train_cd, content, catalog_items, args) -> dict:
     from . import exporter
 
-    k = args.k or cfg.k
+    k = _effective_k(cfg, args)
     titles, handles, thumbs = _word_masks(catalog_items)
-    by_user = (exporter.export_user(winner_model, cd, int(k), titles, handles, thumbs)
+    by_user = (exporter.export_user(winner_model, cd, k, titles, handles, thumbs)
                if winner_model else {})
-    by_product = exporter.export_product_similar(content, cd, int(k), titles, handles, thumbs)
-    fallback = exporter.export_fallback(content, int(k), titles, handles, thumbs)
+    by_product = exporter.export_product_similar(content, cd, k, titles, handles, thumbs)
+    fallback = exporter.export_fallback(content, k, titles, handles, thumbs)
     return {"by_user": by_user, "by_product": by_product, "fallback": fallback}
 
 
