@@ -9,11 +9,12 @@ import os
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
-from recommender.train import main, parse_models  # noqa: E402
+from recommender.train import MAX_EXPORT_K, _effective_k, main, parse_models  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE = os.path.join(os.path.dirname(HERE), "scripts", "sample_orders.csv")
@@ -28,6 +29,29 @@ class ParseModelsTest(unittest.TestCase):
 
     def test_unknown_filtered(self):
         self.assertEqual(parse_models("svd,bogus"), ["svd"])
+
+
+class EffectiveKTest(unittest.TestCase):
+    """K must stay within the backend artifact contract (MODEL_CANDIDATE_LIMIT)."""
+
+    CFG = SimpleNamespace(k=8)
+
+    def test_cli_k_wins_when_set(self):
+        args = SimpleNamespace(k=15)
+        self.assertEqual(_effective_k(self.CFG, args), 15)
+
+    def test_falls_back_to_config(self):
+        self.assertEqual(_effective_k(self.CFG, SimpleNamespace(k=None)), 8)
+
+    def test_clamps_to_backend_limit(self):
+        self.assertEqual(_effective_k(self.CFG, SimpleNamespace(k=500)), MAX_EXPORT_K)
+        self.assertLessEqual(MAX_EXPORT_K, 200)
+
+    def test_clamp_message_printed(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            _effective_k(self.CFG, SimpleNamespace(k=999))
+        self.assertIn("clamping", buf.getvalue())
 
 
 class EndToEndTest(unittest.TestCase):
