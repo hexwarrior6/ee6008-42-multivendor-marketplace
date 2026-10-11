@@ -54,6 +54,92 @@ const makeRequest = (query = {}, options: Record<string, unknown> = {}) => {
 }
 
 describe("rule-based recommendations", () => {
+  function paged(
+    catalog: RecommendationProduct[],
+    linkIds = catalog.map((p) => p.id)
+  ) {
+    const graph = jest.fn(async ({ entity, filters, pagination }) => {
+      if (entity === "product_sales_channel") {
+        expect(filters.sales_channel_id).toEqual(["sc-1"])
+        return {
+          data: linkIds
+            .slice(pagination.skip, pagination.skip + pagination.take)
+            .map((product_id) => ({ product_id })),
+        }
+      }
+      return {
+        data: catalog.filter(
+          (p) => filters.id.includes(p.id) && p.status === filters.status
+        ),
+      }
+    })
+    const req = {
+      query: {},
+      publishable_key_context: { sales_channel_ids: ["sc-1"] },
+      scope: { resolve: () => ({ graph }) },
+    } as never
+    const res = { json: jest.fn(), setHeader: jest.fn() }
+    return {
+      req,
+      res: res as never,
+      graph,
+      result: () => res.json.mock.calls[0][0],
+    }
+  }
+  it("finds a published candidate after 200 draft links", async () => {
+    const h = paged([
+      ...Array.from({ length: 200 }, (_, i) =>
+        product(`draft_${i}`, { status: "draft" })
+      ),
+      product("visible"),
+    ])
+    await GET(h.req, h.res)
+    expect(h.result().recommendations.map((p: any) => p.product_id)).toEqual([
+      "visible",
+    ])
+    expect(
+      h.graph.mock.calls.some(
+        ([q]) =>
+          q.entity === "product_sales_channel" && q.pagination.skip === 200
+      )
+    ).toBe(true)
+    expect(h.result().candidate_scan_truncated).toBe(false)
+  })
+  it("does not let duplicate channel links or products without variants fill the usable quota", async () => {
+    const h = paged(
+      [product("empty", { variants: [] }), product("visible")],
+      [...Array(200).fill("empty"), "visible"]
+    )
+    await GET(h.req, h.res)
+    expect(h.result().recommendations.map((p: any) => p.product_id)).toEqual([
+      "visible",
+    ])
+  })
+  it("stops scanning once the usable candidate quota is filled", async () => {
+    const h = paged(
+      Array.from({ length: 300 }, (_, i) => product(`visible_${i}`))
+    )
+    await GET(h.req, h.res)
+    expect(
+      h.graph.mock.calls.filter(([q]) => q.entity === "product_sales_channel")
+    ).toHaveLength(1)
+    expect(h.result().count).toBe(8)
+  })
+  it("bounds scanning and reports incomplete candidates instead of looping forever", async () => {
+    const h = paged(
+      [product("draft", { status: "draft" })],
+      Array(10_001).fill("draft")
+    )
+    await GET(h.req, h.res)
+    expect(
+      h.graph.mock.calls.filter(([q]) => q.entity === "product_sales_channel")
+    ).toHaveLength(50)
+    expect(h.result()).toMatchObject({
+      count: 0,
+      candidate_scan_limit: 10_000,
+      candidate_scan_truncated: true,
+    })
+  })
   it("ranks public category similarity above recency, excludes seed/drafts/no variants, deduplicates", () => {
     const ranked = rankRecommendations(
       [

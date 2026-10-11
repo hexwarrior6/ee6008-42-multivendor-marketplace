@@ -18,11 +18,13 @@ import {
   customOrderPaymentAmount,
   paymentCollectionId,
   type PaymentOrderSnapshot,
+  CUSTOM_WECHAT_PROVIDER,
 } from "../../../../../modules/custom-order/payment"
 import {
   assertCustomOrderAccess,
   requireCustomerContext,
 } from "../../../../utils/authz"
+import { customPaymentConfig } from "../../../../utils/custom-order-payments"
 
 async function authorizedOrder(req: AuthenticatedMedusaRequest) {
   const customer = requireCustomerContext(req)
@@ -130,6 +132,21 @@ export const POST = async (
       payment_status: order.payment_status,
     })
     return
+  }
+  // A direct API caller must pass the same availability gate as the storefront.
+  // Existing bindings remain readable even if the provider is later disabled.
+  customPaymentConfig()
+  const providers = await payment.listPaymentProviders({
+    id: CUSTOM_WECHAT_PROVIDER,
+  })
+  if (
+    order.currency_code !== "cny" ||
+    !providers.some((provider) => provider.is_enabled)
+  ) {
+    throw new MedusaError(
+      MedusaError.Types.NOT_ALLOWED,
+      "Custom WeChat payment is not available"
+    )
   }
   const collection = await payment.createPaymentCollections({
     currency_code: order.currency_code,

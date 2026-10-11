@@ -17,6 +17,7 @@ import {
 } from "../../../modules/recommendation/artifact"
 
 const CANDIDATE_LIMIT = 200
+const LINK_SCAN_LIMIT = 10_000
 const fields = [
   "id",
   "title",
@@ -88,9 +89,6 @@ export const GET = async (
       order: { product_id: "ASC" },
     },
   })
-  const ids = [
-    ...new Set(links.map((link: { product_id: string }) => link.product_id)),
-  ]
   let seed: RecommendationProduct | undefined
   if (productId) {
     const { data: membership = [] } = await query.graph({
@@ -200,8 +198,24 @@ export const GET = async (
       return
     }
   }
-  const { data: products = [] } = ids.length
-    ? await query.graph({
+  // Unpublished/no-variant products and duplicate channel links must not
+  // consume the usable candidate quota. Bound the scan separately from it.
+  const candidates = new Map<string, RecommendationProduct>()
+  const seen = new Set<string>()
+  let page = links
+  let scanned = 0
+  let scanTruncated = false
+  while (page.length) {
+    scanned += page.length
+    const ids: string[] = []
+    for (const link of page as Array<{ product_id: string }>) {
+      if (!seen.has(link.product_id)) {
+        seen.add(link.product_id)
+        ids.push(link.product_id)
+      }
+    }
+    if (ids.length) {
+      const { data: products = [] } = await query.graph({
         entity: "product",
         fields,
         filters: { id: ids, status: "published" },
@@ -211,9 +225,37 @@ export const GET = async (
           order: { created_at: "DESC", id: "ASC" },
         },
       })
-    : { data: [] }
+      for (const product of products as RecommendationProduct[]) {
+        if (
+          ids.includes(product.id) &&
+          product.id !== productId &&
+          product.status === "published" &&
+          product.variants?.length
+        ) {
+          candidates.set(product.id, product)
+        }
+      }
+    }
+    if (candidates.size >= CANDIDATE_LIMIT || page.length < CANDIDATE_LIMIT)
+      break
+    if (scanned >= LINK_SCAN_LIMIT) {
+      scanTruncated = true
+      break
+    }
+    const { data: next = [] } = await query.graph({
+      entity: "product_sales_channel",
+      fields: ["product_id"],
+      filters: { sales_channel_id: channelIds },
+      pagination: {
+        take: CANDIDATE_LIMIT,
+        skip: scanned,
+        order: { product_id: "ASC" },
+      },
+    })
+    page = next
+  }
   const recommendations = rankRecommendations(
-    products as RecommendationProduct[],
+    [...candidates.values()].slice(0, CANDIDATE_LIMIT),
     seed,
     limit
   )
@@ -228,6 +270,8 @@ export const GET = async (
     strategy: "rules",
     fallback_reason: loaded.reason ?? "no_visible_results",
     candidate_limit: CANDIDATE_LIMIT,
+    candidate_scan_limit: LINK_SCAN_LIMIT,
+    candidate_scan_truncated: scanTruncated,
     context: {
       ...(productId ? { product_id: productId } : {}),
       ...(signedInCustomerId ? { customer_id: signedInCustomerId } : {}),

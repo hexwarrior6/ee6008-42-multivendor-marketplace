@@ -529,6 +529,37 @@ medusaIntegrationTestRunner({
       expect(second.category.id).toBe(first.category.id)
       expect(second.category.metadata?.custom_order_enabled).toBe(true)
     })
+    it("rejects direct collection preparation while payments are disabled without binding the order", async () => {
+      const order = await createQuoted()
+      await api.post(
+        `/store/custom-orders/${order.id}/confirm`,
+        accepted(order),
+        customerHeaders
+      )
+      const enabled = process.env.WECHAT_PAY_ENABLED
+      const sandbox = process.env.WECHAT_PAY_SANDBOX
+      try {
+        process.env.WECHAT_PAY_ENABLED = "false"
+        process.env.WECHAT_PAY_SANDBOX = "false"
+        await expect(
+          api.post(
+            `/store/custom-orders/${order.id}/payment-collection`,
+            {},
+            customerHeaders
+          )
+        ).rejects.toMatchObject({ response: { status: 400 } })
+        const { data } = await api.get(
+          `/store/custom-orders/${order.id}/payment-collection`,
+          customerHeaders
+        )
+        expect(data.payment_collection).toBeNull()
+      } finally {
+        if (enabled === undefined) delete process.env.WECHAT_PAY_ENABLED
+        else process.env.WECHAT_PAY_ENABLED = enabled
+        if (sandbox === undefined) delete process.env.WECHAT_PAY_SANDBOX
+        else process.env.WECHAT_PAY_SANDBOX = sandbox
+      }
+    })
     it("prepares a single durable payment collection when two buyer requests race", async () => {
       const order = await createQuoted()
       await api.post(

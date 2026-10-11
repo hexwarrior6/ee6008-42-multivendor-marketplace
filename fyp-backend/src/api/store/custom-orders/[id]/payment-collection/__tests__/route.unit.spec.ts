@@ -14,13 +14,14 @@ function setup(body: unknown = {}, linked = false) {
     metadata: linked ? { [PAYMENT_BINDING_KEY]: "pay_col_existing" } : {},
   }
   const retrieve = jest.fn().mockResolvedValue(order)
-  const bind = jest
-    .fn()
-    .mockImplementation(async (input) => ({
-      ...order,
-      metadata: { [PAYMENT_BINDING_KEY]: input.collection_id },
-    }))
+  const bind = jest.fn().mockImplementation(async (input) => ({
+    ...order,
+    metadata: { [PAYMENT_BINDING_KEY]: input.collection_id },
+  }))
   const payment = {
+    listPaymentProviders: jest
+      .fn()
+      .mockResolvedValue([{ id: "pp_wechat_wechat", is_enabled: true }]),
     createPaymentCollections: jest
       .fn()
       .mockResolvedValue({ id: "pay_col_new" }),
@@ -65,6 +66,65 @@ function setup(body: unknown = {}, linked = false) {
   }
 }
 describe("custom order payment collection API", () => {
+  const env = { ...process.env }
+  beforeEach(() => {
+    process.env.WECHAT_PAY_ENABLED = "true"
+    process.env.WECHAT_PAY_MODE = "mock"
+    process.env.WECHAT_PAY_SANDBOX = "true"
+  })
+  afterEach(() => {
+    process.env = { ...env }
+  })
+  it("does not bind when WeChat is disabled", async () => {
+    process.env.WECHAT_PAY_ENABLED = "false"
+    process.env.WECHAT_PAY_SANDBOX = "false"
+    const h = setup()
+    await expect(POST(h.req, h.res)).rejects.toMatchObject({
+      type: "not_allowed",
+    })
+    expect(h.payment.createPaymentCollections).not.toHaveBeenCalled()
+    expect(h.bind).not.toHaveBeenCalled()
+  })
+  it.each([
+    { providers: [] },
+    { providers: [{ id: "pp_wechat_wechat", is_enabled: false }] },
+  ])("does not bind an unavailable provider %j", async ({ providers }) => {
+    const h = setup()
+    h.payment.listPaymentProviders.mockResolvedValue(providers)
+    await expect(POST(h.req, h.res)).rejects.toMatchObject({
+      type: "not_allowed",
+    })
+    expect(h.payment.createPaymentCollections).not.toHaveBeenCalled()
+    expect(h.bind).not.toHaveBeenCalled()
+  })
+  it("does not bind unsupported currency", async () => {
+    const h = setup()
+    h.order.currency_code = "usd"
+    await expect(POST(h.req, h.res)).rejects.toMatchObject({
+      type: "not_allowed",
+    })
+    expect(h.bind).not.toHaveBeenCalled()
+    expect(h.payment.createPaymentCollections).not.toHaveBeenCalled()
+  })
+  it("does not bind live payments without explicit enablement", async () => {
+    process.env.WECHAT_PAY_MODE = "live"
+    process.env.WECHAT_PAY_SANDBOX = "false"
+    process.env.CUSTOM_ORDER_LIVE_PAYMENTS_ENABLED = "false"
+    const h = setup()
+    await expect(POST(h.req, h.res)).rejects.toThrow()
+    expect(h.bind).not.toHaveBeenCalled()
+    expect(h.payment.createPaymentCollections).not.toHaveBeenCalled()
+  })
+  it("can reuse/read a binding after payment is disabled without creating another", async () => {
+    process.env.WECHAT_PAY_ENABLED = "false"
+    process.env.WECHAT_PAY_SANDBOX = "false"
+    const h = setup({}, true)
+    await POST(h.req, h.res)
+    await GET(h.req, h.res)
+    expect(h.payment.listPaymentProviders).not.toHaveBeenCalled()
+    expect(h.payment.createPaymentCollections).not.toHaveBeenCalled()
+    expect(h.bind).not.toHaveBeenCalled()
+  })
   it("prepares from the server quote, not client money, and returns no provider data", async () => {
     const { req, res, payment, response } = setup()
     await POST(req, res)
@@ -146,12 +206,10 @@ describe("custom order payment collection API", () => {
   it("does not delete a collection after an ambiguous successful commit", async () => {
     const { req, res, payment, bind, retrieve, order } = setup()
     bind.mockRejectedValue(new Error("lost commit response"))
-    retrieve
-      .mockResolvedValueOnce(order)
-      .mockResolvedValueOnce({
-        ...order,
-        metadata: { [PAYMENT_BINDING_KEY]: "pay_col_new" },
-      })
+    retrieve.mockResolvedValueOnce(order).mockResolvedValueOnce({
+      ...order,
+      metadata: { [PAYMENT_BINDING_KEY]: "pay_col_new" },
+    })
     await expect(POST(req, res)).rejects.toThrow("lost commit response")
     expect(payment.deletePaymentCollections).not.toHaveBeenCalled()
   })

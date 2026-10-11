@@ -16,7 +16,7 @@
 - 生命周期与角色权限：[回归指南](s5-custom-order-states-and-regression.md)。
 - 定制支付、巡检、收款快照及剩余边界：[支付说明](custom-order-payments.md)。
 - 后端：`pnpm test:unit`、`pnpm exec tsc --noEmit`；隔离 HTTP：`pnpm test:feature:http`。
-- 最终本地验证（2026-10-11）：后端 40 组、348 项单元测试，14 个隔离数据库 HTTP 场景，后端类型检查均通过。HTTP 包含实际 S4 训练导出 JSON 到推荐 API 的跨语言联调，无跳过；资金相关场景仅用 mock，未访问真实收款/退款服务。新增管理员生产前全额退款与并发去重；真实到账验收仍未进行。
+- 最终本地验证（2026-10-11 后续修复）：后端 40 组、358 项单元测试，15 个隔离数据库 HTTP 场景，后端类型检查均通过。新增支付关闭/渠道不可用时拒绝创建绑定与规则推荐分页回归；HTTP 包含支付关闭时直接调用准备接口不产生绑定、实际 S4 训练导出 JSON 到推荐 API 的跨语言联调，无跳过。资金相关场景仅用 mock，未访问真实收款/退款服务；真实到账验收仍未进行。提交与发布状态以 GitHub 分支记录为准。
 - 前台：`pnpm test:custom-order-payments`、购物车/结账/边界/申请回归和类型检查。
 - 共享库只读巡检可由获准管理员执行 `pnpm audit:custom-order-payments`；该命令不修复或删除任何数据。
 
