@@ -10,9 +10,6 @@ on:
 
 jobs:
   checks:
-    # The directory lands on development with the recommendation-engine PR;
-    # skip (instead of failing) while that PR is still open.
-    if: ${{ hashFiles('recommendation-engine/pyproject.toml') != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
