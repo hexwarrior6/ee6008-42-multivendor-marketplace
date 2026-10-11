@@ -2,6 +2,21 @@ import { createCipheriv, createSign, generateKeyPairSync } from "crypto";
 import { WeChatPayClient } from "../client";
 
 describe("WeChat Pay API v3 notification security", () => {
+  it("rejects a non-numeric timestamp before signature processing", () => {
+    const client = new WeChatPayClient({
+      mode: "live",
+      publicKeyId: "PUB_KEY_ID_TEST",
+      apiBaseUrl: "https://example.test",
+    });
+    expect(() =>
+      client.verifyAndDecryptNotification("{}", {
+        "wechatpay-timestamp": "NaN",
+        "wechatpay-nonce": "nonce",
+        "wechatpay-signature": "signature",
+        "wechatpay-serial": "PUB_KEY_ID_TEST",
+      })
+    ).toThrow("five-minute window");
+  });
   it("verifies the signature and decrypts an AES-256-GCM transaction", () => {
     const { privateKey, publicKey } = generateKeyPairSync("rsa", {
       modulusLength: 2048,

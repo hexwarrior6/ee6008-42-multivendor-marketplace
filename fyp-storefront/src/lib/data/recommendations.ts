@@ -89,3 +89,38 @@ export async function listRecommendedProducts({
     return []
   }
 }
+
+/** Public product-context recommendations; no customer identity is sent. */
+export async function listRecommendedProductIds(
+  productId: string
+): Promise<string[]> {
+  try {
+    const result = await sdk.client.fetch<{ recommendations: unknown }>(
+      "/store/recommendations",
+      {
+        method: "GET",
+        query: { product_id: productId, limit: 8 },
+        cache: "no-store",
+        signal: AbortSignal.timeout(3000),
+      }
+    )
+    if (!Array.isArray(result.recommendations)) return []
+    const ids: string[] = []
+    for (const item of result.recommendations) {
+      const id = item?.product_id
+      if (
+        typeof id === "string" &&
+        id.trim() &&
+        id !== productId &&
+        !ids.includes(id)
+      ) {
+        ids.push(id)
+      }
+      if (ids.length === 8) break
+    }
+    return ids
+  } catch {
+    // Recommendation failures must not prevent viewing/buying a product.
+    return []
+  }
+}

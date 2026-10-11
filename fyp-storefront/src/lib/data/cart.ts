@@ -10,10 +10,12 @@ import {
   getCacheOptions,
   getCacheTag,
   getCartId,
+  getSellerCartMapping,
   removeCartId,
   setCartId,
 } from "./cookies"
 import { getRegion } from "./regions"
+import { needsCartRegionUpdate } from "@lib/util/cart-region"
 
 /**
  * Retrieves a cart by its ID. If no ID is provided, it will use the cart ID from the cookies.
@@ -57,7 +59,7 @@ export async function getOrSetCart(countryCode: string) {
     throw new Error(`Region not found for country code: ${countryCode}`)
   }
 
-  let cart = await retrieveCart(undefined, 'id,region_id')
+  let cart = await retrieveCart(undefined, 'id,region_id,currency_code')
 
   const headers = {
     ...(await getAuthHeaders()),
@@ -77,8 +79,9 @@ export async function getOrSetCart(countryCode: string) {
     revalidateTag(cartCacheTag)
   }
 
-  if (cart && cart?.region_id !== region.id) {
-    await sdk.store.cart.update(cart.id, { region_id: region.id }, {}, headers)
+  if (cart && needsCartRegionUpdate(cart, region)) {
+    const updated = await sdk.store.cart.update(cart.id, { region_id: region.id }, {}, headers)
+    cart = updated.cart
     const cartCacheTag = await getCacheTag("carts")
     revalidateTag(cartCacheTag)
   }
@@ -203,7 +206,7 @@ export async function deleteLineItem(lineId: string) {
   }
 
   await sdk.store.cart
-    .deleteLineItem(cartId, lineId, headers)
+    .deleteLineItem(cartId, lineId, {}, headers)
     .then(async () => {
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)
@@ -428,17 +431,29 @@ export async function placeOrder(cartId?: string) {
  * @param countryCode
  */
 export async function updateRegion(countryCode: string, currentPath: string) {
+  const normalizedCountryCode = countryCode.trim().toLowerCase()
   const cartId = await getCartId()
-  const region = await getRegion(countryCode)
+  const mapping = await getSellerCartMapping()
+  const region = await getRegion(normalizedCountryCode)
 
   if (!region) {
     throw new Error(`Region not found for country code: ${countryCode}`)
   }
 
-  if (cartId) {
-    await updateCart({ region_id: region.id })
-    const cartCacheTag = await getCacheTag("carts")
-    revalidateTag(cartCacheTag)
+  const cartIds = [...new Set([cartId, ...Object.values(mapping)].filter(
+    (id): id is string => typeof id === "string" && !!id
+  ))]
+  const headers = { ...(await getAuthHeaders()) }
+  const updates = await Promise.allSettled(cartIds.map(id =>
+    sdk.store.cart.update(id, { region_id: region.id }, {}, headers)
+  ))
+  // Invalidate successful updates even if a different store's cart failed.
+  for (const tag of ["carts", "fulfillment", "shippingOptions"]) {
+    revalidateTag(await getCacheTag(tag))
+  }
+  const failed = updates.find(result => result.status === "rejected")
+  if (failed?.status === "rejected") {
+    medusaError(failed.reason)
   }
 
   const regionCacheTag = await getCacheTag("regions")
@@ -447,7 +462,7 @@ export async function updateRegion(countryCode: string, currentPath: string) {
   const productsCacheTag = await getCacheTag("products")
   revalidateTag(productsCacheTag)
 
-  redirect(`/${countryCode}${currentPath}`)
+  redirect(`/${normalizedCountryCode}${currentPath}`)
 }
 
 export async function listCartOptions() {

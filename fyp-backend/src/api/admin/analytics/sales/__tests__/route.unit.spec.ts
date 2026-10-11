@@ -29,7 +29,6 @@ describe("sales analytics revenue filtering", () => {
   })
 
   it.each([
-    { status: "pending" },
     { status: "canceled" },
     { status: "failed" },
   ])("excludes $status orders", ({ status }) => {
@@ -43,6 +42,12 @@ describe("sales analytics revenue filtering", () => {
         ],
       })
     ).toBe(0)
+  })
+
+  it("includes captured pending orders, since pending is Medusa's normal initial fulfillment state", () => {
+    expect(getOrderNetRevenue({ id: "paid-pending", status: "pending", payment_collections: [{ captured_amount: 1000 }] })).toBe(1000)
+    expect(getOrderNetRevenue({ id: "unpaid-pending", status: "pending", total: 1000 })).toBe(0)
+    expect(getOrderNetRevenue({ id: "draft-paid", is_draft_order: true, payment_collections: [{ captured_amount: 1000 }] })).toBe(0)
   })
 
   it("does not treat order.total as revenue without a paid signal", () => {

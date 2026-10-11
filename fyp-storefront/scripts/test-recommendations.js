@@ -173,6 +173,54 @@ test("limits are bounded to the API contract", async () => {
   }
 })
 
+test("legacy related products keep the public ID adapter after merging", async () => {
+  const subject = setup({
+    authenticated: true,
+    recommendations: [
+      null,
+      {},
+      { product_id: "" },
+      { product_id: "current" },
+      { product_id: "a" },
+      { product_id: "a" },
+      { product_id: "b" },
+    ],
+  })
+  assert.deepEqual(await subject.listRecommendedProductIds("current"), [
+    "a",
+    "b",
+  ])
+  assert.equal(subject.calls.length, 1)
+  assert.deepEqual(subject.calls[0].options.query, {
+    product_id: "current",
+    limit: 8,
+  })
+  assert.equal(subject.calls[0].options.headers, undefined)
+  assert.equal(subject.calls[0].options.cache, "no-store")
+  assert.ok(subject.calls[0].options.signal instanceof AbortSignal)
+})
+
+test("public ID adapter bounds results and safely handles invalid responses and failures", async () => {
+  const subject = setup({
+    recommendations: Array.from({ length: 20 }, (_, i) => ({
+      product_id: `prod_${i}`,
+    })),
+  })
+  assert.equal((await subject.listRecommendedProductIds("current")).length, 8)
+  for (const recommendations of [null, {}, []]) {
+    assert.deepEqual(
+      await setup({ recommendations }).listRecommendedProductIds("current"),
+      []
+    )
+  }
+  assert.deepEqual(
+    await setup({ fail: "/store/recommendations" }).listRecommendedProductIds(
+      "current"
+    ),
+    []
+  )
+})
+
 test("widget renders localized copy and product cards, and hides empty results", async () => {
   const React = require("react")
   const { renderToStaticMarkup } = require("react-dom/server")

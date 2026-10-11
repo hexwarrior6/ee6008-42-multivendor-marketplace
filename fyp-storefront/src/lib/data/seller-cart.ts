@@ -7,6 +7,7 @@ import { HttpTypes } from "@medusajs/types";
 import { revalidateTag } from "next/cache";
 import medusaError from "@lib/util/medusa-error";
 import { redirect } from "next/navigation"
+import { needsCartRegionUpdate } from "@lib/util/cart-region"
 
 
 export async function getOrCreateSellerCart(sellerId: string, countryCode: string) {
@@ -35,7 +36,7 @@ export async function getOrCreateSellerCart(sellerId: string, countryCode: strin
             method: "GET",
             headers,
             next,
-            cache: "force-cache",
+            cache: "no-store",
         }).then(({ cart }: { cart: HttpTypes.StoreCart }) => cart)
       .catch(() => null)
     }
@@ -54,8 +55,9 @@ export async function getOrCreateSellerCart(sellerId: string, countryCode: strin
         revalidateTag(cartCacheTag);
     }
 
-    if (cart && cart?.region_id !== region.id) {
-        await sdk.store.cart.update(cart.id, { region_id: region.id }, {}, headers);
+    if (cart && needsCartRegionUpdate(cart, region)) {
+        const updated = await sdk.store.cart.update(cart.id, { region_id: region.id }, {}, headers);
+        cart = updated.cart;
         const cartCacheTag = await getCacheTag("carts");
         revalidateTag(cartCacheTag);
     }
@@ -205,7 +207,7 @@ export async function retrieveCart(cartId: string, fields?: string) {
       },
       headers,
       next,
-      cache: "force-cache",
+      cache: "no-store",
     })
     .then(({ cart }: { cart: HttpTypes.StoreCart }) => cart)
     .catch(() => null)
@@ -233,6 +235,19 @@ export async function updateCart(cartId: string, data: HttpTypes.StoreUpdateCart
       return cart
     })
     .catch(medusaError)
+}
+
+// Explicit server action: never change cart prices while rendering a GET page.
+export async function synchronizeCartCurrency(cartId: string) {
+  const headers = { ...(await getAuthHeaders()) }
+  const { cart } = await sdk.client.fetch<HttpTypes.StoreCartResponse>(
+    `/store/carts/${cartId}`,
+    { method: "GET", headers, query: { fields: "id,region_id,currency_code,*region" }, cache: "no-store" }
+  )
+  if (!cart.region) throw new Error("Cart region is not configured")
+  if (needsCartRegionUpdate(cart, cart.region)) {
+    await updateCart(cart.id, { region_id: cart.region.id })
+  }
 }
 
 // TODO: Pass a POJO instead of a form entity here

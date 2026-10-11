@@ -7,6 +7,8 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getStorefrontDictionary } from "@lib/i18n/storefront"
 import { getStorefrontLocale } from "@lib/i18n/storefront-server"
+import CartCurrencyNotice from "@modules/checkout/components/cart-currency-notice"
+import { needsCartRegionUpdate } from "@lib/util/cart-region"
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getStorefrontLocale()
@@ -26,6 +28,10 @@ export default async function Checkout(props: Props) {
 
   if (!cart) {
     return notFound()
+  }
+
+  if (cart.region && needsCartRegionUpdate(cart, cart.region)) {
+    return <CartCurrencyNotice cartId={cart.id} currency={cart.region.currency_code} locale={await getStorefrontLocale()} />
   }
 
   const customer = await retrieveCustomer()

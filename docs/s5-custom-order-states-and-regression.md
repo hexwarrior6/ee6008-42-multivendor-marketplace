@@ -1,5 +1,9 @@
 # S5 — Custom Order States & Regression Guide
 
+> 更新：买家现在可通过专用 `POST /store/custom-orders/:id/confirm` 接受当前报价；普通 PATCH 的 metadata-only 限制不变。确认需要提交报价版本、金额、币种，校验在事务中完成。下文关于买家不能修改状态的旧描述仅适用于通用 PATCH；新接口详见 [推荐与报价确认说明](recommendations-and-quote-confirmation.md)。
+
+> 支付补充：支付单准备本身不扣款；人民币微信会话、前台入口及 Medusa 扣款/退款事件核验同步已实现，真实商户端到端验收和主动退款仍待完成。绑定后禁止手工改付款状态、直接取消或删除，生产/交付必须重新核验真实账本。下文管理员模拟付款流程仅适用于未绑定的测试订单，不是真实收款证明。详见 [定制订单支付说明](custom-order-payments.md)。
+
 This document records the custom-order lifecycle delivered by S1 (state
 machine + API), S2 (storefront request/tracking UI) and S3 (TalkJS chat), and
 lists the regression coverage that proves the flow is still coherent end to
@@ -26,8 +30,8 @@ Source of truth in code:
 | --- | --- | --- |
 | `request` | The buyer has submitted the requirement and is waiting for the artisan to review it. Every order is created in this state. | System (on creation) |
 | `quote` | The artisan has reviewed the request and provided a quote (`quoted_amount` in minor units). | Artisan / admin |
-| `confirmed` | Buyer and artisan have agreed on the quote; the order is locked in. The quote can no longer change. | Artisan / admin |
-| `produced` | Payment has been authorized or captured and the product has been made. | Artisan / admin |
+| `confirmed` | Buyer and artisan have agreed on the quote; the order is locked in. The quote can no longer change. | Buyer via dedicated confirm; artisan / admin |
+| `produced` | The product has been made. Linked payment orders require verified real capture; legacy unbound tests may use authorization. | Artisan / admin |
 | `delivered` | The product has been handed to the buyer. `delivered_at` is recorded. Terminal state. | Artisan / admin |
 | `cancelled` | The order was abandoned. `cancelled_at`, `cancelled_by` and `cancellation_reason` are recorded. Terminal state. | Customer, artisan or admin (before production) |
 
@@ -69,7 +73,7 @@ regression tests:
 
 Enforced by `assertCustomOrderBusinessRules` (all mutations go through
 `CustomOrderService.updateCustomOrderAtomically` in one DB transaction with
-optimistic-concurrency `version` check):
+an order-row write lock, refreshed snapshot and stale-quote `version` check):
 
 - **Into `quote`**: a positive `quoted_amount` must be supplied in integer
   minor units (`0 < quoted_amount ≤ 2 147 483 647`). A zero, negative,
@@ -77,9 +81,11 @@ optimistic-concurrency `version` check):
 - **Into `confirmed`**: a valid quote must already exist on the order; the
   quote becomes immutable from this point (`The quote cannot be changed after
   confirmation`).
-- **Into `produced`**: `payment_status` must be `authorized` or `captured`.
-  `pending` or `failed` payments cannot start production.
-- **Into `delivered`**: only reachable from `produced`. The service stamps
+- **Into `produced`**: legacy unbound test orders require `authorized` or
+  `captured`. Orders with a linked payment collection additionally require
+  a freshly verified real, full capture; mock/manual payments cannot pass.
+- **Into `delivered`**: only reachable from `produced`; linked orders must
+  pass the fresh payment check again. The service stamps
   `delivered_at` with the transition time and appends a status-history row.
 - **Into `cancelled`**: a non-empty `cancellation_reason` is required. The
   service stamps `cancelled_at`, `cancelled_by` and trims the reason, and
@@ -88,15 +94,16 @@ optimistic-concurrency `version` check):
   quote, category, product references, listing type or payment status.
 - **Payment sub-state machine**: `pending → authorized | captured | failed`,
   `authorized → captured | failed`, `captured` is final, `failed` may be
-  retried. Only a platform administrator may change payment status.
+  retried. Manual platform-admin changes are allowed only on unbound orders;
+  linked orders use trusted payment reconciliation instead.
 
 ## 4. Role permissions
 
 | Role | Allowed | Not allowed |
 | --- | --- | --- |
-| Customer (buyer) | Create orders (`POST /store/custom-orders`), list/read own orders, update own order's `metadata` only, initiate chat on own orders | Change `status`, `quoted_amount`, category, product references, `payment_status` or `cancellation_reason` (rejected as `not_allowed`, HTTP 400); read or modify other customers' orders (HTTP 403); delete orders |
+| Customer (buyer) | Create/list/read own orders, update own metadata, confirm the accepted quote via the dedicated endpoint, prepare own CNY payment and refresh verification, initiate own chat | Generic PATCH of status/quote/payment or other protected fields (HTTP 400); other customers' orders (HTTP 403); delete orders |
 | Artisan (seller) | Read/update orders assigned to their store or explicitly linked via `artisan_user_id`; quote, confirm, mark produced/delivered, cancel with reason; open the order's TalkJS conversation | Access orders of other stores; change `payment_status`; delete orders |
-| Platform admin | Everything: full status control, payment status, delete, list across all stores | — |
+| Platform admin | Status control, list across stores; manual payment status/delete only on unbound orders | Forge server payment metadata; manually mark paid, cancel or delete linked payment orders; bypass real capture check |
 | Unauthenticated / other customers | — | Any custom-order endpoint (401 without login, 403 for someone else's order) |
 
 Enforcement layers:
@@ -176,12 +183,15 @@ artisan profile, storefront running (`pnpm dev` in `fyp-storefront/`),
    `quoted_amount` (e.g. `72000` = 720.00) and moves to **Quote**.
    Expected: 200, buyer's detail page shows Quote as current step and the
    artisan quote amount.
-3. **Confirm** — Merchant moves to **Confirmed**. Expected: quote becomes
-   immutable; a customer PATCH touching `status`/`quoted_amount` is rejected
-   with `not_allowed` (HTTP 400).
-4. **Pay + produce** — Platform admin sets `payment_status: "authorized"`,
-   merchant moves to **Produced**. Expected: 200; without payment the move is
-   rejected with `Payment must be authorized or captured before production`.
+3. **Confirm** — Buyer accepts the quote with the dedicated confirm endpoint
+   (version, amount and currency required). The quote becomes immutable;
+   generic customer PATCH touching status/quote remains rejected (HTTP 400).
+4. **Pay + produce** — On unbound test orders only, an admin may simulate
+   authorization and the merchant can mark Produced. For linked CNY orders,
+   prepare WeChat payment from the buyer detail page: mock mode must remain
+   simulated and reject production; real-mode acceptance requires actual
+   merchant payment and trusted full-capture reconciliation before Produced.
+   Real merchant acceptance has not been performed in this local test run.
 5. **Deliver** — Merchant moves to **Delivered**. Expected: buyer sees all
    timeline steps complete and `delivered_at` recorded; further quote/category
    changes fail.
@@ -191,8 +201,10 @@ artisan profile, storefront running (`pnpm dev` in `fyp-storefront/`),
    identity. Messages appear for both parties and persist in TalkJS.
    Unauthenticated visitors get 401; another customer gets 403 and never
    receives a session.
-7. **Cancellation branch** — While in `request`/`quote`/`confirmed`, an actor
-   with access cancels with a reason. Expected: timeline shows Cancelled,
+7. **Cancellation branch** — For unbound orders in `request`/`quote`/`confirmed`,
+   an actor with access cancels with a reason. Linked orders reject direct
+   cancellation until a dedicated refund/compensation flow exists.
+   Expected for unbound orders: timeline shows Cancelled,
    reason displayed, order cannot be moved to `quote`/`confirmed` afterwards.
 8. **Regression** — Ordinary products, cart and standard orders still work
    (covered by the existing core suite plus the S5 checks below).

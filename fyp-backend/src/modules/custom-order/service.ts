@@ -4,7 +4,32 @@ import {
   MedusaService,
   MedusaContext,
 } from "@medusajs/framework/utils"
-import type { Context } from "@medusajs/framework/types"
+import type { Context, PaymentCollectionDTO } from "@medusajs/framework/types"
+import type { WeChatPayConfig } from "../wechat-pay/config"
+import { randomUUID } from "node:crypto"
+import {
+  paymentOperation,
+  PAYMENT_OPERATION_KEY,
+  type PaymentOperation,
+  type PaymentOperationKind,
+  fullRefundReference,
+} from "./payment-operation"
+import { LockMode } from "@medusajs/framework/mikro-orm/core"
+import {
+  assertCustomerCustomOrderMutation,
+  type CustomerConfirmation,
+} from "./customer-confirmation"
+import {
+  assertPaymentPreparation,
+  assertNoPaymentBindingInput,
+  paymentCollectionId,
+  PAYMENT_BINDING_KEY,
+  PAYMENT_VERIFICATION_KEY,
+  PAYMENT_RECEIPT_KEY,
+  preservedPaymentMetadata,
+  verifyCustomOrderPayment,
+  type PaymentOrderSnapshot,
+} from "./payment"
 import {
   CustomOrderMessage,
   CustomOrderRequest,
@@ -18,6 +43,7 @@ import {
 
 export type CustomOrderMutation = {
   id: string
+  customer_confirmation?: CustomerConfirmation
   status?: CustomOrderStatus
   quoted_amount?: number | null
   product_category?: string
@@ -29,6 +55,8 @@ export type CustomOrderMutation = {
   cancellation_reason?: string | null
   actor?: CustomOrderActor
   reason?: string | null
+  // Internal callback supplied by the back-office route, never read from JSON.
+  verify_payment?: (order: PaymentOrderSnapshot) => Promise<boolean>
 }
 
 export type CreateCustomOrderInput = {
@@ -53,8 +81,9 @@ export class CustomOrderService extends MedusaService({
 }) {
   /**
    * Update every mutable order field and append status history in one DB
-   * transaction. The version selector provides optimistic concurrency
-   * protection when two users update the same order simultaneously.
+   * transaction. Lock the row before reading its state: Medusa's generated
+   * updater selects entities before flushing, so a version selector alone is
+   * not an atomic compare-and-swap. Keep the version for stale-quote checks.
    */
   @InjectTransactionManager()
   async updateCustomOrderAtomically(
@@ -63,27 +92,50 @@ export class CustomOrderService extends MedusaService({
   ) {
     const current = await this.retrieveCustomOrderRequest(
       input.id,
-      undefined,
+      { options: { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true } },
       sharedContext
     )
     const currentStatus = current.status as CustomOrderStatus
     const nextStatus = input.status ?? currentStatus
-    const customerAttemptedRestrictedChange =
-      input.actor?.actor_type === "customer" &&
-      (nextStatus !== currentStatus ||
-        input.quoted_amount !== undefined ||
-        input.product_category !== undefined ||
-        input.product_category_id !== undefined ||
-        input.product_id !== undefined ||
-        input.listing_type !== undefined ||
-        input.payment_status !== undefined ||
-        input.cancellation_reason !== undefined)
-    if (customerAttemptedRestrictedChange) {
+    const operation = paymentOperation(current)
+    if (
+      operation &&
+      operation.status !== "completed" &&
+      (nextStatus !== currentStatus || input.payment_status !== undefined)
+    ) {
       throw new MedusaError(
-        MedusaError.Types.NOT_ALLOWED,
-        "Customers cannot quote or change the custom order workflow"
+        MedusaError.Types.CONFLICT,
+        "Finish the pending payment operation before changing order state"
       )
     }
+    assertNoPaymentBindingInput(input.metadata)
+    const collectionId = paymentCollectionId(current)
+    if (
+      collectionId &&
+      (input.payment_status !== undefined || nextStatus === "cancelled")
+    ) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "Linked payments require a trusted payment/refund workflow; manual payment changes and cancellation are disabled"
+      )
+    }
+    if (
+      collectionId &&
+      nextStatus !== currentStatus &&
+      ["produced", "delivered"].includes(nextStatus)
+    ) {
+      if (
+        current.metadata?.[PAYMENT_VERIFICATION_KEY] !== "verified" ||
+        !input.verify_payment ||
+        !(await input.verify_payment(current))
+      ) {
+        throw new MedusaError(
+          MedusaError.Types.NOT_ALLOWED,
+          "A verified real payment is required before production or delivery"
+        )
+      }
+    }
+    assertCustomerCustomOrderMutation(current, input)
     assertCustomOrderBusinessRules(current, nextStatus, input)
 
     const currentVersion = Number(current.version ?? 0)
@@ -101,6 +153,12 @@ export class CustomOrderService extends MedusaService({
     ] as const) {
       if (input[key] !== undefined) {
         patch[key] = input[key]
+      }
+    }
+    if (input.metadata !== undefined && collectionId) {
+      patch.metadata = {
+        ...input.metadata,
+        ...preservedPaymentMetadata(current.metadata),
       }
     }
 
@@ -132,9 +190,10 @@ export class CustomOrderService extends MedusaService({
     }
 
     if (nextStatus !== currentStatus) {
-      const historyReason = nextStatus === "cancelled"
-        ? input.cancellation_reason?.trim() || input.reason?.trim() || null
-        : input.reason?.trim() || null
+      const historyReason =
+        nextStatus === "cancelled"
+          ? input.cancellation_reason?.trim() || input.reason?.trim() || null
+          : input.reason?.trim() || null
       await this.createCustomOrderStatusHistories(
         {
           custom_order_id: current.id,
@@ -151,11 +210,308 @@ export class CustomOrderService extends MedusaService({
     return result
   }
 
+  /** Bind a server-created collection once, with the same row lock as status updates. */
+  @InjectTransactionManager()
+  async bindPaymentCollection(
+    input: {
+      id: string
+      customer_id: string
+      collection_id: string
+      version: number
+    },
+    @MedusaContext() sharedContext?: Context
+  ) {
+    if (!/^pay_col_[a-zA-Z0-9]+$/.test(input.collection_id)) {
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "Invalid payment collection ID"
+      )
+    }
+    const current = await this.retrieveCustomOrderRequest(
+      input.id,
+      { options: { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true } },
+      sharedContext
+    )
+    assertPaymentPreparation(current, input.customer_id)
+    if (paymentCollectionId(current)) return current
+    if (current.version !== input.version) {
+      throw new MedusaError(
+        MedusaError.Types.CONFLICT,
+        "The custom order changed; refresh before preparing payment"
+      )
+    }
+    const updated = await this.updateCustomOrderRequests(
+      {
+        id: current.id,
+        metadata: {
+          ...current.metadata,
+          [PAYMENT_BINDING_KEY]: input.collection_id,
+        },
+        version: current.version + 1,
+      },
+      sharedContext
+    )
+    return updated
+  }
+
+  /** Serialize session preparation across all app processes using the order row. */
+  @InjectTransactionManager()
+  async withLockedPaymentOrder<T>(
+    id: string,
+    customerId: string,
+    work: (order: PaymentOrderSnapshot) => Promise<T>,
+    @MedusaContext() sharedContext?: Context
+  ): Promise<T> {
+    const current = await this.retrieveCustomOrderRequest(
+      id,
+      { options: { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true } },
+      sharedContext
+    )
+    assertPaymentPreparation(current, customerId)
+    if (!paymentCollectionId(current))
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "Prepare a payment collection first"
+      )
+    return work(current)
+  }
+
+  /** Re-read ledger under the order lock so duplicate/out-of-order events are harmless. */
+  @InjectTransactionManager()
+  async reconcilePaymentCollection(
+    id: string,
+    loadCollection: (id: string) => Promise<PaymentCollectionDTO>,
+    config?: Pick<WeChatPayConfig, "mode" | "appId" | "merchantId">,
+    @MedusaContext() sharedContext?: Context
+  ) {
+    const current = await this.retrieveCustomOrderRequest(
+      id,
+      { options: { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true } },
+      sharedContext
+    )
+    const collectionId = paymentCollectionId(current)
+    if (!collectionId)
+      return { custom_order: current, verification: "unverified" as const }
+    const proof = verifyCustomOrderPayment(
+      current,
+      await loadCollection(collectionId),
+      config
+    )
+    const metadata = {
+      ...current.metadata,
+      [PAYMENT_VERIFICATION_KEY]: proof.verification,
+      ...(proof.receipt_id ? { [PAYMENT_RECEIPT_KEY]: proof.receipt_id } : {}),
+    }
+    const paid = proof.verification === "verified"
+    const changed =
+      current.metadata?.[PAYMENT_VERIFICATION_KEY] !== proof.verification ||
+      (paid && current.payment_status !== "captured") ||
+      (proof.receipt_id &&
+        current.metadata?.[PAYMENT_RECEIPT_KEY] !== proof.receipt_id)
+    if (!changed)
+      return { custom_order: current, verification: proof.verification }
+    // Preserve terminal business states and payment audit markers after refunds.
+    // Verification becomes review_required and the production gate stays closed.
+    const updated = await this.updateCustomOrderRequests(
+      {
+        id,
+        metadata,
+        version: current.version + 1,
+        ...(paid ? { payment_status: "captured" as const } : {}),
+      },
+      sharedContext
+    )
+    return { custom_order: updated, verification: proof.verification }
+  }
+
+  /** Commit intent BEFORE provider calls; a crash leaves a resumable, state-blocking record. */
+  @InjectTransactionManager()
+  async beginPaymentOperation(
+    input: {
+      id: string
+      kind: PaymentOperationKind
+      version: number
+      reason: string
+      actor: CustomOrderActor
+      mode?: "mock" | "live"
+      validate?: (order: PaymentOrderSnapshot) => Promise<void>
+    },
+    @MedusaContext() sharedContext?: Context
+  ) {
+    const current = await this.retrieveCustomOrderRequest(
+      input.id,
+      { options: { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true } },
+      sharedContext
+    )
+    if (
+      input.actor.actor_type !== "admin" &&
+      (input.actor.actor_type !== "customer" ||
+        current.customer_id !== input.actor.actor_id ||
+        input.kind === "refund")
+    ) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "This actor cannot perform the payment operation"
+      )
+    }
+    const existing = paymentOperation(current)
+    if (
+      existing &&
+      existing.kind === input.kind &&
+      (existing.request_version === input.version ||
+        (existing.kind === "refund" && current.version === input.version))
+    ) {
+      if (
+        existing.reason !== input.reason ||
+        (existing.mode && existing.mode !== input.mode)
+      )
+        throw new MedusaError(
+          MedusaError.Types.CONFLICT,
+          "Resume the original operation with the same reason and payment mode"
+        )
+      return current
+    }
+    if (existing && existing.status !== "completed")
+      throw new MedusaError(
+        MedusaError.Types.CONFLICT,
+        "Another payment operation must be resumed first"
+      )
+    if (current.version !== input.version)
+      throw new MedusaError(
+        MedusaError.Types.CONFLICT,
+        "The order changed; refresh before continuing"
+      )
+    if (current.status !== "confirmed" || !paymentCollectionId(current))
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "Only a confirmed linked order can perform this operation"
+      )
+    if (input.kind === "refund" && !input.mode)
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        "A frozen payment mode is required"
+      )
+    await input.validate?.(current)
+    const operation: PaymentOperation = {
+      id: randomUUID(),
+      kind: input.kind,
+      status: "requested",
+      request_version: input.version,
+      reason: input.reason,
+      actor_id: input.actor.actor_id,
+      actor_type: input.actor.actor_type as "customer" | "admin",
+      created_at: new Date().toISOString(),
+      ...(input.kind === "refund"
+        ? { mode: input.mode, refund_reference: fullRefundReference(current) }
+        : {}),
+    }
+    return this.updateCustomOrderRequests(
+      {
+        id: current.id,
+        metadata: { ...current.metadata, [PAYMENT_OPERATION_KEY]: operation },
+        version: current.version + 1,
+      },
+      sharedContext
+    )
+  }
+
+  /** Serialize resumptions. Never roll back the separately committed intent on provider failure. */
+  @InjectTransactionManager()
+  async executePaymentOperation(
+    id: string,
+    operationId: string,
+    work: (
+      order: PaymentOrderSnapshot,
+      operation: PaymentOperation
+    ) => Promise<
+      Partial<PaymentOperation> & { status: PaymentOperation["status"] }
+    >,
+    @MedusaContext() sharedContext?: Context
+  ) {
+    const current = await this.retrieveCustomOrderRequest(
+      id,
+      { options: { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true } },
+      sharedContext
+    )
+    const operation = paymentOperation(current)
+    if (!operation || operation.id !== operationId)
+      throw new MedusaError(
+        MedusaError.Types.CONFLICT,
+        "The payment operation changed"
+      )
+    if (operation.status === "completed") return current
+    if (current.status !== "confirmed")
+      throw new MedusaError(
+        MedusaError.Types.CONFLICT,
+        "Payment operation requires manual review"
+      )
+    const result = await work(current, operation)
+    if (operation.mode && result.mode && operation.mode !== result.mode)
+      throw new MedusaError(
+        MedusaError.Types.CONFLICT,
+        "Payment operation mode changed"
+      )
+    const completed = result.status === "completed"
+    if (
+      !completed &&
+      JSON.stringify({ ...operation, ...result }) === JSON.stringify(operation)
+    )
+      return current
+    const metadata = {
+      ...current.metadata,
+      ...(operation.kind === "refund" && completed
+        ? {
+            [PAYMENT_VERIFICATION_KEY]: "review_required",
+            __custom_order_payment_refund_verification:
+              operation.mode === "live"
+                ? "verified_refund"
+                : "simulated_refund",
+          }
+        : {}),
+      [PAYMENT_OPERATION_KEY]: {
+        ...operation,
+        ...result,
+        ...(completed ? { completed_at: new Date().toISOString() } : {}),
+      },
+    }
+    const cancel = completed && operation.kind !== "retry"
+    const updated = await this.updateCustomOrderRequests(
+      {
+        id,
+        metadata,
+        version: current.version + 1,
+        ...(cancel
+          ? {
+              status: "cancelled" as const,
+              cancelled_at: new Date(),
+              cancelled_by: operation.actor_id,
+              cancellation_reason: operation.reason,
+            }
+          : {}),
+      },
+      sharedContext
+    )
+    if (cancel)
+      await this.createCustomOrderStatusHistories(
+        {
+          custom_order_id: id,
+          from_status: current.status,
+          to_status: "cancelled",
+          actor_type: operation.actor_type,
+          actor_id: operation.actor_id,
+          reason: operation.reason,
+        },
+        sharedContext
+      )
+    return updated
+  }
+
   @InjectTransactionManager()
   async createCustomOrderWithHistory(
     input: CreateCustomOrderInput,
     @MedusaContext() sharedContext?: Context
   ) {
+    assertNoPaymentBindingInput(input.metadata)
     const created = await this.createCustomOrderRequests(
       {
         artisan_id: input.artisan_id,
@@ -193,13 +549,30 @@ export class CustomOrderService extends MedusaService({
     id: string,
     @MedusaContext() sharedContext?: Context
   ) {
-    await this.retrieveCustomOrderRequest(id, undefined, sharedContext)
+    const current = await this.retrieveCustomOrderRequest(
+      id,
+      { options: { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true } },
+      sharedContext
+    )
+    if (paymentCollectionId(current)) {
+      throw new MedusaError(
+        MedusaError.Types.NOT_ALLOWED,
+        "Orders with a linked payment collection cannot be deleted"
+      )
+    }
     const [messages, histories] = await Promise.all([
       this.listCustomOrderMessages({ custom_order_id: id }, {}, sharedContext),
-      this.listCustomOrderStatusHistories({ custom_order_id: id }, {}, sharedContext),
+      this.listCustomOrderStatusHistories(
+        { custom_order_id: id },
+        {},
+        sharedContext
+      ),
     ])
     if (messages.length) {
-      await this.deleteCustomOrderMessages(messages.map((item) => item.id), sharedContext)
+      await this.deleteCustomOrderMessages(
+        messages.map((item) => item.id),
+        sharedContext
+      )
     }
     if (histories.length) {
       await this.deleteCustomOrderStatusHistories(

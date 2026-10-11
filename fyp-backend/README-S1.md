@@ -3,6 +3,8 @@
 这份文档是 S1 的接口契约。S2、S3、S4 可以先按照这里的 URL、请求字段和
 返回 JSON 开发，不需要等待所有后端功能完成。
 
+2026-10-11 交付核对见 [四项任务清单](../docs/feature-completion-checklist.md)、[S4 JSON 推荐对接](../docs/s1-s4-json-integration.md)、[推荐与报价确认](../docs/recommendations-and-quote-confirmation.md) 和 [定制支付及巡检](../docs/custom-order-payments.md)。真实商户付款/退款验收不包含在本地模拟通过结论中。
+
 ## 一、本地启动
 
 在 `fyp-backend` 目录执行：
@@ -215,6 +217,8 @@ request/quote/confirmed -> cancelled
 `authorized` 可以进入 `captured` 或 `failed`，`captured` 不能改回未付款状态；
 已交付或取消的订单不能再修改付款状态。
 
+买家可用 `POST /store/custom-orders/:id/confirm` 提交当前 `version`、`quoted_amount`、`currency_code` 接受报价，普通 PATCH 仍仅允许 metadata。绑定支付单后禁止手工改付款状态、直接取消或删除，生产/交付必须重新核验真实支付账本；微信 mock 不算真实收款。
+
 ## 五、定制订单聊天接口
 
 聊天消息按订单保存，商城前台、工匠页面和管理后台可以共用这组接口：
@@ -276,15 +280,19 @@ GET  /admin/custom-orders/:id/history
 GET /store/recommendations?product_id=prod_01ABC&limit=8
 ```
 
-目前推荐模型还未接入，因此返回空数组，但字段格式已经固定：
+已接入 S4 导出的 JSON，按登录客户推荐、相似商品、产物 fallback 依次选择；文件未配置、过期或异常时降级为分类/新近程度规则。通过后端环境变量 RECOMMENDATIONS_FILE 指定产物路径，默认有效期一天。需要有效 publishable key，过滤跨渠道、草稿和无变体商品，limit 为 1–24，每级候选上限 200。用户身份来自登录认证，所有响应禁止共享缓存。配置与联调详见 [S1–S4 对接说明](../docs/s1-s4-json-integration.md)。未配置产物时响应示例：
 
 ```json
 {
   "recommendations": [],
   "count": 0,
   "limit": 8,
-  "source": "model_pending",
-  "model_version": "contract-v1",
+  "source": "rules",
+  "model_version": "category-recency-v1",
+  "personalized": false,
+  "strategy": "rules",
+  "fallback_reason": "not_configured",
+  "candidate_limit": 200,
   "context": { "product_id": "prod_01ABC" }
 }
 ```
@@ -297,7 +305,7 @@ GET /store/recommendations?product_id=prod_01ABC&limit=8
 GET /admin/analytics/sales?from=2026-08-01&to=2026-08-31&currency_code=cny
 ```
 
-接口会按照日期、币种和可选的 `store_id` 统计订单总额、订单数、平均客单价、每日销售额和热销商品。
+接口会按照日期、币种和可选的 `store_id` 统计扣款减退款后的净收入、订单数、平均客单价、每日销售额和热销商品。排除草稿/取消订单，支持已付款但业务状态仍为 pending 的普通订单。
 平台管理员不传 `store_id` 时统计全平台；普通卖家始终只会看到自己关联店铺的数据，不能用查询参数扩大范围。
 没有符合条件的订单时，数值为 0，数组为空：
 
@@ -305,7 +313,7 @@ GET /admin/analytics/sales?from=2026-08-01&to=2026-08-31&currency_code=cny
 {
   "period": {
     "from": "2026-08-01T00:00:00.000Z",
-    "to": "2026-08-31T00:00:00.000Z"
+    "to": "2026-08-31T23:59:59.999Z"
   },
   "currency_code": "cny",
   "summary": {
@@ -322,13 +330,15 @@ GET /admin/analytics/sales?from=2026-08-01&to=2026-08-31&currency_code=cny
 为了限制单次分析的内存和查询成本，日期范围最长 366 天、最多处理 100,000 张
 订单；若达到硬上限，响应中的 `truncated` 为 `true`。
 
+定制申请数量与状态另用 `GET /admin/analytics/custom-orders`；当前已核验、未退款扣款快照另用 `GET /admin/analytics/custom-order-payments`。后者最多核验 200 个订单，排除模拟和待复核数据，不是完整净收入/结算报表，明确返回 `financial_report: false`。
+
 ## 八、给其他成员的对接顺序
 
 1. 先启动后端并确认 `http://localhost:9000` 可访问。
 2. 前端成员使用 `GET /store/artisans` 获取工匠列表。
 3. 工匠详情页使用 `GET /store/artisans/:id`。
 4. 定制订单页面按照第四、第五节接入订单和聊天。
-5. 推荐页面先按照第六节的空数组格式开发，后续替换模型即可。
+5. 推荐页面按第六节读取模型推荐或规则降级；S4 交付 JSON 后配置后端读取路径，前台继续使用相同接口。
 6. 分析页面按照第七节读取统计数据。
 
 ## 九、安全注意事项

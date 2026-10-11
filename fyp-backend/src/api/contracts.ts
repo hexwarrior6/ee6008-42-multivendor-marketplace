@@ -57,3 +57,14 @@ export type SalesAnalyticsResponse = {
   /** True when the hard safety cap prevented a complete result set. */
   truncated: boolean
 }
+
+/** Snapshot counts, not payment-ledger revenue. Daily groups use creation date. */
+export type CustomOrderAnalyticsResponse = {
+  period: { from: string; to: string }
+  currency_code: string
+  summary: { requests: number; open_requests: number; delivered_requests: number; cancelled_requests: number }
+  status_counts: Record<CustomOrderStatus, number>
+  payment_status_counts: Record<"pending" | "authorized" | "captured" | "failed", number>
+  daily: Array<{ date: string; requests: number }>
+  truncated: boolean
+}
