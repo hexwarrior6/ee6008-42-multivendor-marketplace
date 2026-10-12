@@ -40,6 +40,12 @@ Check out [create-medusa-app docs](https://docs.medusajs.com/learn/installation)
 
 # Overview
 
+## 商品更新与排序
+
+商品数据请求使用 `cache: "no-store"`。后台新增商品或修改图片、价格后，店面在重新加载页面时读取最新数据，无需手动清缓存或重新部署。已经打开的页面不会自动推送更新，需要刷新或重新进入。
+
+“最新上架”由后端按 `-created_at` 倒序分页，覆盖整个商品目录；两种价格排序目前仍取最多 100 件商品后排序。商品数据刷新回归检查：`pnpm test:product-freshness`。
+
 The Medusa Next.js Starter is built with:
 
 - [Next.js](https://nextjs.org/)

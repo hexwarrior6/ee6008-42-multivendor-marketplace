@@ -36,3 +36,7 @@ jobs:
       - name: Type check (tsc --noEmit)
         working-directory: fyp-storefront
         run: npx tsc --noEmit
+
+      - name: Product freshness regression checks
+        working-directory: fyp-storefront
+        run: pnpm test:product-freshness

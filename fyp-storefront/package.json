@@ -17,6 +17,7 @@
     "analyze": "ANALYZE=true next build",
     "test:artisan-profile": "node scripts/check-artisan-profile-mvp.js",
     "test:cart-currency": "node scripts/test-cart-currency.cjs",
+    "test:product-freshness": "node scripts/test-product-freshness.cjs",
     "test:storefront-edge-cases": "node scripts/test-storefront-edge-cases.cjs",
     "test:checkout-state": "node scripts/test-checkout-state.cjs",
     "test:custom-order-payments": "node scripts/test-custom-order-payments.cjs",
