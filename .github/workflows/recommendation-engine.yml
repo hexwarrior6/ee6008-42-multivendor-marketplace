@@ -19,9 +19,9 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install package (editable, numpy only)
+      - name: Install package with API, PostgreSQL driver and HTTP test client
         working-directory: recommendation-engine
-        run: pip install -e .
+        run: pip install -e ".[api,postgres]" httpx
 
       - name: Unit tests + offline pipeline smoke
         working-directory: recommendation-engine
