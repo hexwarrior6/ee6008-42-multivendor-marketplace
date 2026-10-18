@@ -25,6 +25,12 @@ psycopg2-binary>=2.9
 # lightfm>=1.17
 # scipy>=1.10
 
+# --- 可选：REST API 服务（Week 9 部署）--------------------------------------
+# 安装：pip install -e ".[api]"（或手动 pip install fastapi "uvicorn[standard]"）
+# 为避免 pip install -r requirements.txt 时强制安装，下面两行保持注释：
+# fastapi>=0.110
+# uvicorn[standard]>=0.27
+
 # --- 可选：开发 / 测试 -------------------------------------------------------
 # 单元测试仅用标准库 unittest，无需任何额外依赖。
 # 需要 lint 或 pytest 时再手动安装：

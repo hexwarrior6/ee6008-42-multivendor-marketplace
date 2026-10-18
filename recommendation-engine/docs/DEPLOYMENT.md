@@ -46,42 +46,31 @@
 
 ## 3. 路径 B:REST API 服务(Week 9 ★)
 
-### 3.1 服务形态
+### 3.1 服务形态（已实现：`src/recommender/api.py`）
 
-在 `recommendation-engine/` 内新增一个轻量服务(建议 `FastAPI + uvicorn`,或 `Flask`),
-**只读**地暴露推荐结果:
+`recommendation-engine/src/recommender/api.py` 已实现基于 **FastAPI + uvicorn** 的只读服务:
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| `GET` | `/health` | 健康检查,返回 `{"status":"ok","model_version":...}` |
+| `GET` | `/health` | 健康检查,返回 `{"status":"ok","source":...,"model_version":...,"generated_at":...}` |
 | `GET` | `/recommendations?customer_id=&product_id=&limit=8` | 返回 `RecommendationItem` 列表 |
 
-返回体与 `GET /store/recommendations` 的契约保持一致(§5),这样 S1 只需做一次转发。
+返回体与 `GET /store/recommendations` 的契约保持一致(§5),这样 S1 只需做一次转发:
+`strategy` 会标明命中 `by_user` / `by_product` / `fallback` 中的哪一路。
 
-### 3.2 实现骨架(示意,非本轮交付代码)
+实现要点:
 
-```python
-# 思路：启动时载入 artifacts/recommendations.json（或按需训练），查询时按键命中。
-from fastapi import FastAPI, Query
-import json
+- **只读**:仅读取训练产物 `artifacts/recommendations.json`(可用 `RECOMMENDATIONS_PATH` 覆盖),绝不写库。
+- **优雅降级**:产物缺失或 JSON 损坏时返回空列表 + `source="unavailable"`,服务不崩溃。
+- **契约卫生**:自动剔除当前 seed 商品、去重、把导出中的 `"None"` 缩略图规范化为 `null`。
+- **校验**:`limit` 限制 1–24,`customer_id`/`product_id` 需匹配 `^[a-zA-Z0-9_-]{1,128}$`。
 
-app = FastAPI()
-DATA = json.load(open("artifacts/recommendations.json", encoding="utf-8"))
+### 3.2 本地启动
 
-@app.get("/health")
-def health():
-    return {"status": "ok", "model_version": DATA.get("model_version"),
-            "source": DATA.get("source")}
-
-@app.get("/recommendations")
-def recommendations(customer_id: str | None = None,
-                    product_id: str | None = None,
-                    limit: int = Query(8, ge=1, le=24)):
-    items = (DATA["by_user"].get(customer_id) if customer_id else None) \
-        or (DATA["by_product"].get(product_id) if product_id else None) \
-        or DATA["fallback"]
-    return {"recommendations": items[:limit], "count": min(limit, len(items)),
-            "source": DATA.get("source"), "model_version": DATA.get("model_version")}
+```bash
+cd recommendation-engine
+pip install -e ".[api]"            # fastapi + uvicorn
+python -m recommender.api          # 或: uvicorn recommender.api:app --port 8000
 ```
 
 > 若要“实时”推荐(而不是预计算 JSON),可在启动时用 `database.Driver` 读取交互、
@@ -103,14 +92,30 @@ curl "http://127.0.0.1:8000/health"
 curl "http://127.0.0.1:8000/recommendations?customer_id=cus_00001&limit=5"
 ```
 
-### 3.5 部署到 Railway
+### 3.5 部署到 Railway（已提供 Dockerfile）
 
-1. Railway 新建一个 **Service**,根目录指向 `recommendation-engine/`。
-2. 环境变量:在 Railway 面板配置 `DATABASE_URL`(与后端同一个 Postgres),**不要**把 `.env` 提交进仓库。
-3. Build:`pip install -e .` 或 `pip install -r requirements.txt`。
-4. Start:`uvicorn recommender.api:app --host 0.0.0.0 --port $PORT`。
-   (Railway 注入 `PORT`;本方案里的服务端口要读它。)
-5. 模型刷新:可在部署阶段先跑一次训练生成 `artifacts/`,或加一个 Railway Cron 定期重跑。
+仓库已随附 `recommendation-engine/Dockerfile` 与 `recommendation-engine/scripts/start_api.sh`:
+
+```bash
+# 本地验证镜像
+docker build -t recommendation-api recommendation-engine
+docker run -p 8000:8000 -e DATABASE_URL="postgresql://..." recommendation-api
+curl "http://127.0.0.1:8000/health"
+```
+
+启动脚本的行为:
+
+- 若 `artifacts/recommendations.json` 不存在且配置了 `DATABASE_URL` → **先训练一次再启动**;
+- 否则直接启动,接口返回空结果(`source="unavailable"`),**不会崩溃**。
+
+Railway 步骤:
+
+1. Railway 新建一个 **Service**,根目录指向 `recommendation-engine/`(会自动识别 Dockerfile)。
+2. 环境变量:配置 `DATABASE_URL`(与后端同一个 Postgres)与可选的 `RECOMMENDATIONS_PATH`; **不要**把 `.env` 提交进仓库。
+3. Build:由 Dockerfile 完成(`pip install -e ".[api]"`)。
+4. Start:`scripts/start_api.sh` → `uvicorn recommender.api:app --host 0.0.0.0 --port $PORT`(Railway 注入 `PORT`)。
+5. 发布健康检查:把 Healthcheck Path 设为 `/health`。
+6. 模型刷新:更新后重跑训练(CI 训练产物或 Railway Cron);服务会按产物 mtime 自动重新加载,无需重启。
 
 ### 3.6 S1 侧集成
 
