@@ -3,8 +3,7 @@
 > 对应项目计划第 9 周的 ★ 里程碑:*"S4 deploys the trained recommendation model as a
 > REST API service on Railway"*。
 >
-> 本文只给**部署方案**(不含实现代码,按团队约定本轮不新增 API 代码)。当前仓库已具备
-> 训练与导出能力,下面的两种集成路径都能直接落地。
+> 当前仓库已实现训练、导出和 REST API，支持以下两种集成路径。
 
 ---
 
@@ -64,12 +63,17 @@
 - **优雅降级**:产物缺失或 JSON 损坏时返回空列表 + `source="unavailable"`,服务不崩溃。
 - **契约卫生**:自动剔除当前 seed 商品、去重、把导出中的 `"None"` 缩略图规范化为 `null`。
 - **校验**:`limit` 限制 1–24,`customer_id`/`product_id` 需匹配 `^[a-zA-Z0-9_-]{1,128}$`。
+- **调用鉴权**:`/recommendations` 必须携带 `X-API-Key` 请求头，与服务端
+  `RECOMMENDATIONS_API_KEY` 匹配。缺失或错误返回 401；服务端未配置或仅配置空白时返回 503。
+  `/health` 保持公开。推荐响应使用 `Cache-Control: private, no-store`。
 
 ### 3.2 本地启动
 
 ```bash
 cd recommendation-engine
 pip install -e ".[api]"            # fastapi + uvicorn
+# 在当前终端设置本地测试密钥，调用方使用同一个值。
+export RECOMMENDATIONS_API_KEY='local-test-only'
 python -m recommender.api          # 或: uvicorn recommender.api:app --port 8000
 ```
 
@@ -89,7 +93,8 @@ pip install fastapi "uvicorn[standard]"     # 或 flask gunicorn
 ```bash
 uvicorn recommender.api:app --port 8000
 curl "http://127.0.0.1:8000/health"
-curl "http://127.0.0.1:8000/recommendations?customer_id=cus_00001&limit=5"
+curl -H "X-API-Key: $RECOMMENDATIONS_API_KEY" \
+  "http://127.0.0.1:8000/recommendations?customer_id=cus_00001&limit=5"
 ```
 
 ### 3.5 部署到 Railway（已提供 Dockerfile）
@@ -99,7 +104,7 @@ curl "http://127.0.0.1:8000/recommendations?customer_id=cus_00001&limit=5"
 ```bash
 # 本地验证镜像
 docker build -t recommendation-api recommendation-engine
-docker run -p 8000:8000 -e DATABASE_URL="postgresql://..." recommendation-api
+docker run -p 8000:8000 -e DATABASE_URL -e RECOMMENDATIONS_API_KEY recommendation-api
 curl "http://127.0.0.1:8000/health"
 ```
 
@@ -111,17 +116,29 @@ curl "http://127.0.0.1:8000/health"
 Railway 步骤:
 
 1. Railway 新建一个 **Service**,根目录指向 `recommendation-engine/`(会自动识别 Dockerfile)。
-2. 环境变量:配置 `DATABASE_URL`(与后端同一个 Postgres)与可选的 `RECOMMENDATIONS_PATH`; **不要**把 `.env` 提交进仓库。
-3. Build:由 Dockerfile 完成(`pip install -e ".[api]"`)。
+2. 环境变量:配置 `DATABASE_URL`(与后端同一个 Postgres)、随机生成的
+   `RECOMMENDATIONS_API_KEY` 与可选的 `RECOMMENDATIONS_PATH`; **不要**把 `.env` 或实际密钥提交进仓库。
+3. Build:由 Dockerfile 完成(`pip install -e ".[api,postgres]"`)，包含首次启动训练所需的 PostgreSQL 驱动。
 4. Start:`scripts/start_api.sh` → `uvicorn recommender.api:app --host 0.0.0.0 --port $PORT`(Railway 注入 `PORT`)。
 5. 发布健康检查:把 Healthcheck Path 设为 `/health`。
 6. 模型刷新:更新后重跑训练(CI 训练产物或 Railway Cron);服务会按产物 mtime 自动重新加载,无需重启。
+
+建议在现有数据库所在项目环境中新建独立服务，连接 GitHub 的 `development` 分支，
+Root Directory 设为 `/recommendation-engine`。Build/Start Command 无需覆盖，端口设为 8000。
+为本地后端同学调用，在 Networking 中生成 HTTPS 公开域名；Railway 私网域名不能供本地电脑直接访问。
+
+`/health` 返回 200 只代表进程存活；必须同时检查 `source` 不是 `unavailable`，
+并带有效密钥请求 `/recommendations?limit=4`，确认训练产物可用。
+未配置持久化卷时，新建容器会重新训练；当前启动脚本不负责周期刷新。
+独立 Cron 服务的本地文件不会自动同步到 API 容器，后续如需周期更新，应另行设计共享产物交付。
 
 ### 3.6 S1 侧集成
 
 - S1 在 Medusa 的 `GET /store/recommendations` 中调用 S4 服务(建议加 **超时 + 降级**:
   调用失败或超时即返回 `fallback`,保证店面不因推荐服务不可用而报错)。
-- 建议加一层短缓存(如 60 秒),避免每次浏览都打 S4。
+- S1 的服务端请求必须携带 `X-API-Key`，密钥仅放后端环境变量，不发送到浏览器。
+  本服务信任持有密钥的后端；客户身份校验、销售渠道/商品发布状态过滤仍由 Medusa 负责，不能直接转发未经验证的浏览器参数。
+- 若增加缓存，应按客户与商品上下文隔离，个性化结果不得共享缓存。
 
 ---
 
@@ -161,6 +178,7 @@ Railway 步骤:
 ## 6. 上线检查清单
 
 - [ ] `DATABASE_URL` 已在 Railway 配置(Railway 环境变量,而非提交 `.env`)
+- [ ] `RECOMMENDATIONS_API_KEY` 已配置；无密钥调用返回 401，正确密钥可读取推荐
 - [ ] `python -m recommender.train --inspect` 在真实库上角色定位正确
 - [ ] 训练产出 `artifacts/recommendations.json` 且 `by_user` / `by_product` / `fallback` 非空
 - [ ] 服务 `/health` 正常、`/recommendations` 返回契约字段

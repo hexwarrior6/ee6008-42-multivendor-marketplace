@@ -10,6 +10,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from recommender import api
 
@@ -142,6 +143,9 @@ except Exception:  # noqa: BLE001  # pragma: no cover
 @unittest.skipUnless(_HAS_TESTCLIENT, "fastapi TestClient (httpx) not installed")
 class EndpointTest(unittest.TestCase):
     def setUp(self) -> None:
+        self.key_env = patch.dict(os.environ, {"RECOMMENDATIONS_API_KEY": "test-api-secret"})
+        self.key_env.start()
+        self.addCleanup(self.key_env.stop)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         path = Path(self.tmp.name) / "recs.json"
@@ -161,7 +165,45 @@ class EndpointTest(unittest.TestCase):
         self._old = os.environ.get("RECOMMENDATIONS_PATH")
         os.environ["RECOMMENDATIONS_PATH"] = str(path)
         self.addCleanup(self._restore)
-        self.client = TestClient(api.app)
+        self.client = TestClient(api.app, headers={"X-API-Key": "test-api-secret"})
+
+    def test_missing_key_is_rejected_without_exposing_recommendations(self):
+        response = TestClient(api.app).get("/recommendations?customer_id=cus_1")
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn("recommendations", response.json())
+        self.assertEqual(response.headers["cache-control"], "private, no-store")
+
+    def test_wrong_key_is_rejected(self):
+        response = self.client.get("/recommendations", headers={"X-API-Key": "wrong"})
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn("test-api-secret", response.text)
+
+    def test_query_parameter_cannot_replace_header(self):
+        response = TestClient(api.app).get(
+            "/recommendations", params={"api_key": "test-api-secret", "customer_id": "cus_1"}
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_missing_or_blank_server_key_fails_closed(self):
+        for key in (None, "", "   "):
+            with self.subTest(key=key):
+                if key is None:
+                    os.environ.pop("RECOMMENDATIONS_API_KEY", None)
+                else:
+                    os.environ["RECOMMENDATIONS_API_KEY"] = key
+                response = self.client.get("/recommendations")
+                self.assertEqual(response.status_code, 503)
+                self.assertNotIn("recommendations", response.json())
+
+    def test_health_does_not_require_a_key(self):
+        os.environ.pop("RECOMMENDATIONS_API_KEY", None)
+        response = TestClient(api.app).get("/health")
+        self.assertEqual(response.status_code, 200)
+
+    def test_authenticated_response_is_not_shared_cached(self):
+        response = self.client.get("/recommendations?customer_id=cus_1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["cache-control"], "private, no-store")
 
     def _restore(self):
         if self._old is None:

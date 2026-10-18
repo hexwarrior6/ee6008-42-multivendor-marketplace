@@ -21,11 +21,13 @@ from __future__ import annotations
 import json
 import os
 import re
+import secrets
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 try:  # optional dependency group: [api]
-    from fastapi import FastAPI, HTTPException, Query
+    from fastapi import Depends, FastAPI, HTTPException, Query, Response, Security
+    from fastapi.security import APIKeyHeader
 except ImportError as exc:  # pragma: no cover - only when extras are missing
     raise ImportError(
         "The recommendation API requires optional dependencies.\n"
@@ -43,6 +45,22 @@ MAX_LIMIT = 24
 # Tiny cache so repeated requests do not re-read the JSON. It is refreshed when the
 # file's mtime changes, so a cron-trained artifact is picked up without a restart.
 _cache: Dict[str, Any] = {"path": None, "mtime": None, "data": None}
+
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def require_api_key(api_key: Optional[str] = Security(_api_key_header)) -> None:
+    """Authenticate trusted backend callers; missing configuration fails closed."""
+    expected = os.environ.get("RECOMMENDATIONS_API_KEY", "")
+    headers = {"Cache-Control": "private, no-store"}
+    if not expected.strip():
+        raise HTTPException(
+            status_code=503, detail="Recommendation API key is not configured", headers=headers
+        )
+    if api_key is None or not secrets.compare_digest(
+        api_key.encode("utf-8"), expected.encode("utf-8")
+    ):
+        raise HTTPException(status_code=401, detail="Invalid API key", headers=headers)
 
 
 def artifact_path() -> Path:
@@ -207,13 +225,15 @@ def health() -> Dict[str, Any]:
     }
 
 
-@app.get("/recommendations")
+@app.get("/recommendations", dependencies=[Depends(require_api_key)])
 def recommendations(
+    response: Response,
     customer_id: Optional[str] = Query(None),
     product_id: Optional[str] = Query(None),
     limit: int = Query(8, ge=1, le=MAX_LIMIT),
 ) -> Dict[str, Any]:
-    """Return ``RecommendationItem``-shaped items for a customer and/or product."""
+    """Return recommendations to a trusted backend that authenticates its customer."""
+    response.headers["Cache-Control"] = "private, no-store"
     for name, value in (("customer_id", customer_id), ("product_id", product_id)):
         if value is not None and not ID_PATTERN.match(value):
             raise HTTPException(status_code=422, detail=f"Invalid {name}")

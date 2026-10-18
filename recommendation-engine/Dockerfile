@@ -18,10 +18,10 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install the package with the optional API extras (fastapi + uvicorn).
+# Install API dependencies and the driver used for first-boot PostgreSQL training.
 COPY pyproject.toml requirements.txt README.md ./
 COPY src ./src
-RUN pip install --upgrade pip && pip install -e ".[api]"
+RUN pip install --upgrade pip && pip install -e ".[api,postgres]"
 
 # Normalise CRLF (the repo is developed on Windows) so the shebang works in Linux.
 COPY scripts/start_api.sh ./scripts/start_api.sh
