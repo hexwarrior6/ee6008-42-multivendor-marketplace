@@ -23,7 +23,8 @@
     "test:custom-order-payments": "node scripts/test-custom-order-payments.cjs",
     "test:custom-order": "node scripts/test-custom-order-request.js",
     "test:s2-localization": "node scripts/test-s2-localization.js",
-    "test:recommendations": "node scripts/test-recommendations.js"
+    "test:recommendations": "node scripts/test-recommendations.js",
+    "test:recommendations:http": "node scripts/test-recommendations-http.cjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",

@@ -4,7 +4,6 @@ import { getStorefrontDictionary } from "@lib/i18n/storefront"
 import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 import { HttpTypes } from "@medusajs/types"
 import Product from "../product-preview"
-import { listRecommendedProductIds } from "@lib/data/recommendations"
 
 type RelatedProductsProps = {
   product: HttpTypes.StoreProduct
@@ -24,21 +23,15 @@ export default async function RelatedProducts({
   const locale = await getStorefrontLocale()
   const t = getStorefrontDictionary(locale).catalog
 
-  const recommendedIds = await listRecommendedProductIds(product.id)
-  // Re-fetch recommendations through the normal product endpoint so prices,
-  // region context and visibility checks remain authoritative. Fall back to
-  // the existing related-product query if the recommendation API is offline.
+  // This catalog query is used only when the recommendation widget has no results.
   const queryParams: HttpTypes.StoreProductListParams = {}
   if (region?.id) {
     queryParams.region_id = region.id
   }
-  if (recommendedIds.length) {
-    queryParams.id = recommendedIds
-    queryParams.limit = recommendedIds.length
-  } else if (product.collection_id) {
+  if (product.collection_id) {
     queryParams.collection_id = [product.collection_id]
   }
-  if (!recommendedIds.length && product.tags) {
+  if (product.tags?.length) {
     queryParams.tag_id = product.tags
       .map((t) => t.id)
       .filter(Boolean) as string[]
@@ -49,14 +42,9 @@ export default async function RelatedProducts({
     queryParams,
     countryCode,
   }).then(({ response }) => {
-    const visible = response.products.filter(
+    return response.products.filter(
       (responseProduct) => responseProduct.id !== product.id
     )
-    return recommendedIds.length
-      ? visible.sort(
-          (a, b) => recommendedIds.indexOf(a.id) - recommendedIds.indexOf(b.id)
-        )
-      : visible
   })
 
   if (!products.length) {

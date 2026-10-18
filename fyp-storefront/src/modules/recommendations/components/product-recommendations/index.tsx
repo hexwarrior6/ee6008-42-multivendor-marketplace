@@ -3,19 +3,22 @@ import { listRecommendedProducts } from "@lib/data/recommendations"
 import { getStorefrontDictionary } from "@lib/i18n/storefront"
 import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 import ProductPreview from "@modules/products/components/product-preview"
+import type { ReactNode } from "react"
 
 export default async function ProductRecommendations({
   region,
   productId,
+  fallback = null,
 }: {
   region: HttpTypes.StoreRegion
   productId?: string
+  fallback?: ReactNode
 }) {
   const products = await listRecommendedProducts({
     regionId: region.id,
     productId,
   })
-  if (!products.length) return null
+  if (!products.length) return fallback
 
   const locale = await getStorefrontLocale()
   const t = getStorefrontDictionary(locale).recommendations
