@@ -6,7 +6,6 @@ import ProductOnboardingCta from "@modules/products/components/product-onboardin
 import ProductTabs from "@modules/products/components/product-tabs"
 import RelatedProducts from "@modules/products/components/related-products"
 import ProductInfo from "@modules/products/templates/product-info"
-import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
 import { notFound } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 import ProductActionsWrapper from "./product-actions-wrapper"
@@ -70,16 +69,19 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
         </div>
       </div>
       <Suspense fallback={<RecommendationsSkeleton />}>
-        <ProductRecommendations region={region} productId={product.id} />
+        <ProductRecommendations
+          region={region}
+          productId={product.id}
+          fallback={
+            <div
+              className="content-container my-16 small:my-32"
+              data-testid="related-products-container"
+            >
+              <RelatedProducts product={product} countryCode={countryCode} />
+            </div>
+          }
+        />
       </Suspense>
-      <div
-        className="content-container my-16 small:my-32"
-        data-testid="related-products-container"
-      >
-        <Suspense fallback={<SkeletonRelatedProducts />}>
-          <RelatedProducts product={product} countryCode={countryCode} />
-        </Suspense>
-      </div>
     </>
   )
 }

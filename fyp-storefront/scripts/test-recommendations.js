@@ -266,3 +266,61 @@ test("widget renders localized copy and product cards, and hides empty results",
   )
   assert.equal(await empty.default({ region: { id: "reg_cn" } }), null)
 })
+
+test("product recommendations show the catalog fallback only when no recommendations are available", async () => {
+  const React = require("react")
+  const { renderToStaticMarkup } = require("react-dom/server")
+  const { getStorefrontDictionary } = loadSource("src/lib/i18n/storefront.ts")
+  const fallback = React.createElement("aside", null, "Catalog fallback")
+  for (const products of [[], [{ id: "a", handle: "cup", title: "Cup" }]]) {
+    const subject = loadSource(
+      "src/modules/recommendations/components/product-recommendations/index.tsx",
+      {
+        "@lib/data/recommendations": { listRecommendedProducts: async () => products },
+        "@lib/i18n/storefront": { getStorefrontDictionary },
+        "@lib/i18n/storefront-server": { getStorefrontLocale: async () => "en" },
+        "@modules/products/components/product-preview": {
+          __esModule: true,
+          default: ({ product }) => React.createElement("a", null, product.title),
+        },
+      }
+    )
+    const html = renderToStaticMarkup(
+      await subject.default({ region: { id: "reg_cn" }, productId: "current", fallback })
+    )
+    assert.equal(html.includes("Catalog fallback"), products.length === 0)
+    assert.equal(html.includes("You may also like"), products.length > 0)
+  }
+})
+
+test("catalog fallback does not issue a second recommendation request", async () => {
+  const queries = []
+  const { getStorefrontDictionary } = loadSource("src/lib/i18n/storefront.ts")
+  const subject = loadSource("src/modules/products/components/related-products/index.tsx", {
+    "@lib/data/products": {
+      listProducts: async (options) => {
+        queries.push(options.queryParams)
+        return { response: { products: [] } }
+      },
+    },
+    "@lib/data/regions": { getRegion: async () => ({ id: "reg_cn" }) },
+    "@lib/i18n/storefront": { getStorefrontDictionary },
+    "@lib/i18n/storefront-server": { getStorefrontLocale: async () => "en" },
+    "../product-preview": {},
+    "@lib/data/recommendations": {
+      listRecommendedProductIds: async () => {
+        assert.fail("The catalog fallback must not request recommendations again")
+      },
+    },
+  })
+  assert.equal(await subject.default({
+    product: { id: "current", collection_id: "collection_cups", tags: [{ id: "tag_ceramics" }] },
+    countryCode: "cn",
+  }), null)
+  assert.deepEqual(queries, [{
+    region_id: "reg_cn",
+    collection_id: ["collection_cups"],
+    tag_id: ["tag_ceramics"],
+    is_giftcard: false,
+  }])
+})
