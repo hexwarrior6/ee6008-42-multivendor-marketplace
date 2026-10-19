@@ -11,10 +11,8 @@ import {
   type RecommendationProduct,
 } from "../../../modules/recommendation/ranking"
 
-import {
-  readRecommendationArtifact,
-  recommendationLists,
-} from "../../../modules/recommendation/artifact"
+import { recommendationLists } from "../../../modules/recommendation/artifact"
+import { readRecommendationSource } from "../../../modules/recommendation/api"
 
 const CANDIDATE_LIMIT = 200
 const LINK_SCAN_LIMIT = 10_000
@@ -39,7 +37,7 @@ function optionalId(value: unknown, name: string) {
   return value
 }
 
-/** S4 offline results, revalidated against live channel membership; rules on failure. */
+/** S4 API results (legacy JSON when unconfigured), revalidated against live channels. */
 export const GET = async (
   req: AuthenticatedMedusaRequest,
   res: MedusaResponse
@@ -114,7 +112,10 @@ export const GET = async (
     req.auth_context?.actor_type === "customer"
       ? optionalId(req.auth_context.actor_id, "authenticated customer")
       : undefined
-  const loaded = await readRecommendationArtifact()
+  const loaded = await readRecommendationSource({
+    customerId: signedInCustomerId,
+    productId,
+  })
   if (loaded.artifact) {
     for (const list of recommendationLists(
       loaded.artifact,
@@ -187,6 +188,7 @@ export const GET = async (
         source: loaded.artifact.source,
         model_version: loaded.artifact.model_version,
         generated_at: loaded.artifact.generated_at,
+        transport: loaded.transport,
         strategy: list.strategy,
         personalized: list.strategy === "by_user",
         candidate_limit: 200,

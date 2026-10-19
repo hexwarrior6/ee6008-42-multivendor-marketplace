@@ -1,5 +1,7 @@
 # S1 推荐 API 与 S4 JSON 对接
 
+> 2026-10-19：已新增 [REST API 对接](s1-s4-rest-integration.md)。配置 `RECOMMENDATIONS_API_URL` 后以远程 API 为准；本文保留为未配置 API 时的旧 JSON 兼容说明。
+
 更新日期：2026-10-11。S1 通过 `GET /store/recommendations` 提供 S4 离线训练后的推荐结果。
 
 ## 交付与配置

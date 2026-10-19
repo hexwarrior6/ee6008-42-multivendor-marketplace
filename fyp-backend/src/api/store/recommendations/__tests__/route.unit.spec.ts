@@ -54,6 +54,9 @@ const makeRequest = (query = {}, options: Record<string, unknown> = {}) => {
 }
 
 describe("rule-based recommendations", () => {
+  beforeEach(() => {
+    delete process.env.RECOMMENDATIONS_API_URL
+  })
   function paged(
     catalog: RecommendationProduct[],
     linkIds = catalog.map((p) => p.id)

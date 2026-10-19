@@ -1,4 +1,6 @@
 import { createHmac } from "node:crypto"
+import { createServer } from "node:http"
+import type { AddressInfo } from "node:net"
 import { spawnSync } from "node:child_process"
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
@@ -251,6 +253,150 @@ medusaIntegrationTestRunner({
         { ...publicHeaders, validateStatus: () => true }
       )
       expect(hidden.status).toBe(404)
+    })
+    it("integrates the S4 REST contract with authenticated identity, live visibility and safe failure fallback", async () => {
+      const previous = {
+        url: process.env.RECOMMENDATIONS_API_URL,
+        key: process.env.RECOMMENDATIONS_API_KEY,
+        timeout: process.env.RECOMMENDATIONS_API_TIMEOUT_MS,
+      }
+      let calls = 0
+      let mode = "ok"
+      const requests: URL[] = []
+      const server = createServer((request, response) => {
+        calls++
+        const url = new URL(request.url!, "http://localhost")
+        requests.push(url)
+        if (
+          url.pathname !== "/recommendations" ||
+          request.headers["x-api-key"] !== "feature-only-key"
+        ) {
+          response.writeHead(401).end()
+          return
+        }
+        if (mode === "error") {
+          response.writeHead(503).end("unavailable")
+          return
+        }
+        if (mode === "timeout") return
+        const strategy =
+          mode === "empty"
+            ? "empty"
+            : url.searchParams.has("customer_id")
+            ? "by_user"
+            : url.searchParams.has("product_id")
+            ? "by_product"
+            : "fallback"
+        response.writeHead(200, { "content-type": "application/json" })
+        const ids =
+          mode === "empty" ? [] : [hiddenId, draftId, seedId, sameId, sameId]
+        response.end(
+          JSON.stringify({
+            recommendations: ids.map((product_id) => ({
+              product_id,
+              score: 0.9,
+              title: "stale export title",
+              handle: "untrusted-export-handle",
+              reason: null,
+            })),
+            count: ids.length,
+            limit: 24,
+            source: "als",
+            model_version: "reco-v1-http-api",
+            generated_at: new Date().toISOString(),
+            strategy,
+            personalized: strategy === "by_user",
+          })
+        )
+      })
+      try {
+        await new Promise<void>((resolve) =>
+          server.listen(0, "127.0.0.1", resolve)
+        )
+        process.env.RECOMMENDATIONS_API_URL = `http://127.0.0.1:${
+          (server.address() as AddressInfo).port
+        }`
+        process.env.RECOMMENDATIONS_API_KEY = "feature-only-key"
+        process.env.RECOMMENDATIONS_API_TIMEOUT_MS = "3000"
+        const user = await api.get(
+          `/store/recommendations?product_id=${seedId}&limit=2`,
+          customerHeaders
+        )
+        expect(user.data).toMatchObject({
+          transport: "api",
+          source: "als",
+          strategy: "by_user",
+          personalized: true,
+          context: { customer_id: customerId, product_id: seedId },
+        })
+        expect(user.data.recommendations.map((x: any) => x.product_id)).toEqual(
+          [sameId]
+        )
+        expect(user.data.recommendations[0].title).toBe("Feature Same")
+        expect(user.headers["cache-control"]).toBe("private, no-store")
+        expect(JSON.stringify(user.data)).not.toContain("feature-only-key")
+        expect(requests.at(-1)!.searchParams.get("customer_id")).toBe(
+          customerId
+        )
+        expect(requests.at(-1)!.searchParams.get("limit")).toBe("24")
+        const product = await api.get(
+          `/store/recommendations?product_id=${seedId}`,
+          publicHeaders
+        )
+        expect(product.data.strategy).toBe("by_product")
+        expect(requests.at(-1)!.searchParams.has("customer_id")).toBe(false)
+        const home = await api.get("/store/recommendations", publicHeaders)
+        expect(home.data).toMatchObject({
+          transport: "api",
+          strategy: "fallback",
+          personalized: false,
+        })
+        expect(home.data.context).not.toHaveProperty("customer_id")
+        const beforeForged = calls
+        const forged = await api.get(
+          `/store/recommendations?customer_id=${customerId}`,
+          { ...otherHeaders, validateStatus: () => true }
+        )
+        expect(forged.status).toBe(400)
+        expect(calls).toBe(beforeForged)
+        mode = "error"
+        const unavailable = await api.get(
+          "/store/recommendations",
+          publicHeaders
+        )
+        expect(unavailable.data).toMatchObject({
+          source: "rules",
+          fallback_reason: "api_unavailable",
+        })
+        mode = "empty"
+        const empty = await api.get("/store/recommendations", publicHeaders)
+        expect(empty.data).toMatchObject({
+          source: "rules",
+          fallback_reason: "no_visible_results",
+        })
+        mode = "timeout"
+        process.env.RECOMMENDATIONS_API_TIMEOUT_MS = "100"
+        const timeout = await api.get("/store/recommendations", publicHeaders)
+        expect(timeout.data).toMatchObject({
+          source: "rules",
+          fallback_reason: "api_timeout",
+        })
+        mode = "ok"
+        process.env.RECOMMENDATIONS_API_TIMEOUT_MS = "3000"
+        const recovered = await api.get("/store/recommendations", publicHeaders)
+        expect(recovered.data.transport).toBe("api")
+      } finally {
+        for (const [name, value] of Object.entries({
+          RECOMMENDATIONS_API_URL: previous.url,
+          RECOMMENDATIONS_API_KEY: previous.key,
+          RECOMMENDATIONS_API_TIMEOUT_MS: previous.timeout,
+        })) {
+          if (value === undefined) delete process.env[name]
+          else process.env[name] = value
+        }
+        server.closeAllConnections()
+        await new Promise<void>((resolve) => server.close(() => resolve()))
+      }
     })
     const s4Test =
       process.env.FEATURE_S4_ROOT && process.env.FEATURE_S4_PYTHON
