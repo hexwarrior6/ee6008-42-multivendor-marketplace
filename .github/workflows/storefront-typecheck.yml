@@ -40,3 +40,11 @@ jobs:
       - name: Product freshness regression checks
         working-directory: fyp-storefront
         run: pnpm test:product-freshness
+
+      - name: Recommendation widget regression checks
+        working-directory: fyp-storefront
+        run: pnpm test:recommendations
+
+      - name: Storefront localization regression checks
+        working-directory: fyp-storefront
+        run: pnpm test:s2-localization
