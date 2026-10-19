@@ -74,6 +74,8 @@ async function runFeatureHttpTests() {
       TALKJS_APP_ID: "",
       TALKJS_SECRET_KEY: "",
       RECOMMENDATIONS_FILE: "",
+      RECOMMENDATIONS_API_URL: "",
+      RECOMMENDATIONS_API_KEY: "",
       RECOMMENDATIONS_MAX_AGE_SECONDS: "86400",
       WECHAT_PAY_ENABLED: "true",
       WECHAT_PAY_SANDBOX: "true",

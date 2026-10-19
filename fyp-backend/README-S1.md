@@ -1,5 +1,7 @@
 # S1 工匠档案与接口说明
 
+> 2026-10-19 推荐服务已支持 REST：后端配置 `RECOMMENDATIONS_API_URL`、`RECOMMENDATIONS_API_KEY` 后调用 S4 `/recommendations`，前台接口路径不变。详见 [配置与降级说明](../docs/s1-s4-rest-integration.md)。下文 JSON 部分为兼容模式。
+
 这份文档是 S1 的接口契约。S2、S3、S4 可以先按照这里的 URL、请求字段和
 返回 JSON 开发，不需要等待所有后端功能完成。
 

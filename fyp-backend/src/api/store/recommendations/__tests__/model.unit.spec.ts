@@ -69,6 +69,7 @@ function fixture(query = {}, authenticated = false) {
   return { req, res, graph, result: () => res.json.mock.calls[0][0] }
 }
 beforeEach(() => {
+  delete process.env.RECOMMENDATIONS_API_URL
   jest.clearAllMocks()
   read.mockResolvedValue({ artifact: artifact() })
 })
