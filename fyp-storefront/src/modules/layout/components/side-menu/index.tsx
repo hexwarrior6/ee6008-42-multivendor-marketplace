@@ -8,16 +8,17 @@ import { Fragment } from "react"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import CountrySelect from "../country-select"
 import { HttpTypes } from "@medusajs/types"
-
-const SideMenuItems = {
-  Home: "/",
-  Store: "/store",
-  Account: "/account",
-  Cart: "/cart",
-}
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 
 const SideMenu = ({ regions }: { regions: HttpTypes.StoreRegion[] | null }) => {
   const toggleState = useToggleState()
+  const { t } = useStorefrontI18n()
+  const sideMenuItems = [
+    { key: "home", label: t.shell.home, href: "/" },
+    { key: "store", label: t.shell.products, href: "/store" },
+    { key: "account", label: t.shell.account, href: "/account" },
+    { key: "cart", label: t.shell.cart, href: "/cart" },
+  ]
 
   return (
     <div className="h-full">
@@ -30,7 +31,7 @@ const SideMenu = ({ regions }: { regions: HttpTypes.StoreRegion[] | null }) => {
                   data-testid="nav-menu-button"
                   className="relative h-full flex items-center transition-all ease-out duration-200 focus:outline-none hover:text-ui-fg-base"
                 >
-                  Menu
+                  {t.shell.menu}
                 </Popover.Button>
               </div>
 
@@ -63,16 +64,16 @@ const SideMenu = ({ regions }: { regions: HttpTypes.StoreRegion[] | null }) => {
                       </button>
                     </div>
                     <ul className="flex flex-col gap-6 items-start justify-start">
-                      {Object.entries(SideMenuItems).map(([name, href]) => {
+                      {sideMenuItems.map(({ key, label, href }) => {
                         return (
-                          <li key={name}>
+                          <li key={key}>
                             <LocalizedClientLink
                               href={href}
                               className="text-3xl leading-10 hover:text-ui-fg-disabled"
                               onClick={close}
-                              data-testid={`${name.toLowerCase()}-link`}
+                              data-testid={`${key}-link`}
                             >
-                              {name}
+                              {label}
                             </LocalizedClientLink>
                           </li>
                         )
@@ -98,8 +99,7 @@ const SideMenu = ({ regions }: { regions: HttpTypes.StoreRegion[] | null }) => {
                         />
                       </div>
                       <Text className="flex justify-between txt-compact-small">
-                        © {new Date().getFullYear()} Medusa Store. All rights
-                        reserved.
+                        © {new Date().getFullYear()} {t.shell.rights}
                       </Text>
                     </div>
                   </div>

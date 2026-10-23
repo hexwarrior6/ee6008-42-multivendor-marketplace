@@ -1,6 +1,8 @@
 import { acceptTransferRequest } from "@lib/data/orders"
 import { Heading, Text } from "@medusajs/ui"
 import TransferImage from "@modules/order/components/transfer-image"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 
 export default async function TransferPage({
   params,
@@ -8,6 +10,8 @@ export default async function TransferPage({
   params: { id: string; token: string }
 }) {
   const { id, token } = params
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).order
 
   const { success, error } = await acceptTransferRequest(id, token)
 
@@ -18,20 +22,20 @@ export default async function TransferPage({
         {success && (
           <>
             <Heading level="h1" className="text-xl text-zinc-900">
-              Order transfered!
+              {t.transferAcceptedTitle}
             </Heading>
             <Text className="text-zinc-600">
-              Order {id} has been successfully transfered to the new owner.
+              {t.transferAcceptedBody.replace("{id}", id)}
             </Text>
           </>
         )}
         {!success && (
           <>
-            <Text className="text-zinc-600">
-              There was an error accepting the transfer. Please try again.
-            </Text>
+            <Text className="text-zinc-600">{t.transferAcceptError}</Text>
             {error && (
-              <Text className="text-red-500">Error message: {error}</Text>
+              <Text className="text-red-500">
+                {t.transferErrorPrefix} {error}
+              </Text>
             )}
           </>
         )}

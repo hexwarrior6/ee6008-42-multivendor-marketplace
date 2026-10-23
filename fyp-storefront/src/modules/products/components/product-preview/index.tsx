@@ -1,5 +1,6 @@
 import { Text } from "@medusajs/ui"
 import { listProducts } from "@lib/data/products"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 import { getProductPrice } from "@lib/util/get-product-price"
 import { HttpTypes } from "@medusajs/types"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
@@ -24,8 +25,11 @@ export default async function ProductPreview({
   //   return null
   // }
 
+  const locale = await getStorefrontLocale()
+
   const { cheapestPrice } = getProductPrice({
     product,
+    locale,
   })
 
   return (

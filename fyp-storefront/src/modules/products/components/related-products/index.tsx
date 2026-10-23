@@ -1,5 +1,7 @@
 import { listProducts } from "@lib/data/products"
 import { getRegion } from "@lib/data/regions"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 import { HttpTypes } from "@medusajs/types"
 import Product from "../product-preview"
 
@@ -18,7 +20,10 @@ export default async function RelatedProducts({
     return null
   }
 
-  // edit this function to define your related products logic
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).catalog
+
+  // This catalog query is used only when the recommendation widget has no results.
   const queryParams: HttpTypes.StoreProductListParams = {}
   if (region?.id) {
     queryParams.region_id = region.id
@@ -26,7 +31,7 @@ export default async function RelatedProducts({
   if (product.collection_id) {
     queryParams.collection_id = [product.collection_id]
   }
-  if (product.tags) {
+  if (product.tags?.length) {
     queryParams.tag_id = product.tags
       .map((t) => t.id)
       .filter(Boolean) as string[]
@@ -50,10 +55,10 @@ export default async function RelatedProducts({
     <div className="product-page-constraint">
       <div className="flex flex-col items-center text-center mb-16">
         <span className="text-base-regular text-gray-600 mb-6">
-          Related products
+          {t.relatedProducts}
         </span>
         <p className="text-2xl-regular text-ui-fg-base max-w-lg">
-          You might also want to check out these products.
+          {t.relatedProductsIntro}
         </p>
       </div>
 

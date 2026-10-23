@@ -3,6 +3,7 @@ import { Badge, Button, clx } from "@medusajs/ui"
 import { useEffect } from "react"
 
 import useToggleState from "@lib/hooks/use-toggle-state"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { useFormStatus } from "react-dom"
 
 type AccountInfoProps = {
@@ -22,11 +23,12 @@ const AccountInfo = ({
   isSuccess,
   isError,
   clearState,
-  errorMessage = "An error occurred, please try again",
+  errorMessage,
   children,
   'data-testid': dataTestid
 }: AccountInfoProps) => {
   const { state, close, toggle } = useToggleState()
+  const { t } = useStorefrontI18n()
 
   const { pending } = useFormStatus()
 
@@ -63,7 +65,7 @@ const AccountInfo = ({
             data-testid="edit-button"
             data-active={state}
           >
-            {state ? "Cancel" : "Edit"}
+            {state ? t.account.cancel : t.account.edit}
           </Button>
         </div>
       </div>
@@ -82,7 +84,9 @@ const AccountInfo = ({
           data-testid="success-message"
         >
           <Badge className="p-2 my-4" color="green">
-            <span>{label} updated succesfully</span>
+            <span>
+              {t.account.updatedSuccessfully.replace("{label}", label)}
+            </span>
           </Badge>
         </Disclosure.Panel>
       </Disclosure>
@@ -101,7 +105,7 @@ const AccountInfo = ({
           data-testid="error-message"
         >
           <Badge className="p-2 my-4" color="red">
-            <span>{errorMessage}</span>
+            <span>{errorMessage ?? t.account.genericError}</span>
           </Badge>
         </Disclosure.Panel>
       </Disclosure>
@@ -126,7 +130,7 @@ const AccountInfo = ({
                 type="submit"
                 data-testid="save-button"
               >
-                Save changes
+                {t.account.saveChanges}
               </Button>
             </div>
           </div>

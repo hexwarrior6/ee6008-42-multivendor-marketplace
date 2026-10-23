@@ -13,13 +13,9 @@ import ReactCountryFlag from "react-country-flag"
 import { StateType } from "@lib/hooks/use-toggle-state"
 import { useParams, usePathname } from "next/navigation"
 import { updateRegion } from "@lib/data/cart"
+import { useStorefrontI18n } from "@lib/i18n/storefront-context"
 import { HttpTypes } from "@medusajs/types"
-
-type CountryOption = {
-  country: string
-  region: string
-  label: string
-}
+import { getCountryOptions, type CountryOption } from "@lib/util/country-options"
 
 type CountrySelectProps = {
   toggleState: StateType
@@ -27,27 +23,16 @@ type CountrySelectProps = {
 }
 
 const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
-  const [current, setCurrent] = useState<
-    | { country: string | undefined; region: string; label: string | undefined }
-    | undefined
-  >(undefined)
+  const [current, setCurrent] = useState<CountryOption | undefined>(undefined)
 
   const { countryCode } = useParams()
-  const currentPath = usePathname().split(`/${countryCode}`)[1]
+  const currentPath = usePathname().split(`/${countryCode}`)[1] || "/"
+  const { t } = useStorefrontI18n()
 
   const { state, close } = toggleState
 
   const options = useMemo(() => {
-    return regions
-      ?.map((r) => {
-        return r.countries?.map((c) => ({
-          country: c.iso_2,
-          region: r.id,
-          label: c.display_name,
-        }))
-      })
-      .flat()
-      .sort((a, b) => (a?.label ?? "").localeCompare(b?.label ?? ""))
+    return getCountryOptions(regions)
   }, [regions])
 
   useEffect(() => {
@@ -75,7 +60,7 @@ const CountrySelect = ({ toggleState, regions }: CountrySelectProps) => {
       >
         <ListboxButton className="py-1 w-full">
           <div className="txt-compact-small flex items-start gap-x-2">
-            <span>Shipping to:</span>
+            <span>{t.shell.shippingTo}</span>
             {current && (
               <span className="txt-compact-small flex items-center gap-x-2">
                 {/* @ts-ignore */}

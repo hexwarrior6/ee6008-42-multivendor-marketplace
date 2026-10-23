@@ -4,7 +4,7 @@ import { sdk } from "@lib/config"
 import { sortProducts } from "@lib/util/sort-products"
 import { HttpTypes } from "@medusajs/types"
 import { SortOptions } from "@modules/store/components/refinement-list/sort-products"
-import { getAuthHeaders, getCacheOptions } from "./cookies"
+import { getAuthHeaders } from "./cookies"
 import { getRegion, retrieveRegion } from "./regions"
 import { StoreProductWithStore } from "types/global"
 import { StoreListProductReviewsQuery, StoreListProductReviewStatsQuery, 
@@ -53,10 +53,6 @@ export const listProducts = async ({
     ...(await getAuthHeaders()),
   }
 
-  const next = {
-    ...(await getCacheOptions("products")),
-  }
-
   return sdk.client
     .fetch<{ products: StoreProductWithStore[]; count: number }>(
       `/store/products`,
@@ -71,8 +67,8 @@ export const listProducts = async ({
           ...queryParams,
         },
         headers,
-        next,
-        cache: "force-cache",
+        // Catalog edits must be visible without relying on a revalidation webhook.
+        cache: "no-store",
       }
     )
     .then(({ products, count }) => {
@@ -90,11 +86,11 @@ export const listProducts = async ({
 }
 
 /**
- * This will fetch 100 products to the Next.js cache and sort them based on the sortBy parameter.
- * It will then return the paginated products based on the page and limit parameters.
+ * Latest arrivals are ordered and paginated by the API across the full catalog.
+ * Price sorting uses up to 100 fresh products until the API supports price ordering.
  */
 export const listProductsWithSort = async ({
-  page = 0,
+  page = 1,
   queryParams,
   sortBy = "created_at",
   countryCode,
@@ -109,6 +105,15 @@ export const listProductsWithSort = async ({
   queryParams?: HttpTypes.FindParams & HttpTypes.StoreProductParams
 }> => {
   const limit = queryParams?.limit || 12
+  const currentPage = Math.max(page, 1)
+
+  if (sortBy === "created_at") {
+    return listProducts({
+      pageParam: currentPage,
+      queryParams: { ...queryParams, limit, order: "-created_at" },
+      countryCode,
+    })
+  }
 
   const {
     response: { products, count },
@@ -123,9 +128,9 @@ export const listProductsWithSort = async ({
 
   const sortedProducts = sortProducts(products, sortBy)
 
-  const pageParam = (page - 1) * limit
+  const pageParam = (currentPage - 1) * limit
 
-  const nextPage = count > pageParam + limit ? pageParam + limit : null
+  const nextPage = count > pageParam + limit ? currentPage + 1 : null
 
   const paginatedProducts = sortedProducts.slice(pageParam, pageParam + limit)
 

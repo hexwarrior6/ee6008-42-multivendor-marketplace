@@ -3,9 +3,11 @@ import Divider from "@modules/common/components/divider"
 import EmptyCartMessage from "../components/empty-cart-message"
 import SignInPrompt from "../components/sign-in-prompt"
 import { Heading } from "@medusajs/ui"
+import { getStorefrontDictionary } from "@lib/i18n/storefront"
+import { getStorefrontLocale } from "@lib/i18n/storefront-server"
 import ItemsTemplate from "./items"
 
-const MultiVendorCartTemplate = ({
+const MultiVendorCartTemplate = async ({
   carts,
   customer,
 }: {
@@ -14,6 +16,8 @@ const MultiVendorCartTemplate = ({
 }) => {
   // Check if any items exist across all carts
   const hasItems = carts.some(cart => cart.items && cart.items.length > 0)
+  const locale = await getStorefrontLocale()
+  const t = getStorefrontDictionary(locale).cart
 
   return (
     <div className="py-12">
@@ -28,7 +32,7 @@ const MultiVendorCartTemplate = ({
             )}
 
             <div className="pb-3 flex items-center">
-              <Heading className="text-[2rem] leading-[2.75rem]">Your Shopping Bag</Heading>
+              <Heading className="text-[2rem] leading-[2.75rem]">{t.title}</Heading>
             </div>
 
             {/* Map through each seller's cart */}

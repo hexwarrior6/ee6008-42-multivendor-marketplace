@@ -11,7 +11,6 @@ type PaginatedProductsParams = {
   collection_id?: string[]
   category_id?: string[]
   id?: string[]
-  order?: string
 }
 
 export default async function PaginatedProducts({
@@ -43,10 +42,6 @@ export default async function PaginatedProducts({
 
   if (productsIds) {
     queryParams["id"] = productsIds
-  }
-
-  if (sortBy === "created_at") {
-    queryParams["order"] = "created_at"
   }
 
   const region = await getRegion(countryCode)

@@ -2,6 +2,7 @@ import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils";
 import { STRIPE_CONNECT_MODULE } from "../../../../../modules/stripe-connect";
+import type { StripeConnectModuleService } from "../../../../../modules/stripe-connect/service";
 import { StoreDTO } from "@medusajs/framework/types";
 import storePayoutAccountLink from "../../../../../links/store-payout";
 import recalculateOnboardingWorkflow from "../../../../../workflows/recalculate-onboarding-status";
@@ -10,7 +11,7 @@ import { PayoutAccountStatus } from "../../../../../modules/stripe-connect/model
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     const backendURL = process.env.MEDUSA_BACKEND_URL || "http://localhost:9000";
     const logger = req.scope.resolve("logger");
-    const stripeConnectModuleService = req.scope.resolve(STRIPE_CONNECT_MODULE);
+    const stripeConnectModuleService = req.scope.resolve<StripeConnectModuleService>(STRIPE_CONNECT_MODULE);
     const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
     const storeId = req.scope.resolve("currentStore") as Pick<StoreDTO,'id'>;
     logger.info(`Store ID in Stripe Connect Success Route: ${storeId.id}`);

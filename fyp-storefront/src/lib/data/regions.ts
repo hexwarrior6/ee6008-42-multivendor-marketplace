@@ -5,16 +5,18 @@ import medusaError from "@lib/util/medusa-error"
 import { HttpTypes } from "@medusajs/types"
 import { getCacheOptions } from "./cookies"
 
-export const listRegions = async () => {
-  const next = {
-    ...(await getCacheOptions("regions")),
-  }
+export const listRegions = async (forceRefresh = false) => {
+  const next = forceRefresh
+    ? undefined
+    : {
+        ...(await getCacheOptions("regions")),
+      }
 
   return sdk.client
     .fetch<{ regions: HttpTypes.StoreRegion[] }>(`/store/regions`, {
       method: "GET",
       next,
-      cache: "force-cache",
+      cache: forceRefresh ? "no-store" : "force-cache",
     })
     .then(({ regions }) => regions)
     .catch(medusaError)
@@ -35,31 +37,14 @@ export const retrieveRegion = async (id: string) => {
     .catch(medusaError)
 }
 
-const regionMap = new Map<string, HttpTypes.StoreRegion>()
-
 export const getRegion = async (countryCode: string) => {
   try {
-    if (regionMap.has(countryCode)) {
-      return regionMap.get(countryCode)
-    }
-
-    const regions = await listRegions()
-
-    if (!regions) {
-      return null
-    }
-
-    regions.forEach((region) => {
-      region.countries?.forEach((c) => {
-        regionMap.set(c?.iso_2 ?? "", region)
-      })
-    })
-
-    const region = countryCode
-      ? regionMap.get(countryCode)
-      : regionMap.get("us")
-
-    return region
+    const normalizedCountryCode = countryCode?.trim().toLowerCase() || "us"
+    // Cart mutations must use current currency/country settings, not process-wide snapshots.
+    const regions = await listRegions(true)
+    return regions?.find(region => region.countries?.some(
+      country => country.iso_2?.toLowerCase() === normalizedCountryCode
+    )) ?? null
   } catch (e: any) {
     return null
   }

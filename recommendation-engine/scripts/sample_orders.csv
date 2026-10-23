@@ -1,0 +1,23 @@
+# 运行示例之前：确保 numpy 可用，然后：
+#   python -m reco.train --offline-rows scripts/sample_orders.csv --models svd,als --export out/recommendations.json
+# 该 CSV 纯演示（无真实数据、不代表真实用户），用于离线验证整条 pipeline。
+
+customer_id,product_id,title,weight,handle
+cus_alice,prod_pottery_tea,手作陶瓷壶,1,tea-pot
+cus_alice,prod_linen_sachet,亚麻香囊,1,linen-sachet
+cus_alice,prod_wood_comb,原木牛角梳,1,wood-comb
+cus_bob,prod_soap_herb,草药手工皂,1,herb-soap
+cus_bob,prod_candle_soy,大豆香薰蜡烛,1,soy-candle
+cus_bob,prod_pottery_tea,手作陶瓷壶,1,tea-pot
+cus_carol,prod_wood_comb,原木牛角梳,1,wood-comb
+cus_carol,prod_basket_rattan,手工藤篮,1,rattan-basket
+cus_carol,prod_leather_pouch,植鞣革收纳,1,leather-pouch
+cus_dave,prod_candle_soy,大豆香薰蜡烛,1,soy-candle
+cus_dave,prod_soap_herb,草药手工皂,1,herb-soap
+cus_dave,prod_pottery_tea,手作陶瓷壶,1,tea-pot
+cus_eve,prod_basket_rattan,手工藤篮,1,rattan-basket
+cus_eve,prod_linen_sachet,亚麻香囊,1,linen-sachet
+cus_eve,prod_pottery_tea,手作陶瓷壶,1,tea-pot
+cus_frank,prod_soap_herb,草药手工皂,1,herb-soap
+cus_frank,prod_leather_pouch,植鞣革收纳,1,leather-pouch
+cus_frank,prod_wood_comb,原木牛角梳,1,wood-comb

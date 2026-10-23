@@ -165,6 +165,7 @@ const CartDropdown = ({
                           </div>
                           <DeleteButton
                             id={item.id}
+                            cartId={cartState.id}
                             className="mt-1"
                             data-testid="cart-item-remove-button"
                           >

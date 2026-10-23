@@ -6,17 +6,19 @@ import ProductOnboardingCta from "@modules/products/components/product-onboardin
 import ProductTabs from "@modules/products/components/product-tabs"
 import RelatedProducts from "@modules/products/components/related-products"
 import ProductInfo from "@modules/products/templates/product-info"
-import SkeletonRelatedProducts from "@modules/skeletons/templates/skeleton-related-products"
 import { notFound } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 import ProductActionsWrapper from "./product-actions-wrapper"
 import { StoreProductWithStore } from "types/global"
+import ProductRecommendations from "@modules/recommendations/components/product-recommendations"
+import RecommendationsSkeleton from "@modules/recommendations/components/recommendations-skeleton"
 
 type ProductTemplateProps = {
   product: StoreProductWithStore
   region: HttpTypes.StoreRegion
   countryCode: string
   images: HttpTypes.StoreProductImage[]
+  artisanProfileId: string | null
 }
 
 const ProductTemplate: React.FC<ProductTemplateProps> = ({
@@ -24,6 +26,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
   region,
   countryCode,
   images,
+  artisanProfileId,
 }) => {
   if (!product || !product.id) {
     return notFound()
@@ -37,7 +40,11 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
       >
         <div className="flex flex-col small:sticky small:top-48 small:py-0 small:max-w-[300px] w-full py-8 gap-y-6">
           <ProductInfo product={product} />
-          <ProductTabs product={product} />
+          <ProductTabs
+            product={product}
+            countryCode={countryCode}
+            artisanProfileId={artisanProfileId}
+          />
         </div>
         <div className="block w-full relative">
           <ImageGallery images={images} />
@@ -53,18 +60,28 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({
               />
             }
           >
-            <ProductActionsWrapper id={product.id} region={region} storeId={product.store?.id}/>
+            <ProductActionsWrapper
+              id={product.id}
+              region={region}
+              storeId={product.store?.id}
+            />
           </Suspense>
         </div>
       </div>
-      <div
-        className="content-container my-16 small:my-32"
-        data-testid="related-products-container"
-      >
-        <Suspense fallback={<SkeletonRelatedProducts />}>
-          <RelatedProducts product={product} countryCode={countryCode} />
-        </Suspense>
-      </div>
+      <Suspense fallback={<RecommendationsSkeleton />}>
+        <ProductRecommendations
+          region={region}
+          productId={product.id}
+          fallback={
+            <div
+              className="content-container my-16 small:my-32"
+              data-testid="related-products-container"
+            >
+              <RelatedProducts product={product} countryCode={countryCode} />
+            </div>
+          }
+        />
+      </Suspense>
     </>
   )
 }

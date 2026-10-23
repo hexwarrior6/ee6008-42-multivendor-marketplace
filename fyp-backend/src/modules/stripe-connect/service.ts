@@ -8,7 +8,7 @@ import { PayoutReversal } from "./models/payout-reversal";
 import { getAmountFromSmallestUnit } from "./util/money";
 
 type ModuleOptions = {
-    apiKey: string
+    apiKey?: string
     //serverUrl: string
 }
 type InjectedDependencies = {
@@ -36,14 +36,29 @@ export class StripeConnectModuleService extends MedusaService({
   PayoutReversal,
 }) {
     protected readonly logger: Logger
-    protected readonly stripe_: Stripe
+    protected readonly stripe_?: Stripe
     protected readonly serverUrl: string = "localhost:9000"
 
     constructor({ logger }: InjectedDependencies, options: ModuleOptions) {
       super(...arguments);
       this.logger = logger;
-      this.stripe_ = new Stripe(options.apiKey)
+      if (options.apiKey) {
+        this.stripe_ = new Stripe(options.apiKey)
+      } else {
+        this.logger.warn("Stripe Connect is disabled locally because STRIPE_API_KEY is not configured.")
+      }
       // this.serverUrl = options.serverUrl;
+    }
+
+    private getStripe_(): Stripe {
+      if (!this.stripe_) {
+        throw new MedusaError(
+          MedusaError.Types.PAYMENT_AUTHORIZATION_ERROR,
+          "Stripe Connect is disabled locally. Configure STRIPE_API_KEY before using Stripe payout features."
+        )
+      }
+
+      return this.stripe_
     }
 
     // Handle creation of payout account record in DB
@@ -78,7 +93,7 @@ export class StripeConnectModuleService extends MedusaService({
       storeName: string,
       @MedusaContext() sharedContext?: Context) {
         try {
-          const account = await this.stripe_.accounts.create({
+          const account = await this.getStripe_().accounts.create({
           type: 'express',
           country: 'SG',
           business_type: 'individual',
@@ -104,7 +119,7 @@ export class StripeConnectModuleService extends MedusaService({
 
       async retrieveStripeAccount(stripeAccountId: string): Promise<Stripe.Response<Stripe.Account>> {
         try {
-          const account = await this.stripe_.accounts.retrieve(stripeAccountId);
+          const account = await this.getStripe_().accounts.retrieve(stripeAccountId);
           return account;
         } catch (error) {
           this.logger.error(`Error retrieving Stripe Account with ID: ${stripeAccountId} - ${error.message}`);
@@ -117,7 +132,7 @@ export class StripeConnectModuleService extends MedusaService({
         @MedusaContext() sharedContext?: Context
       ): Promise<Stripe.Response<Stripe.AccountLink>> {
         try {
-          const accountLink = await this.stripe_.accountLinks.create({
+          const accountLink = await this.getStripe_().accountLinks.create({
             account: stripeAccountId,
             refresh_url: `${process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"}/app`,
             return_url: `${process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"}/admin/stripe-connect/account-link/return`,
@@ -133,7 +148,7 @@ export class StripeConnectModuleService extends MedusaService({
 
       async getStripeFees(paymentIntentId: string) {
         try {
-          const paymentIntent = await this.stripe_.paymentIntents.retrieve(paymentIntentId, {
+          const paymentIntent = await this.getStripe_().paymentIntents.retrieve(paymentIntentId, {
             expand: ['latest_charge.balance_transaction'],
           });
 
@@ -156,7 +171,7 @@ export class StripeConnectModuleService extends MedusaService({
         @MedusaContext() sharedContext?: Context
       ) {
         try {
-          const transfer = await this.stripe_.transfers.create({
+          const transfer = await this.getStripe_().transfers.create({
           amount: input.amount,
           currency: input.currency_code,
           destination: input.stripe_connect_id,

@@ -1,0 +1,124 @@
+{
+ "by_user": {},
+ "by_product": {
+  "prod_01M3J09A2N0EQ4CNPRHHQ4NBFH": [
+   {
+    "product_id": "prod_01M22P4ECR2EP6PPKG6AVGR1Z2",
+    "title": "毛衣",
+    "handle": "maoyi",
+    "thumbnail": "None",
+    "score": 0.0
+   },
+   {
+    "product_id": "prod_01M3J8XSM5TP6MNEJNJYNT47DE",
+    "title": "手工陶艺马克杯",
+    "handle": "pottery-mug",
+    "thumbnail": "None",
+    "score": 0.0
+   },
+   {
+    "product_id": "prod_01M3J90CQCCD67W28RRPQA6T0E",
+    "title": "手织羊毛围巾",
+    "handle": "handwoven-scarf",
+    "thumbnail": "None",
+    "score": 0.0
+   },
+   {
+    "product_id": "prod_01M3J90ECPA5P1MYQQTPQWE21Y",
+    "title": "蓝染帆布托特包",
+    "handle": "indigo-tote",
+    "thumbnail": "None",
+    "score": 0.0
+   },
+   {
+    "product_id": "prod_01M3J915EMF1FMCS238FAV7PT8",
+    "title": "原木胡桃木托盘",
+    "handle": "walnut-tray",
+    "thumbnail": "None",
+    "score": 0.0
+   },
+   {
+    "product_id": "prod_01M3J916YG6SMHQVET35CE8HNK",
+    "title": "大豆蜡香薰蜡烛礼盒",
+    "handle": "soy-candle-gift",
+    "thumbnail": "None",
+    "score": 0.0
+   },
+   {
+    "product_id": "prod_01M3J918EDE42M3ENN9939JEEZ",
+    "title": "手工银饰月牙耳环",
+    "handle": "silver-moon-earrings",
+    "thumbnail": "None",
+    "score": 0.0
+   },
+   {
+    "product_id": "prod_01M22PR8Z8TZ0KWGHFS9V03N0W",
+    "title": "手缝植鞣革手账本",
+    "handle": "handmade-leather-journal",
+    "thumbnail": "None",
+    "score": 0.0
+   }
+  ]
+ },
+ "fallback": [
+  {
+   "product_id": "prod_01M3J09A2N0EQ4CNPRHHQ4NBFH",
+   "title": "外套",
+   "handle": "waitao",
+   "thumbnail": "None",
+   "score": 1.0
+  },
+  {
+   "product_id": "prod_01M22P4ECR2EP6PPKG6AVGR1Z2",
+   "title": "毛衣",
+   "handle": "maoyi",
+   "thumbnail": "None",
+   "score": 0.2
+  },
+  {
+   "product_id": "prod_01M3J8XSM5TP6MNEJNJYNT47DE",
+   "title": "手工陶艺马克杯",
+   "handle": "pottery-mug",
+   "thumbnail": "None",
+   "score": 0.2
+  },
+  {
+   "product_id": "prod_01M3J90CQCCD67W28RRPQA6T0E",
+   "title": "手织羊毛围巾",
+   "handle": "handwoven-scarf",
+   "thumbnail": "None",
+   "score": 0.2
+  },
+  {
+   "product_id": "prod_01M3J90ECPA5P1MYQQTPQWE21Y",
+   "title": "蓝染帆布托特包",
+   "handle": "indigo-tote",
+   "thumbnail": "None",
+   "score": 0.2
+  },
+  {
+   "product_id": "prod_01M3J915EMF1FMCS238FAV7PT8",
+   "title": "原木胡桃木托盘",
+   "handle": "walnut-tray",
+   "thumbnail": "None",
+   "score": 0.2
+  },
+  {
+   "product_id": "prod_01M3J916YG6SMHQVET35CE8HNK",
+   "title": "大豆蜡香薰蜡烛礼盒",
+   "handle": "soy-candle-gift",
+   "thumbnail": "None",
+   "score": 0.2
+  },
+  {
+   "product_id": "prod_01M3J918EDE42M3ENN9939JEEZ",
+   "title": "手工银饰月牙耳环",
+   "handle": "silver-moon-earrings",
+   "thumbnail": "None",
+   "score": 0.2
+  }
+ ],
+ "source": "content",
+ "model_version": "reco-v1-20261011-1856",
+ "generated_at": "2026-10-11T18:56:53Z"
+}
