@@ -119,6 +119,7 @@ curl "http://127.0.0.1:8000/health"
 启动脚本的行为:
 
 - 若 `artifacts/recommendations.json` 不存在且配置了 `DATABASE_URL` → **先训练一次再启动**;
+  `artifacts/sentiment.json` 同理(缺失时自动导出一次,Week 10)。
 - 否则直接启动,接口返回空结果(`source="unavailable"`),**不会崩溃**。
 
 Railway 步骤:
