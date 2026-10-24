@@ -16,7 +16,8 @@
 ## Git 规则
 
 本节是对所有成员与 agent 的硬性约束：**新建分支或 PR 之前先对照本节自查，
-不符合就不要建**——宁可直接续用已有分支，也不要多开。
+不符合就不要建**——同一任务续用已有分支，不要多开；分支命名由 CI
+（`check-branch-name.yml`）强制校验，违规 PR 无法通过检查。
 
 - 分支一律基于 `origin/development` 新建，PR 回 `development`，合并后删除分支。
 - **永不直接 push `main`**（GitHub 受保护，合并被 workflow 限制）；`development`
@@ -60,7 +61,9 @@
 
 - GitHub Actions 只认**仓库根目录**的 `.github/workflows/`；子目录里的 `.github/`
   副本不会被执行（如 `recommendation-engine/.github/` 仅作参考）。
-- 现有 workflow：`restrict-main-merge.yml`（合并限制）；`backend-ci.yml`（后端
+- 现有 workflow：`restrict-main-merge.yml`（合并限制：仅 development 可合入
+  main）；`check-branch-name.yml`（校验回 development 的 PR 分支命名，规则见上节）；
+  `backend-ci.yml`（后端
   类型检查 + 单测 + HTTP 集成测试 + 构建）；`recommendation-engine.yml` 与
   `storefront-typecheck.yml`（PR 质检门，按路径触发）；`recommendation-training.yml`
   （手动触发：连平台库训练并导出 `recommendations.json` 产物）。推荐引擎的检查入口是
