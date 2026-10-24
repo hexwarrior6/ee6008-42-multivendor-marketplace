@@ -52,7 +52,9 @@ class Driver:
         if is_sqlite(self.url):
             import sqlite3
 
-            self._sqlite = sqlite3.connect(sqlite_path(self.url))
+            # autocommit, matching the PostgreSQL drivers below: Driver.query is
+            # expected to take effect immediately (the test-data tool relies on it).
+            self._sqlite = sqlite3.connect(sqlite_path(self.url), isolation_level=None)
             return self
         try:
             import psycopg  # type: ignore # v3

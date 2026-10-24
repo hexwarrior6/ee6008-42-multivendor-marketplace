@@ -8,6 +8,7 @@ Endpoints
 ---------
 ``GET /health``
 ``GET /recommendations?customer_id=&product_id=&limit=``
+``GET /sentiment?product_id=&store_id=``
 
 Response fields mirror the backend's ``GET /store/recommendations`` contract so S1 can
 forward them without reshaping. The service is strictly read-only: it never writes to
@@ -38,13 +39,15 @@ except ImportError as exc:  # pragma: no cover - only when extras are missing
 # .../recommendation-engine/src/recommender/api.py -> recommendation-engine/
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ARTIFACT = PROJECT_ROOT / "artifacts" / "recommendations.json"
+DEFAULT_SENTIMENT_ARTIFACT = PROJECT_ROOT / "artifacts" / "sentiment.json"
 
 ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{1,128}$")
 MAX_LIMIT = 24
 
-# Tiny cache so repeated requests do not re-read the JSON. It is refreshed when the
+# Tiny caches so repeated requests do not re-read the JSON. They are refreshed when the
 # file's mtime changes, so a cron-trained artifact is picked up without a restart.
 _cache: Dict[str, Any] = {"path": None, "mtime": None, "data": None}
+_sentiment_cache: Dict[str, Any] = {"path": None, "mtime": None, "data": None}
 
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
@@ -203,6 +206,93 @@ def select_items(
     return [], "empty"
 
 
+# ---------------------------------------------------------------------------
+# Sentiment artifact (Week 10): aggregate review sentiment for the dashboard
+# ---------------------------------------------------------------------------
+def sentiment_artifact_path() -> Path:
+    """Sentiment report location; override with ``SENTIMENT_PATH``."""
+    raw = os.environ.get("SENTIMENT_PATH")
+    return Path(raw) if raw else DEFAULT_SENTIMENT_ARTIFACT
+
+
+def _empty_sentiment() -> Dict[str, Any]:
+    return {
+        "overall": None,
+        "by_product": {},
+        "by_store": {},
+        "model_version": None,
+        "generated_at": None,
+        "source": "unavailable",
+    }
+
+
+def load_sentiment_artifact() -> Dict[str, Any]:
+    """Load (and cache) the sentiment report; degrade gracefully if absent."""
+    path = sentiment_artifact_path()
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return _empty_sentiment()
+
+    if (
+        _sentiment_cache["path"] == str(path)
+        and _sentiment_cache["mtime"] == mtime
+        and isinstance(_sentiment_cache["data"], dict)
+    ):
+        return _sentiment_cache["data"]
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return _empty_sentiment()
+    if not isinstance(data, dict):
+        return _empty_sentiment()
+
+    data.setdefault("overall", None)
+    data.setdefault("by_product", {})
+    data.setdefault("by_store", {})
+    if not isinstance(data["by_product"], dict):
+        data["by_product"] = {}
+    if not isinstance(data["by_store"], dict):
+        data["by_store"] = {}
+
+    _sentiment_cache.update({"path": str(path), "mtime": mtime, "data": data})
+    return data
+
+
+def select_sentiment(
+    artifact: Dict[str, Any],
+    product_id: Optional[str],
+    store_id: Optional[str],
+) -> Tuple[Optional[Dict[str, Any]], str]:
+    """Priority: ``by_product`` -> ``by_store`` -> ``overall``.
+
+    Returns ``(summary, dimension)`` where dimension is ``product`` / ``store`` /
+    ``overall`` / ``unavailable``.
+    """
+    by_product = artifact.get("by_product") or {}
+    by_store = artifact.get("by_store") or {}
+    if not isinstance(by_product, dict):
+        by_product = {}
+    if not isinstance(by_store, dict):
+        by_store = {}
+
+    if product_id:
+        summary = by_product.get(product_id)
+        if isinstance(summary, dict):
+            return summary, "product"
+
+    if store_id:
+        summary = by_store.get(store_id)
+        if isinstance(summary, dict):
+            return summary, "store"
+
+    overall = artifact.get("overall")
+    if isinstance(overall, dict):
+        return overall, "overall"
+    return None, "unavailable"
+
+
 app = FastAPI(
     title="S4 Recommendation API",
     version="1.0.0",
@@ -257,6 +347,37 @@ def recommendations(
         "strategy": strategy,
         "personalized": strategy == "by_user",
         "context": context,
+    }
+
+
+@app.get("/sentiment", dependencies=[Depends(require_api_key)])
+def sentiment_summary(
+    response: Response,
+    product_id: Optional[str] = Query(None),
+    store_id: Optional[str] = Query(None),
+) -> Dict[str, Any]:
+    """Aggregate review sentiment for a product, a store, or the whole platform."""
+    response.headers["Cache-Control"] = "private, no-store"
+    for name, value in (("product_id", product_id), ("store_id", store_id)):
+        if value is not None and not ID_PATTERN.match(value):
+            raise HTTPException(status_code=422, detail=f"Invalid {name}")
+
+    data = load_sentiment_artifact()
+    summary, dimension = select_sentiment(data, product_id, store_id)
+
+    context: Dict[str, str] = {}
+    if product_id:
+        context["product_id"] = product_id
+    if store_id:
+        context["store_id"] = store_id
+
+    return {
+        "summary": summary,
+        "dimension": dimension,
+        "context": context,
+        "model_version": data.get("model_version"),
+        "generated_at": data.get("generated_at"),
+        "source": data.get("source", "unavailable"),
     }
 
 
