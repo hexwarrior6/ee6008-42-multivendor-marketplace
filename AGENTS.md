@@ -15,13 +15,43 @@
 
 ## Git 规则
 
+本节是对所有成员与 agent 的硬性约束：**新建分支或 PR 之前先对照本节自查，
+不符合就不要建**——宁可直接续用已有分支，也不要多开。
+
 - 分支一律基于 `origin/development` 新建，PR 回 `development`，合并后删除分支。
 - **永不直接 push `main`**（GitHub 受保护，合并被 workflow 限制）；`development`
-  也统一走 PR，保持可审查历史——包括纯文档改动。
+  也统一走 PR，保持可审查历史——包括纯文档改动。任何人都不得绕过 PR 直接
+  push `development`。
 - Commit message 用约定式前缀：`feat(scope): ...`、`fix(scope): ...`、`docs: ...`。
   scope 用**功能名**（如 `recommendation-engine`、`storefront`、`backend`），
   不用成员代号（S1–S5）——成员归属由 git 记录，不进命名。
 - 提交前跑所在目录的验证命令（见下），不过不提交。
+
+### 分支命名（统一格式，agent 必须严格执行）
+
+- 格式固定为 `<type>/<英文短主题>`：全小写 kebab-case，`type` 与 commit 前缀一致，
+  取 `feat` / `fix` / `docs` / `chore` / `perf` / `ci` / `data` 之一。
+  必须匹配：`^(feat|fix|docs|chore|perf|ci|data)/[a-z0-9-]+$`
+  - ✅ `feat/seller-analytics-dashboard`、`fix/analytics-sales-populate`、
+    `docs/agent-git-norms`
+  - ❌ `codex/seller-analytics-dashboard`（工具名）、`S5-perf-test`（代号+下划线）、
+    `perf/analytics-load-tests-20261025`（日期后缀）
+- 主题写功能内容，不带成员代号、工具名、日期或随机后缀；描述同一任务的新提交
+  直接推到已有分支，**不要另开平行分支**。
+- 一个任务一个分支，用完即删：合并或放弃后立即删除远端与本地分支，不跨周堆积。
+
+### PR 粒度（小团队扁平规则，不要按大项目操作）
+
+- **默认每人每周 1 个 PR**：一个 PR 装一个完整任务，或一组**紧密相关**、能一起
+  测试、一起回滚的改动（如某层的功能 + 它的文档 + 它的配置）。紧密相关的多个
+  功能应**合并成一个 PR**，审和测都更省事。
+- **不要一个 commit 开一个 PR**，也不要把互不相关的改动塞进同一个 PR。
+- 只有满足以下任一条，才从主 PR 里**拆出**单独的小 PR；其余情况一律并入：
+  1. 改动落在**别人负责的目录**，需要对应 owner 专门审查（PR 里 @ 该 owner）；
+  2. 需要**抢先合并**解锁他人（如修复阻塞全组验收的 bug）；
+  3. 风险或回滚需求与主 PR 明显不同。
+- PR 标题与 commit 同款约定式前缀；描述写清「改了什么 + 怎么验证」，让 reviewer
+  能照着测。合并后删除分支。
 
 ## CI/CD
 
