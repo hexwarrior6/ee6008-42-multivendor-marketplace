@@ -19,10 +19,15 @@
 不符合就不要建**——同一任务续用已有分支，不要多开；分支命名由 CI
 （`check-branch-name.yml`）强制校验，违规 PR 无法通过检查。
 
-- 分支一律基于 `origin/development` 新建，PR 回 `development`，合并后删除分支。
-- **永不直接 push `main`**（GitHub 受保护，合并被 workflow 限制）；`development`
-  也统一走 PR，保持可审查历史——包括纯文档改动。任何人都不得绕过 PR 直接
-  push `development`。
+- **永不直接 push `main`**（GitHub 受保护，只能由 development 经 PR 合入）。
+- `development` 是协作主干，按改动风险分两档：
+  - **可直接 push**：不影响构建与运行行为的纯文本改动——文档（含本文件）、
+    注释、文案修正。这类改动不必开分支或 PR；development 不是受保护主分支，
+    别为琐碎文本走流程。
+  - **必须开 PR**：一切代码、配置、依赖、数据库迁移、CI 的改动——它们会改变
+    构建/运行行为，需要 CI 检查与 review 把关。分支基于 `origin/development`
+    新建（命名见下），合并后删除分支。
+- 拿不准属于哪一档时，一律按「必须开 PR」处理。
 - Commit message 用约定式前缀：`feat(scope): ...`、`fix(scope): ...`、`docs: ...`。
   scope 用**功能名**（如 `recommendation-engine`、`storefront`、`backend`），
   不用成员代号（S1–S5）——成员归属由 git 记录，不进命名。
