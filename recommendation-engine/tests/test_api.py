@@ -245,5 +245,96 @@ class EndpointTest(unittest.TestCase):
         )
 
 
+class SentimentEndpointTest(unittest.TestCase):
+    """/sentiment follows the same rules as /recommendations: auth, degrade, no-store."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name) / "sentiment.json"
+        self.path.write_text(
+            json.dumps(
+                {
+                    "generated_at": "2026-10-23T00:00:00Z",
+                    "model_version": "sentiment-v1",
+                    "overall": {"total": 10, "positive": 6, "neutral": 2, "negative": 2},
+                    "by_product": {
+                        "p1": {"total": 4, "positive": 3, "neutral": 0, "negative": 1}
+                    },
+                    "by_store": {
+                        "s1": {"total": 7, "positive": 4, "neutral": 2, "negative": 1}
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+        self._old_sentiment = os.environ.get("SENTIMENT_PATH")
+        self._old_key = os.environ.get("RECOMMENDATIONS_API_KEY")
+        os.environ["SENTIMENT_PATH"] = str(self.path)
+        os.environ["RECOMMENDATIONS_API_KEY"] = "test-api-secret"
+        self.addCleanup(self._restore)
+        self.client = TestClient(api.app, headers={"X-API-Key": "test-api-secret"})
+
+    def _restore(self):
+        if self._old_sentiment is None:
+            os.environ.pop("SENTIMENT_PATH", None)
+        else:
+            os.environ["SENTIMENT_PATH"] = self._old_sentiment
+        if self._old_key is None:
+            os.environ.pop("RECOMMENDATIONS_API_KEY", None)
+        else:
+            os.environ["RECOMMENDATIONS_API_KEY"] = self._old_key
+
+    def test_requires_api_key(self):
+        response = TestClient(api.app).get("/sentiment")
+        self.assertEqual(response.status_code, 401)
+        self.assertNotIn("summary", response.json())
+
+    def test_overall_when_no_filter(self):
+        body = self.client.get("/sentiment").json()
+        self.assertEqual(body["dimension"], "overall")
+        self.assertEqual(body["summary"]["total"], 10)
+
+    def test_product_dimension(self):
+        body = self.client.get("/sentiment", params={"product_id": "p1"}).json()
+        self.assertEqual(body["dimension"], "product")
+        self.assertEqual(body["summary"]["total"], 4)
+
+    def test_store_dimension(self):
+        body = self.client.get("/sentiment", params={"store_id": "s1"}).json()
+        self.assertEqual(body["dimension"], "store")
+        self.assertEqual(body["summary"]["total"], 7)
+
+    def test_product_takes_priority_over_store(self):
+        body = self.client.get(
+            "/sentiment", params={"product_id": "p1", "store_id": "s1"}
+        ).json()
+        self.assertEqual(body["dimension"], "product")
+
+    def test_unknown_ids_fall_back_to_overall(self):
+        body = self.client.get(
+            "/sentiment", params={"product_id": "unknown", "store_id": "unknown"}
+        ).json()
+        self.assertEqual(body["dimension"], "overall")
+
+    def test_missing_artifact_degrades(self):
+        os.environ["SENTIMENT_PATH"] = str(Path(self.tmp.name) / "missing.json")
+        body = self.client.get("/sentiment").json()
+        self.assertEqual(body["dimension"], "unavailable")
+        self.assertIsNone(body["summary"])
+        self.assertEqual(body["source"], "unavailable")
+
+    def test_invalid_id_rejected(self):
+        self.assertEqual(
+            self.client.get("/sentiment", params={"store_id": "bad id!"}).status_code,
+            422,
+        )
+
+    def test_response_is_not_shared_cached(self):
+        response = self.client.get("/sentiment")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["cache-control"], "private, no-store")
+
+
 if __name__ == "__main__":
     unittest.main()

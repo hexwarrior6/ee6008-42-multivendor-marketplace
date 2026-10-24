@@ -4,6 +4,9 @@
 > REST API service on Railway"*。
 >
 > 当前仓库已实现训练、导出和 REST API，支持以下两种集成路径。
+>
+> 情感分析层（Week 10）的产物 `artifacts/sentiment.json` 走同样的离线交付模式，
+> 详见 [SENTIMENT.md](SENTIMENT.md)。
 
 ---
 
@@ -53,6 +56,7 @@
 | --- | --- | --- |
 | `GET` | `/health` | 健康检查,返回 `{"status":"ok","source":...,"model_version":...,"generated_at":...}` |
 | `GET` | `/recommendations?customer_id=&product_id=&limit=8` | 返回 `RecommendationItem` 列表 |
+| `GET` | `/sentiment?product_id=&store_id=` | Week 10：返回评论情感聚合（product → store → overall） |
 
 返回体与 `GET /store/recommendations` 的契约保持一致(§5),这样 S1 只需做一次转发:
 `strategy` 会标明命中 `by_user` / `by_product` / `fallback` 中的哪一路。
@@ -66,6 +70,10 @@
 - **调用鉴权**:`/recommendations` 必须携带 `X-API-Key` 请求头，与服务端
   `RECOMMENDATIONS_API_KEY` 匹配。缺失或错误返回 401；服务端未配置或仅配置空白时返回 503。
   `/health` 保持公开。推荐响应使用 `Cache-Control: private, no-store`。
+- **情感摘要（Week 10）**:`/sentiment` 读取 `artifacts/sentiment.json`(可用 `SENTIMENT_PATH`
+  覆盖)，按 `by_product` → `by_store` → `overall` 命中；产物缺失时返回
+  `dimension="unavailable"`、`summary=null`，不崩溃。与 `/recommendations` 共用同一个
+  `X-API-Key` 认证和 `private, no-store` 缓存策略。
 
 ### 3.2 本地启动
 
