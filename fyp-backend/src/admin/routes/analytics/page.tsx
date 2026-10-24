@@ -2,7 +2,6 @@ import { defineRouteConfig } from "@medusajs/admin-sdk"
 import {
   ArrowPath,
   ChartBar,
-  InformationCircle,
   Spinner,
 } from "@medusajs/icons"
 import { Badge, Button, Heading, Input } from "@medusajs/ui"
@@ -22,6 +21,7 @@ import {
 } from "../../components/analytics/data"
 import { copy, type Labels } from "../../components/analytics/copy"
 import { Trend } from "../../components/analytics/trend"
+import { SentimentSummary } from "../../components/analytics/sentiment"
 
 function Problem({
   kind,
@@ -222,7 +222,7 @@ export default function AnalyticsPage() {
           >
             {currencies.map((code) => (
               <option key={code} value={code}>
-                {code.toUpperCase()}
+                {t.currencyNames[code]}
               </option>
             ))}
           </select>
@@ -445,20 +445,7 @@ export default function AnalyticsPage() {
           </section>
         </>
       )}
-      <section
-        className="border-t border-ui-border-base pt-6"
-        aria-label={t.sentiment}
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-base font-medium">{t.sentiment}</h2>
-          <Badge color="grey">{t.pending}</Badge>
-        </div>
-        <p className="mt-4 flex items-center gap-2 text-sm text-ui-fg-subtle">
-          <InformationCircle aria-hidden="true" />
-          {t.sentimentBody}
-        </p>
-        <p className="mt-1 text-xs text-ui-fg-muted">{t.sentimentOwner}</p>
-      </section>
+      <SentimentSummary locale={locale} t={t} />
     </div>
   )
 }
