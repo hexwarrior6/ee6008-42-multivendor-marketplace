@@ -26,6 +26,7 @@
     "test:integration:modules": "cross-env TEST_TYPE=integration:modules NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
     "test:unit": "cross-env TEST_TYPE=unit NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit",
     "test:feature:http": "node scripts/run-feature-http-tests.cjs",
+    "perf": "node scripts/perf/run-perf-tests.mjs",
     "patch-admin": "node node_modules/@techlabi/medusa-marketplace-plugin/.medusa/server/src/patch-admin.js",
     "postinstall": ""
   },

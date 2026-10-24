@@ -62,3 +62,5 @@ playwright/.auth/
 *.tmp
 *.temp
 .zcodeignore
+# Local perf-test reports (fyp-backend pnpm perf --out)
+fyp-backend/perf-results/
