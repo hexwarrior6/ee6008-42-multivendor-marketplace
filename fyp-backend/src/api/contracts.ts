@@ -58,6 +58,28 @@ export type SalesAnalyticsResponse = {
   truncated: boolean
 }
 
+export type SentimentSummary = {
+  total: number
+  positive: number
+  neutral: number
+  negative: number
+  positive_ratio: number
+  negative_ratio: number
+  average_score: number
+  average_rating: number
+  top_positive_terms: Array<[string, number]>
+  top_negative_terms: Array<[string, number]>
+}
+
+export type SentimentAnalyticsResponse = {
+  summary: SentimentSummary | null
+  dimension: "store" | "overall" | "unavailable"
+  context: { store_id?: string }
+  model_version: string | null
+  generated_at: string | null
+  source: string
+}
+
 /** Snapshot counts, not payment-ledger revenue. Daily groups use creation date. */
 export type CustomOrderAnalyticsResponse = {
   period: { from: string; to: string }
