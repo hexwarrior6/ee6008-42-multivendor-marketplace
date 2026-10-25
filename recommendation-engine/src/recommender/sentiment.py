@@ -284,6 +284,7 @@ REVIEW_RATING_COLUMNS = ("rating", "score", "stars")
 REVIEW_TEXT_COLUMNS = ("content", "comment", "body", "text", "message", "review")
 REVIEW_TITLE_COLUMNS = ("title", "subject", "headline")
 REVIEW_STATUS_COLUMNS = ("status",)
+REVIEW_DELETED_COLUMNS = ("deleted_at", "deletedat", "deleted")
 
 
 def _pick(cols: Sequence[str], candidates: Sequence[str]) -> Optional[str]:
@@ -333,6 +334,7 @@ def load_reviews(
     text_col = _pick(cols, REVIEW_TEXT_COLUMNS)
     title_col = _pick(cols, REVIEW_TITLE_COLUMNS)
     status_col = _pick(cols, REVIEW_STATUS_COLUMNS)
+    deleted_col = _pick(cols, REVIEW_DELETED_COLUMNS)
     if not pid_col or not (rating_col or text_col):
         raise RuntimeError(
             f"Review table {review_key} lacks product_id or text/rating columns: {cols}"
@@ -348,9 +350,17 @@ def load_reviews(
 
     sql = f"SELECT {', '.join(select)} FROM {database.quote_table(review_key)}"
     params: List[Any] = []
+    conditions = []
     if status_col:
         # Skip rejected/spam reviews when the plugin exposes a status column.
-        sql += f' WHERE COALESCE(CAST("{status_col}" AS TEXT), \'\') NOT IN (\'rejected\', \'spam\')'
+        conditions.append(
+            f'COALESCE(CAST("{status_col}" AS TEXT), \'\') NOT IN (\'rejected\', \'spam\')'
+        )
+    if deleted_col:
+        # Medusa plugins soft-delete rows; deleted reviews must not be counted.
+        conditions.append(f'"{deleted_col}" IS NULL')
+    if conditions:
+        sql += " WHERE " + " AND ".join(conditions)
     if limit and limit > 0:
         sql += " LIMIT %s" if not database.is_sqlite(cfg.database_url) else " LIMIT ?"
         params.append(int(limit))
@@ -378,20 +388,49 @@ def load_reviews(
 def load_product_store_map(cfg, info: database.SchemaInfo) -> Dict[str, str]:
     """Map product_id -> store_id so the report can aggregate per vendor.
 
-    Returns an empty mapping when the product table has no store/seller column, so
-    ``by_store`` is simply empty rather than failing the whole run.
+    Two layouts, in priority order:
+    1. a ``store_id``-style column directly on the product table;
+    2. a Medusa link table holding both ``product_id`` and ``store_id``
+       columns (e.g. ``product_product_store_store``) — the Medusa v2
+       marketplace schema stores the ownership there, not on ``product``.
+    Tables whose name mentions ``collection`` are ignored so the
+    collection-store link cannot be mistaken for product ownership.
+
+    Returns an empty mapping when neither layout exists, so ``by_store``
+    is simply empty rather than failing the whole run.
     """
     product_key = info.role_map.get("product")
-    if not product_key:
+    if product_key:
+        cols = info.tables[product_key]
+        id_col = _pick(cols, ("id",))
+        store_col = _pick(cols, ("store_id", "seller_id", "vendor_id"))
+        if id_col and store_col:
+            sql = (
+                f'SELECT "{id_col}" AS product_id, "{store_col}" AS store_id '
+                f"FROM {database.quote_table(product_key)}"
+            )
+            with database.Driver(cfg.database_url) as driver:
+                rows = driver.query(sql)
+            mapping: Dict[str, str] = {}
+            for row in rows:
+                product_id = str(row.get("product_id") or "").strip()
+                store_id = str(row.get("store_id") or "").strip()
+                if product_id and store_id:
+                    mapping[product_id] = store_id
+            if mapping:
+                return mapping
+
+    link_key = _pick_product_store_link_table(info)
+    if not link_key:
         return {}
-    cols = info.tables[product_key]
-    id_col = _pick(cols, ("id",))
-    store_col = _pick(cols, ("store_id", "seller_id", "vendor_id"))
-    if not id_col or not store_col:
+    cols = info.tables[link_key]
+    pid_col = _pick(cols, ("product_id",))
+    store_col = _pick(cols, ("store_id",))
+    if not pid_col or not store_col:
         return {}
     sql = (
-        f'SELECT "{id_col}" AS product_id, "{store_col}" AS store_id '
-        f"FROM {database.quote_table(product_key)}"
+        f'SELECT "{pid_col}" AS product_id, "{store_col}" AS store_id '
+        f"FROM {database.quote_table(link_key)}"
     )
     with database.Driver(cfg.database_url) as driver:
         rows = driver.query(sql)
@@ -402,6 +441,27 @@ def load_product_store_map(cfg, info: database.SchemaInfo) -> Dict[str, str]:
         if product_id and store_id:
             mapping[product_id] = store_id
     return mapping
+
+
+def _pick_product_store_link_table(info: database.SchemaInfo) -> Optional[str]:
+    """Find a link table that carries product_id + store_id columns."""
+    best: Optional[Tuple[int, str]] = None
+    for key, cols in info.tables.items():
+        low = {c.lower() for c in cols}
+        if "product_id" not in low or "store_id" not in low:
+            continue
+        name = key.split(".", 1)[-1].lower()
+        if "collection" in name or "review" in name:
+            continue
+        if "product" not in name or "store" not in name:
+            continue
+        # Prefer the most literal product↔store link name.
+        score = len("product_store") if "product_store" in name.replace(
+            "product_product", "product"
+        ) else 0
+        if best is None or score > best[0]:
+            best = (score, key)
+    return best[1] if best else None
 
 
 # ---------------------------------------------------------------------------
@@ -441,7 +501,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"product->store mapping: {len(store_map)} products (by_store enabled)")
         else:
             print("product->store mapping: unavailable "
-                  "(product table has no store_id/seller_id/vendor_id; by_store will be empty)")
+                  "(no store column on product and no product↔store link table; by_store will be empty)")
         return 0
 
     reviews = load_reviews(cfg, info, review_key, limit=args.limit)

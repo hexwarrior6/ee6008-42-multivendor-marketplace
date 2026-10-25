@@ -265,7 +265,11 @@ def select_sentiment(
     product_id: Optional[str],
     store_id: Optional[str],
 ) -> Tuple[Optional[Dict[str, Any]], str]:
-    """Priority: ``by_product`` -> ``by_store`` -> ``overall``.
+    """Exact scope or nothing: ``by_product`` / ``by_store`` when an id is given.
+
+    A requested id that has no aggregate must NOT fall back to ``overall`` —
+    that would leak platform-wide review sentiment into a seller's dashboard.
+    ``overall`` is only returned when no specific id was requested.
 
     Returns ``(summary, dimension)`` where dimension is ``product`` / ``store`` /
     ``overall`` / ``unavailable``.
@@ -281,11 +285,13 @@ def select_sentiment(
         summary = by_product.get(product_id)
         if isinstance(summary, dict):
             return summary, "product"
+        return None, "unavailable"
 
     if store_id:
         summary = by_store.get(store_id)
         if isinstance(summary, dict):
             return summary, "store"
+        return None, "unavailable"
 
     overall = artifact.get("overall")
     if isinstance(overall, dict):

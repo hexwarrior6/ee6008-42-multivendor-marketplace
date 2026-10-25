@@ -1,6 +1,7 @@
 import type {
   CustomOrderAnalyticsResponse,
   SalesAnalyticsResponse,
+  SentimentAnalyticsResponse,
 } from "../../../api/contracts"
 
 export type Filters = { from: string; to: string; currency_code: string }
@@ -208,6 +209,48 @@ export async function loadAnalytics(
     getPart("custom-orders", filters, signal, validCustom),
   ])
   return { sales, custom }
+}
+
+const validSentiment = (
+  value: unknown
+): value is SentimentAnalyticsResponse =>
+  object(value) &&
+  (value.summary === null || object(value.summary)) &&
+  ["store", "overall", "unavailable"].includes(String(value.dimension)) &&
+  object(value.context) &&
+  typeof value.source === "string"
+
+/**
+ * Load the seller sentiment summary. The endpoint needs no date filters and
+ * degrades server-side, so any failure simply keeps the card in its
+ * pending state instead of surfacing an error panel.
+ */
+export async function loadSentiment(
+  signal: AbortSignal
+): Promise<SentimentAnalyticsResponse | null> {
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  signal.addEventListener("abort", abort, { once: true })
+  if (signal.aborted) abort()
+  const timeout = setTimeout(abort, 10000)
+  try {
+    const response = await fetch("/admin/analytics/sentiment", {
+      method: "GET",
+      credentials: "include",
+      cache: "no-store",
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    })
+    if (!response.ok) return null
+    const data: unknown = await response.json()
+    return validSentiment(data) ? data : null
+  } catch (error) {
+    if (signal.aborted) throw error
+    return null
+  } finally {
+    clearTimeout(timeout)
+    signal.removeEventListener("abort", abort)
+  }
 }
 
 export function buildTimeline(
