@@ -311,11 +311,17 @@ class SentimentEndpointTest(unittest.TestCase):
         ).json()
         self.assertEqual(body["dimension"], "product")
 
-    def test_unknown_ids_fall_back_to_overall(self):
+    def test_unknown_ids_do_not_leak_overall(self):
         body = self.client.get(
             "/sentiment", params={"product_id": "unknown", "store_id": "unknown"}
         ).json()
-        self.assertEqual(body["dimension"], "overall")
+        self.assertEqual(body["dimension"], "unavailable")
+        self.assertIsNone(body["summary"])
+
+    def test_unknown_store_does_not_leak_overall(self):
+        body = self.client.get("/sentiment", params={"store_id": "unknown"}).json()
+        self.assertEqual(body["dimension"], "unavailable")
+        self.assertIsNone(body["summary"])
 
     def test_missing_artifact_degrades(self):
         os.environ["SENTIMENT_PATH"] = str(Path(self.tmp.name) / "missing.json")

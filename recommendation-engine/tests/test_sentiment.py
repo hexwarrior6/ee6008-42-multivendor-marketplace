@@ -271,5 +271,97 @@ class LoadReviewsSqliteTest(unittest.TestCase):
         )
 
 
+class MedusaLayoutSqliteTest(unittest.TestCase):
+    """Medusa v2 layout: soft-deleted reviews + product↔store link table."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.path = Path(self.tmp.name) / "medusa.db"
+        conn = sqlite3.connect(str(self.path))
+        try:
+            conn.executescript(
+                """
+                CREATE TABLE product_review (
+                    id TEXT PRIMARY KEY,
+                    product_id TEXT,
+                    rating INTEGER,
+                    content TEXT,
+                    status TEXT,
+                    deleted_at TEXT
+                );
+                CREATE TABLE product (
+                    id TEXT PRIMARY KEY,
+                    title TEXT
+                );
+                CREATE TABLE product_product_store_store (
+                    id TEXT PRIMARY KEY,
+                    product_id TEXT,
+                    store_id TEXT
+                );
+                CREATE TABLE product_product_collection_store_store (
+                    id TEXT PRIMARY KEY,
+                    product_collection_id TEXT,
+                    store_id TEXT
+                );
+                """
+            )
+            conn.executemany(
+                "INSERT INTO product_review VALUES (?,?,?,?,?,?)",
+                [
+                    ("r1", "p1", 5, "质量很好，非常喜欢", "approved", None),
+                    ("r2", "p1", 2, "有线头，不太满意", "approved", None),
+                    ("r3", "p2", 4, "很漂亮，值得买", "approved", None),
+                    ("r4", "p2", 1, "很差，不建议购买", "approved", "2026-10-24 00:00:00"),
+                ],
+            )
+            conn.executemany(
+                "INSERT INTO product VALUES (?,?)",
+                [("p1", "毛衣"), ("p2", "马克杯")],
+            )
+            conn.executemany(
+                "INSERT INTO product_product_store_store VALUES (?,?,?)",
+                [("l1", "p1", "store_a"), ("l2", "p2", "store_b")],
+            )
+            conn.executemany(
+                "INSERT INTO product_product_collection_store_store VALUES (?,?,?)",
+                [("c1", "col_1", "store_decoy")],
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        self.cfg = Config(database_url=f"sqlite:///{self.path.as_posix()}")
+
+    def test_soft_deleted_reviews_are_excluded(self):
+        info = database.list_schema(self.cfg)
+        key = sentiment.pick_review_table(info)
+        reviews = sentiment.load_reviews(self.cfg, info, key)
+        self.assertEqual(len(reviews), 3)
+        self.assertEqual({r["product_id"] for r in reviews}, {"p1", "p2"})
+        p2_ratings = [r["rating"] for r in reviews if r["product_id"] == "p2"]
+        self.assertEqual(p2_ratings, [4])
+
+    def test_store_map_resolves_via_link_table(self):
+        info = database.list_schema(self.cfg)
+        database.resolve_roles(self.cfg, info)
+        mapping = sentiment.load_product_store_map(self.cfg, info)
+        # The collection-store decoy must never be mistaken for ownership.
+        self.assertEqual(mapping, {"p1": "store_a", "p2": "store_b"})
+
+    def test_report_by_store_via_link_table(self):
+        info = database.list_schema(self.cfg)
+        database.resolve_roles(self.cfg, info)
+        key = sentiment.pick_review_table(info)
+        reviews = sentiment.load_reviews(self.cfg, info, key)
+        mapping = sentiment.load_product_store_map(self.cfg, info)
+        report = sentiment.build_report(reviews, product_to_store=mapping)
+        self.assertEqual(report["overall"]["total"], 3)
+        self.assertIn("store_a", report["by_store"])
+        self.assertIn("store_b", report["by_store"])
+        self.assertEqual(report["by_store"]["store_a"]["total"], 2)
+        # p2's soft-deleted review must not reach store_b either.
+        self.assertEqual(report["by_store"]["store_b"]["total"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()

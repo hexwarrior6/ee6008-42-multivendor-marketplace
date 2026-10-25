@@ -11,6 +11,7 @@ import {
   currencies,
   formatAmount,
   loadAnalytics,
+  loadSentiment,
   presetRange,
   statuses,
   validateFilters,
@@ -19,6 +20,7 @@ import {
   type Filters,
   type Locale,
 } from "../../components/analytics/data"
+import type { SentimentAnalyticsResponse } from "../../../api/contracts"
 import { copy, type Labels } from "../../components/analytics/copy"
 import { Trend } from "../../components/analytics/trend"
 import { SentimentSummary } from "../../components/analytics/sentiment"
@@ -87,6 +89,8 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<Analytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [reload, setReload] = useState(0)
+  const [sentiment, setSentiment] =
+    useState<SentimentAnalyticsResponse | null>(null)
   const retry = () => setReload((count) => count + 1)
 
   useEffect(() => {
@@ -116,6 +120,23 @@ export default function AnalyticsPage() {
       controller.abort()
     }
   }, [filters, reload])
+
+  // The sentiment card is independent of the date filters; it refreshes with
+  // the page-level retry but never blocks the revenue panels.
+  useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+    setSentiment(null)
+    void loadSentiment(controller.signal)
+      .then((result) => {
+        if (active && result) setSentiment(result)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+      controller.abort()
+    }
+  }, [reload])
 
   const sales = data?.sales.data
   const custom = data?.custom.data
@@ -445,7 +466,12 @@ export default function AnalyticsPage() {
           </section>
         </>
       )}
-      <SentimentSummary locale={locale} t={t} />
+      <SentimentSummary
+        summary={sentiment?.summary ?? null}
+        generatedAt={sentiment?.generated_at ?? null}
+        locale={locale}
+        t={t}
+      />
     </div>
   )
 }
