@@ -17,7 +17,9 @@ Our team simulated the complete business flow across five coordinated student ro
 8. **Customer Review & Sentiment**: S3 submitted a 5-star review, which was ingested by the sentiment analysis pipeline to update polarity and top terms.
 9. **Analytics Dashboard Sync**: S1 and S2 inspected platform-wide and vendor-scoped dashboards, confirming real-time metric synchronization and multi-tenant isolation.
 
-All identified issues were logged and triaged with zero critical/blocker defects remaining. Concurrent stress testing demonstrated high resilience with a 0% request error rate under mixed workloads. All 468 backend tests, frontend typechecks and regression scripts, recommendation suite (137 tests), and the new Week 11 E2E test harness passed cleanly.
+All identified issues were logged and triaged with zero critical/blocker defects remaining. Concurrent stress testing demonstrated high resilience with a 0% request error rate under mixed workloads. Furthermore, we conducted a live user-facing browser audit using our deployed Railway storefront (`/cn`), verifying the complete Chinese browsing, per-vendor cart management, WeChat Pay option selection, and order confirmation (#5 generated) with 16 high-resolution visual evidence screenshots captured.
+
+All 468 backend tests, frontend typechecks and regression scripts, recommendation suite (137 tests), and the new Week 11 E2E test harness passed cleanly.
 
 ★ **Milestone reached**: The entire system end-to-end flow runs without critical errors, and all tests have passed.
 
