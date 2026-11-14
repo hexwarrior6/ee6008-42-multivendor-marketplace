@@ -3,7 +3,7 @@
   <p>Multi-vendor marketplace for handmade goods — independent artisans, custom orders, WeChat Pay and personalized recommendations.</p>
   <p>NTU EE6008 · Group 42 · Medusa v2 + Next.js + Python</p>
   <p><a href="https://fyp-storefront-development.up.railway.app">Live Storefront</a> · <a href="https://fyp-backend-development.up.railway.app/app">Admin Panel</a> · <a href="https://recommendation-api-development.up.railway.app/docs">Recommendation API</a></p>
-  <p>🌐 <a href="README_zh-hans.md">简体中文</a></p>
+  <p>🌐 <a href="README_zh-hans.md">简体中文</a> / English</p>
 </div>
 
 ![BridgeCart storefront catalog](docs/images/storefront-catalog.png)
