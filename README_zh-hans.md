@@ -2,7 +2,8 @@
   <h1>BridgeCart</h1>
   <p>面向独立手艺人的多商户电商平台 —— 商家入驻、定制订单、微信支付与个性化推荐。</p>
   <p>NTU EE6008 · Group 42 · Medusa v2 + Next.js + Python</p>
-  <p><a href="https://fyp-storefront-development.up.railway.app">商城前台</a> · <a href="https://fyp-backend-development.up.railway.app/app">管理后台</a> · <a href="https://recommendation-api-development.up.railway.app/docs">推荐服务</a> · <a href="README.md">English</a></p>
+  <p><a href="https://fyp-storefront-development.up.railway.app">商城前台</a> · <a href="https://fyp-backend-development.up.railway.app/app">管理后台</a> · <a href="https://recommendation-api-development.up.railway.app/docs">推荐服务</a></p>
+  <p>🌐 <a href="README.md">English</a></p>
 </div>
 
 ![BridgeCart 商城前台 — 商品目录](docs/images/storefront-catalog.png)
@@ -87,6 +88,6 @@ python scripts/run_checks.py   # 检查入口，退出码 0 为通过
 
 <div align="center">
 
-NTU EE6008 毕业设计 · Group 42 · 2026
+NTU EE6008 合作项目 · Group 42 · 2026
 
 </div>
