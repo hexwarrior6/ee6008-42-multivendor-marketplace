@@ -353,6 +353,11 @@ export const GET = async (
     } as never
     const { data } = await query.graph({
       entity: "order",
+      // Fully explicit field list. Dot-chained wildcard entries such as
+      // `*payment_collections.payments.captures` crash MikroORM 6.4.16
+      // populate parsing (expandDotPaths), and any unstarred dot path
+      // restricts its relation to the listed subfields — so every scalar
+      // the aggregation below reads is spelled out here.
       fields: [
         "id",
         "currency_code",
@@ -364,12 +369,32 @@ export const GET = async (
         "refunded_amount",
         "created_at",
         "stores.id",
-        "*items",
-        "*items.variant.product",
-        "*payment_collections",
-        "*payment_collections.payments",
-        "*payment_collections.payments.captures",
-        "*payment_collections.payments.refunds",
+        "items.id",
+        "items.product_id",
+        "items.variant_id",
+        "items.title",
+        "items.quantity",
+        "items.unit_price",
+        "items.subtotal",
+        "items.total",
+        "items.product.id",
+        "items.product.title",
+        "items.variant.id",
+        "items.variant.product_id",
+        "items.variant.product.id",
+        "items.variant.product.title",
+        "payment_collections.id",
+        "payment_collections.status",
+        "payment_collections.amount",
+        "payment_collections.captured_amount",
+        "payment_collections.refunded_amount",
+        "payment_collections.payments.id",
+        "payment_collections.payments.amount",
+        "payment_collections.payments.captured_at",
+        "payment_collections.payments.captures.id",
+        "payment_collections.payments.captures.amount",
+        "payment_collections.payments.refunds.id",
+        "payment_collections.payments.refunds.amount",
       ],
       filters: orderFilters,
       pagination: { take: ORDER_PAGE_SIZE, skip },

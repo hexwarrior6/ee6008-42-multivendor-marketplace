@@ -1,0 +1,31 @@
+name: Check branch naming
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+
+jobs:
+  check-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate head branch name (AGENTS.md Git 规则)
+        run: |
+          head="${{ github.head_ref }}"
+          base="${{ github.base_ref }}"
+          if [ "$base" != "development" ]; then
+            echo "This PR does not target development. No naming check needed."
+            exit 0
+          fi
+          if echo "$head" | grep -Eq '^(feat|fix|docs|chore|perf|ci|data)/[a-z0-9-]+$'; then
+            echo "✅ Branch '$head' matches the required <type>/<topic> format."
+          else
+            echo "❌ Branch '$head' violates the AGENTS.md naming rule."
+            echo "   Required: ^(feat|fix|docs|chore|perf|ci|data)/[a-z0-9-]+\$"
+            echo "   i.e. <type>/<english-topic>, lowercase kebab-case; no tool"
+            echo "   names, member codes, dates or random suffixes."
+            exit 1
+          fi

@@ -18,7 +18,9 @@ recommendation-engine/
 ├─ README.md                      # 本文（快速上手）
 ├─ .env.example                   # 环境变量样例
 ├─ docs/
-│  └─ ARCHITECTURE.md             # 详细架构与实现说明
+│  ├─ ARCHITECTURE.md             # 详细架构与实现说明
+│  ├─ DEPLOYMENT.md               # Week 9：REST API 部署（Docker / Railway）
+│  └─ SENTIMENT.md                # Week 10：评论情感分析层
 ├─ src/
 │  └─ recommender/                # 主包
 │     ├─ __init__.py
@@ -29,6 +31,8 @@ recommendation-engine/
 │     ├─ content_based.py         # 内容相似度（冷启动 / 无历史时的回退）
 │     ├─ evaluation.py            # precision@K / recall@K / hit@K / coverage
 │     ├─ exporter.py              # 导出对齐 RecommendationItem 契约的 JSON
+│     ├─ sentiment.py             # Week 10：评论情感分析（词典+规则，零依赖）
+│     ├─ api.py                   # Week 9：只读 REST API（FastAPI）
 │     ├─ train.py                 # CLI 入口：清洗 → 训练 → 评估 → 导出
 │     └─ models/                  # 推荐模型（统一接口，可互换）
 │        ├─ __init__.py
